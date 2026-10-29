@@ -1,0 +1,64 @@
+{
+ "profile_id": "cot_xfa",
+ "profile_name": "City of Tshwane – e-billing (XFA form)",
+ "short_name": "CoT",
+ "_doc": "City of Tshwane e-billing PDFs that are XFA form shells: the page only says 'requires Adobe Reader 8', the bill itself travels as an XFA datasets package that the engine flattens to 'Tag: value' lines (CBX 1.0.77 fixed that flattening — it used to fail on prefixed attributes, so these bills looked empty). Layout: header tags (AccountNumber, InvoiceDate, Deposit …), then one CategoryName block per service with Description/Amount/VAT/Total lines; the Elektrisiteit Vooruitbetaal block carries TOU charge lines (Spits=Peak, Niespits=Off-peak, Standard, Vaste Heffing=fixed, Aanvraagheff=demand) and register lines (KWH E_PK / E_OP / E_STD, KVA). Built and checked on 35 Telkom bills (3 sites, Oct 2026): the electricity lines add up to the bill's own 'Totale lopende heffing (B)' on every one.",
+ "fingerprint": {
+  "all": ["GISKEY:", "CATEGORYNAME:", "4000142267"],
+  "any": ["Elektrisiteit", "Electricity", "Water", "Sanitasie"]
+ },
+ "sections": {
+  "electricity": {"start": "^CategoryName: (?:Elektrisiteit|Electricity)"},
+  "water": {"start": "^CategoryName: Water"},
+  "sewerage": {"start": "^CategoryName: (?:Sanitasie|Riool|Sewer)"},
+  "rates": {"start": "^CategoryName: (?:Eiendomsbelasting|Property Rates)"},
+  "refuse": {"start": "^CategoryName: (?:Vullis|Refuse|Afval)"},
+  "sundry": {"start": "^CategoryName: VAT"}
+ },
+ "fields": [
+  {"field": "account_number", "label": "Account Number", "scope": "document", "pattern": "^AccountNumber: (\\d+)", "type": "text", "required": true},
+  {"field": "invoice_number", "label": "Invoice Number", "scope": "document", "pattern": "^InvoiceNumber: (\\d+)", "type": "text", "required": false},
+  {"field": "billing_date", "label": "Invoice Date", "scope": "document", "pattern": "^InvoiceDate: (\\d{4}-\\d{2}-\\d{2})", "type": "date", "required": true},
+  {"field": "due_date", "label": "Due Date", "scope": "document", "pattern": "^DueDate: (\\S+)", "type": "date", "required": false},
+  {"field": "site_out", "label": "Premises", "scope": "document", "pattern": "^PremiseAddress1: (.+)$", "type": "text", "required": false},
+  {"field": "cot_deposit_r", "label": "Deposit", "scope": "document", "pattern": "^Deposit: (-?[\\d.]+)$", "type": "money", "required": false},
+  {"field": "cot_guarantee_r", "label": "Guarantee deposit", "scope": "document", "pattern": "^GuaranteeDeposit: (-?[\\d.]+)$", "type": "money", "required": false},
+  {"field": "levy_total_ex_r", "label": "Current levy excl. VAT (B) — the bill's own total", "scope": "document", "pattern": "^LevyAmount: (-?[\\d.]+)$", "type": "money", "required": false},
+  {"field": "peak_ex_r", "label": "Peak (Spits) energy", "scope": "section:electricity", "pattern": "^Description: Spits [^\\n]*\\nAmount: (-?[\\d.]+)$", "type": "money", "collect": "sum", "required": false},
+  {"field": "offpeak_ex_r", "label": "Off-peak (Niespits) energy", "scope": "section:electricity", "pattern": "^Description: Niespits [^\\n]*\\nAmount: (-?[\\d.]+)$", "type": "money", "collect": "sum", "required": false},
+  {"field": "std_ex_r", "label": "Standard energy", "scope": "section:electricity", "pattern": "^Description: Standa\\w* Energ[^\\n]*\\nAmount: (-?[\\d.]+)$", "type": "money", "collect": "sum", "required": false},
+  {"field": "fixed_ex_r", "label": "Fixed charge (Vaste Heffing)", "scope": "section:electricity", "pattern": "^Description: Vaste Heffing[^\\n]*\\nAmount: (-?[\\d.]+)$", "type": "money", "collect": "sum", "required": false},
+  {"field": "demand_ex_r", "label": "Demand charge (Aanvraagheffing)", "scope": "section:electricity", "pattern": "^Description: Aanvraag\\w*[^\\n]*\\nAmount: (-?[\\d.]+)$", "type": "money", "collect": "sum", "required": false},
+  {"field": "other_elec_r", "label": "Other electricity lines", "scope": "section:electricity", "pattern": "^Description: (?!Spits |Niespits |Standa\\w* Energ|Vaste Heffing|Aanvraag|Lesingdatums|Meter:)[^\\n]*\\nAmount: (-?[\\d.]+)$", "type": "money", "collect": "sum", "required": false},
+  {"fields": ["read_end", "read_start", "days"], "label": "Reading dates (energy)", "scope": "section:electricity", "pattern": "^Description: Lesingdatums Huidige (\\d{2}/\\d{2}/\\d{2}) Vorige (\\d{2}/\\d{2}/\\d{2}) \\( ?(\\d+) dae\\)", "types": ["date", "date", "number"], "required": false},
+  {"field": "meter", "label": "Meter", "scope": "section:electricity", "pattern": "^Description: Meter: (\\d+)\\(", "type": "text", "required": false},
+  {"field": "reading_type", "label": "Reading type", "scope": "section:electricity", "pattern": "^Description: Meter: \\d+\\((\\w+)\\)", "type": "text", "required": false},
+  {"field": "tariff_out", "label": "Tariff", "scope": "section:electricity", "pattern": "^Description: Vaste Heffing (.+)$", "type": "text", "required": false},
+  {"field": "peak_kwh", "label": "Peak kWh", "scope": "section:electricity", "pattern": "Verbruik (\\d+) KWH \\( ?E_PK", "type": "number", "collect": "sum", "required": false},
+  {"field": "offpeak_kwh", "label": "Off-peak kWh", "scope": "section:electricity", "pattern": "Verbruik (\\d+) KWH \\( ?E_OP", "type": "number", "collect": "sum", "required": false},
+  {"field": "std_kwh", "label": "Standard kWh", "scope": "section:electricity", "pattern": "Verbruik (\\d+) KWH \\( ?E_STD", "type": "number", "collect": "sum", "required": false},
+  {"field": "demand_kva", "label": "Demand kVA", "scope": "section:electricity", "pattern": "Verbruik (\\d+) KVA", "type": "number", "required": false}
+ ],
+ "computes": [
+  {"field": "total_kwh_out", "op": "sum", "of": ["peak_kwh", "offpeak_kwh", "std_kwh"], "as": "number"},
+  {"field": "other_r_out", "op": "sum", "of": ["fixed_ex_r", "other_elec_r"]},
+  {"field": "elec_ex_r", "op": "sum", "of": ["peak_ex_r", "offpeak_ex_r", "std_ex_r", "demand_ex_r", "fixed_ex_r", "other_elec_r"]}
+ ],
+ "canonical": {
+  "site_name": "site_out",
+  "tariff_name": "tariff_out",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "total_kwh_out",
+  "standard_kwh": "std_kwh",
+  "peak_r": "peak_ex_r",
+  "standard_r": "std_ex_r",
+  "offpeak_r": "offpeak_ex_r",
+  "demand_r": "demand_ex_r",
+  "other_r": "other_r_out",
+  "total_ex_vat_r": "elec_ex_r",
+  "deposit_r": "cot_deposit_r",
+  "guarantee_r": "cot_guarantee_r"
+ },
+ "recon": {}
+}

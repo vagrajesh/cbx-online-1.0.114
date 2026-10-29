@@ -1,0 +1,297 @@
+{
+ "profile_id": "george_2025",
+ "profile_name": "George Municipality – 2025 ledger statement",
+ "short_name": "George",
+ "_doc": "George statements from before the October 2025 layout (May–September 2025 in the Telkom folder): one page of service ledger rows (BALANCE OPENING / RECEIPTS / CHARGE / … / BALANCE CLOSING), then charge lines 'Peak Energy TOUPM <kWh> <ex><incl> <VAT>' — the ex-VAT and incl-VAT amounts print GLUED together on the TOU and demand lines (e.g. 1000.002000.00) — plus 'Electricity Demand: kVa' lines and small conventional meters 'Elec:<tariff> Cons New/Old <kWh> <c/kWh> <incl> <VAT>'. Every line is read as incl and VAT and the ex-VAT is incl − VAT, which needs no guess at where the glue splits. Checked on 5 bills: the electricity lines add up, to the cent, to the bill's own electricity CHARGE row (ge_elec_charge_r). Reading periods print without a year (dd/mm-dd/mm). Built by CBX 1.0.77 from the Telkom folder. Total kWh is the TOU meter's (Peak + Standard + Off-peak); the small conventional meters' kWh stay in small_kwh and their Rands are in Other.",
+ "fingerprint": {
+  "all": [
+   "4630193664",
+   "SITE ADDRESS:",
+   "BALANCECLOSING"
+  ],
+  "any": [
+   "TOUPM",
+   "Elec:",
+   "Demand: kVa"
+  ],
+  "reject_if_text": [
+   "George Municipality",
+   "amptera.openaccess.energy"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^\\s*SERVICE\\s+BALANCE ?OPENING"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account No.",
+   "scope": "header",
+   "pattern": "ACCOUNT NO\\.\\s+(GRG\\s*\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement date",
+   "scope": "header",
+   "pattern": "STATEMENT DATE\\s+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "invoice_number",
+   "label": "Tax invoice no.",
+   "scope": "header",
+   "pattern": "TAX INVOICE NO\\.\\s+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "site_name",
+   "label": "Site address",
+   "scope": "header",
+   "pattern": "SITE ADDRESS:\\s+(\\S.*?)\\s*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "ge_elec_charge_r",
+   "label": "Electricity CHARGE row (the bill's own figure)",
+   "scope": "section:electricity",
+   "pattern": "SERVICE\\s+BALANCE ?OPENING[^\\n]*\\n\\s+-?[\\d,]+\\.\\d{2}\\s+-?[\\d,]+\\.\\d{2}\\s+(-?[\\d,]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "peak_kwh",
+    "peak_inc_r",
+    "peak_vat_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Peak energy",
+   "scope": "section:electricity",
+   "pattern": "(?:^|\\s{2,})Peak Energ?\\w*[ \\t]+TOUPM[ \\t]+([\\d.]+)[ \\t]+(?:[\\d.]+[ \\t]+)?(?:\\d+\\.\\d{2}(?=\\d))?(\\d+\\.\\d{2})[ \\t]+(\\d[\\d,]*\\.\\d{2})(?=\\s{2,}\\D|[ \\t]*$)",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "standard_kwh",
+    "std_inc_r",
+    "std_vat_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Standard energy",
+   "scope": "section:electricity",
+   "pattern": "(?:^|\\s{2,})Standard(?: Ener\\w*)?[ \\t]+TOUSM[ \\t]+([\\d.]+)[ \\t]+(?:[\\d.]+[ \\t]+)?(?:\\d+\\.\\d{2}(?=\\d))?(\\d+\\.\\d{2})[ \\t]+(\\d[\\d,]*\\.\\d{2})(?=\\s{2,}\\D|[ \\t]*$)",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "offpeak_kwh",
+    "off_inc_r",
+    "off_vat_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Off-peak energy",
+   "scope": "section:electricity",
+   "pattern": "(?:^|\\s{2,})Off Peak(?: Ener\\w*)?[ \\t]+TOUOS[ \\t]+([\\d.]+)[ \\t]+(?:[\\d.]+[ \\t]+)?(?:\\d+\\.\\d{2}(?=\\d))?(\\d+\\.\\d{2})[ \\t]+(\\d[\\d,]*\\.\\d{2})(?=\\s{2,}\\D|[ \\t]*$)",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "dem_qty",
+    "dem_inc_r",
+    "dem_vat_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Demand (kVa lines)",
+   "scope": "section:electricity",
+   "pattern": "(?:^|\\s{2,})Electricity[ \\t]+Demand: kVa[ \\t]+([\\d.]+)[ \\t]+(?:[\\d.]+[ \\t]+)?(?:\\d+\\.\\d{2}(?=\\d))?(\\d+\\.\\d{2})[ \\t]+(\\d[\\d,]*\\.\\d{2})(?=\\s{2,}\\D|[ \\t]*$)",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "small_kwh",
+    "small_inc_r",
+    "small_vat_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Small meters — consumption",
+   "scope": "section:electricity",
+   "pattern": "(?:^|\\s{2,})Elec:\\d+[ \\t]+Cons (?:New|Old)[ \\t]+([\\d.]+)[ \\t]+(?:[\\d.]+[ \\t]+)?(?:\\d+\\.\\d{2}(?=\\d))?(\\d+\\.\\d{2})[ \\t]+(\\d[\\d,]*\\.\\d{2})(?=\\s{2,}\\D|[ \\t]*$)",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "basic_qty",
+    "basic_inc_r",
+    "basic_vat_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Small meters — basic",
+   "scope": "section:electricity",
+   "pattern": "(?:^|\\s{2,})Elec:\\d+[ \\t]+Basic/Basies[ \\t]+([\\d.]+)[ \\t]+(?:[\\d.]+[ \\t]+)?(?:\\d+\\.\\d{2}(?=\\d))?(\\d+\\.\\d{2})[ \\t]+(\\d[\\d,]*\\.\\d{2})(?=\\s{2,}\\D|[ \\t]*$)",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "demand_kva",
+   "label": "Demand kVA (D register)",
+   "scope": "section:electricity",
+   "pattern": "^\\s*K\\s+D\\w+\\s+([\\d.]+)\\s",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "meter",
+   "label": "TOU meter",
+   "scope": "section:electricity",
+   "pattern": "^\\s*E\\s+P(\\d{6,})\\s",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Reading period (no year printed)",
+   "scope": "section:electricity",
+   "pattern": "^\\s*E\\s+P\\w+\\s+[\\d.]+\\s+[\\d.]+\\s+[\\d.]+\\s+(\\d{2}/\\d{2})-(\\d{2}/\\d{2})",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "peak_r",
+   "op": "sub",
+   "of": [
+    "peak_inc_r",
+    "peak_vat_r"
+   ]
+  },
+  {
+   "field": "standard_r",
+   "op": "sub",
+   "of": [
+    "std_inc_r",
+    "std_vat_r"
+   ]
+  },
+  {
+   "field": "offpeak_r",
+   "op": "sub",
+   "of": [
+    "off_inc_r",
+    "off_vat_r"
+   ]
+  },
+  {
+   "field": "demand_r",
+   "op": "sub",
+   "of": [
+    "dem_inc_r",
+    "dem_vat_r"
+   ]
+  },
+  {
+   "field": "small_r",
+   "op": "sub",
+   "of": [
+    "small_inc_r",
+    "small_vat_r"
+   ]
+  },
+  {
+   "field": "basic_r",
+   "op": "sub",
+   "of": [
+    "basic_inc_r",
+    "basic_vat_r"
+   ]
+  },
+  {
+   "field": "other_r",
+   "op": "sum",
+   "of": [
+    "small_r",
+    "basic_r"
+   ]
+  },
+  {
+   "field": "total_kwh",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "peak_kwh",
+    "standard_kwh",
+    "offpeak_kwh"
+   ]
+  },
+  {
+   "field": "elec_ex_r",
+   "op": "sum",
+   "of": [
+    "peak_r",
+    "standard_r",
+    "offpeak_r",
+    "demand_r",
+    "other_r"
+   ]
+  },
+  {
+   "field": "tariff_name",
+   "op": "label_present",
+   "of": [
+    "peak_kwh"
+   ],
+   "labels": [
+    "Time of Use"
+   ]
+  }
+ ],
+ "canonical": {
+  "total_ex_vat_r": "elec_ex_r",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "reading_type": "_none"
+ },
+ "recon": {}
+}

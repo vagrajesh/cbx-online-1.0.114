@@ -1,0 +1,344 @@
+{
+ "profile_id": "beaufort_west",
+ "profile_name": "Beaufort West Municipality (Western Cape)",
+ "short_name": "Beaufort West",
+ "_doc": "Sebata 'Computer Generated Tax Invoice for:' print (layout family B, same stream as the Ubuntu/Tokologo built-ins). Page 1: masthead with 'Municipality VAT Nr', account/invoice block, Property/Town grid, Physical Address, Cycle row (deposit, guarantee), and a service summary (ex VAT | VAT | incl VAT per row) ending in VAT Services and Total Amount(B); pages 2..n: transaction detail with 'Reading dates ... / Cur Prev Cons n KWH / Meter ...' blocks. Electricity section starts at the first 'Electricity Basic/Metered' summary row; other services are overlays started by their own summary row. total_ex_vat_r = the electricity summary rows; standard_r = 'Electricity Metered' (single energy band; it also carries interest the municipality books to electricity, which cannot be split from the text); total_kwh = sum of the Cons ... KWH figures (estimate slices without reading dates are already inside the next Cons). Readings and reading dates are filled only when the bill has ONE kWh block (blank on multi-meter or re-billed bills rather than guess). IDENTITY seb_tb_elec_r = printed Total Amount(B) ex VAT - the explicitly listed non-electricity summary rows; an unknown or missed row shows up as a gap. Fingerprint: VAT 4000846388 + name/e-mail domain. Electricity rows: Electricity Basic (basic + amperage charge levies) + Electricity Metered + Journals (system reversal of earlier kWh estimates, can make the month negative) -> other_r = Basic + Journals. Most bills have three meters (meter joined with '/'), one is an 11-period re-bill of one meter, so readings stay blank on all 9; reading type 'Estimate' when printed. Advance-allocation rows are treated as non-electricity. Result: 9/9 Beaufort West bills routed, identity exact on 9/9. The folder also holds 4 Thabazimbi bills (that municipality's own VAT number) which route to the thabazimbi profile, not here.",
+ "fingerprint": {
+  "all": [
+   "4000846388"
+  ],
+  "any": [
+   "Beaufort West Municipality",
+   "beaufortwestmun.co.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity (?:Basic|Metered)[ \\t]{2,}\\(?R"
+  },
+  "water": {
+   "start": "^[ \\t]*(?:Water Basic|Water Metered)[ \\t]{2,}\\(?R",
+   "overlay": true
+  },
+  "sewerage": {
+   "start": "^[ \\t]*(?:Sanitation Basic)[ \\t]{2,}\\(?R",
+   "overlay": true
+  },
+  "refuse": {
+   "start": "^[ \\t]*(?:Waste Disposal)[ \\t]{2,}\\(?R",
+   "overlay": true
+  },
+  "rates": {
+   "start": "^[ \\t]*(?:Property Rates)[ \\t]{2,}\\(?R",
+   "overlay": true
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account No.",
+   "scope": "document",
+   "pattern": "(?<!Old )Account No\\.[ \\t]{2,}(\\d{9,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "seb_invoice_no",
+   "label": "Invoice No.",
+   "scope": "document",
+   "pattern": "Invoice No\\.[ \\t]{2,}(\\S+)",
+   "type": "text"
+  },
+  {
+   "field": "seb_old_account",
+   "label": "Old Account No.",
+   "scope": "document",
+   "pattern": "Old Account No\\.[ \\t]{2,}(\\S+)",
+   "type": "text"
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement month",
+   "scope": "document",
+   "pattern": "Computer Generated Tax Invoice for:[ \\t]*([A-Za-z]+[ \\t]+\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "seb_due_date",
+   "label": "Due Date",
+   "scope": "document",
+   "pattern": "^[ \\t]*Due Date[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "seb_print_date",
+   "label": "Print Date",
+   "scope": "document",
+   "pattern": "Print Date:[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "site_name",
+   "label": "Physical Address",
+   "scope": "document",
+   "pattern": "^[ \\t]*Physical Address[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(\\S+(?:[ \\t]\\S+)*)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "seb_deposit_r",
+    "seb_guarantee_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Deposit / Guarantee (Cycle row)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Cycle, Meter book & Route[^\\n]*\\n(?:[ \\t]*\\n)*[^\\n]*?([\\d,]+\\.\\d{2})[ \\t]+\\S+[ \\t]+([\\d,]+\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "seb_basic_ex",
+    "seb_basic_vat",
+    "seb_basic_incl"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity Basic (ex / VAT / incl)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Electricity Basic[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "seb_metered_ex",
+    "seb_metered_vat",
+    "seb_metered_incl"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity Metered (ex / VAT / incl)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Electricity Metered[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "seb_journals_ex",
+    "seb_journals_vat",
+    "seb_journals_incl"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Journals (ex / VAT / incl)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Journals[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]*$"
+  },
+  {
+   "field": "seb_nonelec_ex",
+   "label": "Non-electricity summary rows (ex VAT, summed)",
+   "scope": "document",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "^[ \\t]*(?:Adv\\. Payment Allocation|Advance Allocation|Sanitation Basic|Waste Disposal|Water Basic|Water Metered|Property Rates)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "seb_total_b_ex",
+    "seb_total_b_vat",
+    "seb_total_b_incl"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Total Amount(B)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Total Amount\\(B\\)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "seb_vat_services_base",
+    "seb_vat_services_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "VAT Services <base> ... VAT",
+   "scope": "document",
+   "pattern": "^[ \\t]*VAT Services[ \\t]+([\\d ,]+\\.\\d{2})[^\\n]*?(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?)[^\\n]*$"
+  },
+  {
+   "field": "seb_total_kwh",
+   "label": "kWh consumption (all kWh blocks, summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "type": "number",
+   "pattern": "^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KWH\\b"
+  },
+  {
+   "field": "seb_kwh_r",
+   "label": "Reading-dated kWh charge lines (ex VAT, summed \u2014 audit)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Reading dates:[^\\n]*?[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]*\\n[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b"
+  },
+  {
+   "fields": [
+    "seb_read_cur",
+    "seb_read_prev",
+    "seb_end_reading",
+    "seb_start_reading"
+   ],
+   "types": [
+    "date",
+    "date",
+    "number",
+    "number"
+   ],
+   "label": "Reading dates + registers (only when the bill has a single kWh block)",
+   "scope": "section:electricity",
+   "pattern": "\\A(?![\\s\\S]*?^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b[\\s\\S]*?^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b)[\\s\\S]*?Reading dates:[ \\t]*Cur[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*Prev[ \\t]*(\\d{2}/\\d{2}/\\d{4})[^\\n]*\\n[ \\t]*Cur[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Prev[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b"
+  },
+  {
+   "field": "seb_meters",
+   "label": "Electricity meter number(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b[^\\n]*\\n[ \\t]*Meter[ \\t]+([^\\s(]+)"
+  },
+  {
+   "field": "seb_reading_type",
+   "label": "Electricity reading type (printed only for estimates)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b[^\\n]*\\n[ \\t]*Meter[ \\t]+[^\\s(]+[ \\t]*\\((Estimate)\\)"
+  },
+  {
+   "field": "seb_tariffs",
+   "label": "Electricity tariff of the kWh blocks",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b(?:(?!^[ \\t]*\\d{2}/\\d{2}/\\d{4})[\\s\\S])*?^[ \\t]*Tariff:[ \\t]*(\\S[^\\n]*?)[ \\t]*$"
+  },
+  {
+   "field": "seb_water_ex",
+   "label": "water summary row(s) ex VAT",
+   "scope": "section:water",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "^[ \\t]*(?:Water Basic|Water Metered)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]*$"
+  },
+  {
+   "field": "seb_sewerage_ex",
+   "label": "sewerage summary row(s) ex VAT",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "^[ \\t]*(?:Sanitation Basic)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]*$"
+  },
+  {
+   "field": "seb_refuse_ex",
+   "label": "refuse summary row(s) ex VAT",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "^[ \\t]*(?:Waste Disposal)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]*$"
+  },
+  {
+   "field": "seb_rates_ex",
+   "label": "rates summary row(s) ex VAT",
+   "scope": "section:rates",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "^[ \\t]*(?:Property Rates)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ]+\\.\\d{2}\\)?|-)[ \\t]*$"
+  },
+  {
+   "field": "seb_water_kl",
+   "label": "Water kL (summed)",
+   "scope": "section:water",
+   "collect": "sum",
+   "type": "number",
+   "pattern": "^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KL\\b"
+  }
+ ],
+ "computes": [
+  {
+   "field": "seb_elec_total_ex_r",
+   "op": "sum",
+   "of": [
+    "seb_basic_ex",
+    "seb_metered_ex",
+    "seb_journals_ex"
+   ]
+  },
+  {
+   "field": "seb_elec_total_vat_r",
+   "op": "sum",
+   "of": [
+    "seb_basic_vat",
+    "seb_metered_vat",
+    "seb_journals_vat"
+   ]
+  },
+  {
+   "field": "seb_other_r",
+   "op": "sum",
+   "of": [
+    "seb_basic_ex",
+    "seb_journals_ex"
+   ]
+  },
+  {
+   "field": "seb_tb_elec_r",
+   "op": "sub",
+   "of": [
+    "seb_total_b_ex",
+    "seb_nonelec_ex"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "seb_tariffs",
+  "account_number": "account_number",
+  "meter": "seb_meters",
+  "reading_type": "seb_reading_type",
+  "read_start": "seb_read_prev",
+  "read_end": "seb_read_cur",
+  "start_reading_kwh": "seb_start_reading",
+  "end_reading_kwh": "seb_end_reading",
+  "total_kwh": "seb_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "seb_total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "seb_metered_ex",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "seb_other_r",
+  "total_ex_vat_r": "seb_elec_total_ex_r",
+  "deposit_r": "seb_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "seb_guarantee_r",
+  "security_held_r": "_none"
+ }
+}

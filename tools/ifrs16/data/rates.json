@@ -1,0 +1,50 @@
+{
+  "kind": "table",
+  "title": "data.rates.title",
+  "scope": "all",
+  "write": "everyone",
+  "columns": [
+    {
+      "key": "month",
+      "label": "col.rate_month",
+      "type": "text",
+      "hint": "hint.month",
+      "required": true
+    },
+    {
+      "key": "a",
+      "label": "col.band_a",
+      "type": "number"
+    },
+    {
+      "key": "b",
+      "label": "col.band_b",
+      "type": "number"
+    },
+    {
+      "key": "c",
+      "label": "col.band_c",
+      "type": "number"
+    },
+    {
+      "key": "d",
+      "label": "col.band_d",
+      "type": "number"
+    },
+    {
+      "key": "e",
+      "label": "col.band_e",
+      "type": "number"
+    },
+    {
+      "key": "f",
+      "label": "col.band_f",
+      "type": "number"
+    },
+    {
+      "key": "note",
+      "label": "col.note",
+      "type": "text"
+    }
+  ]
+}

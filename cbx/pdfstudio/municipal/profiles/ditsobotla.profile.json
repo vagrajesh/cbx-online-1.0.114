@@ -1,0 +1,804 @@
+{
+ "profile_id": "ditsobotla",
+ "profile_name": "Ditsobotla Local Municipality (Lichtenburg)",
+ "short_name": "Ditsobotla",
+ "_doc": "CENT-EXACT VARIANT - requires the patched pdf_harvester.py (_to_decimal / _recon_money comma-decimal fix). With the STOCK engine every money value from this profile is 100x too large. Use ditsobotla.profile.json instead if the app is not patched.\n\nTWO SHAPES, ONE ACCOUNT (Telkom Lichtenburg, acct [number removed]).\n\nSHAPE A - \"TAX INVOICE / STATEMENT\" (Accounts Receivable Statement, 1 page).\n  Header: 'Invoice No: INV[number removed]/31/2025', 'Month : August 2025',\n  'Statement Date', 'Due Date::', 'Account No :' (number two lines lower),\n  'Stand No/ERF Nr', 'Area', 'Land Area', 'Election Ward', 'Market Value',\n  'Deposit', 'Street No'.  Ledger columns: Date / Description / Vat /\n  Amount (Inc Vat) / Balance, grouped under bold service sub-headings\n  (Other, Interest on Arrears, Property Rates, Sanitation, Refuse Removal,\n  Electricity Basic, Electricity Consumption).  Dates are US-style\n  m/d/yyyy ('8/31/2025') and are KEPT EXACTLY AS PRINTED (the app never\n  reformats a date).  Money is period-decimal ('56,837.49') and parses\n  correctly.  NO meter-readings table, NO meter numbers, NO reading period,\n  NO reading type, and the descriptions are TRUNCATED mid-text\n  ('...22255KWH - ['), so start/end readings are not recoverable.\n\nSHAPE B - \"TAX INVOICE / BELASTINGFAKTUUR\" (tri-lingual invoice, 3 pages,\n  9 of the 10 bills).  Header: 'Invoice No:INV [number removed] 202607',\n  'Month/Maand/Kgwedi:', 'Statement Date/Staat Datum/...' (value on the NEXT\n  line), 'Due Date/Betaaldatum/...', 'Account  [number removed]',\n  'ERF No/No Ya Tulo', 'Surburb/ Voorstad/ Tulo', 'Extent/ Grootte/ Botona',\n  'Mkt Value/ Markwaarde/', 'Category/ Kategorie/ Karolo',\n  'Street No/ Straat Nr/ Leina'.  Ledger columns: Date / Description / VAT /\n  Debit / Credit / Balance; dates are dd/mm/yyyy.  It DOES print a\n  meter-readings table under each consumption row:\n  'Meter Number  Factor  Date From  Date To  Band From  Band End  Rate\n   Units  Description  Reading Type  Exclusive' - which gives the reading\n  period, Actual/Estimated, the rate, and the bill's own EX-VAT amount\n  ('Exclusive').  The meter number itself wraps onto the line BELOW the data\n  row.  Both shapes carry the kWh/kVA quantity and the register readings\n  inside the description text ('19909KWH - [[number removed] to [number removed]]').\n\nNUMBER FORMAT WARNING (the one real defect).  Shape B prints money South\nAfrican style: SPACE thousands + COMMA decimal ('55 473,14').  The engine's\n_to_decimal() deletes spaces AND commas, so a full capture reads [number removed] -\nexactly 100x too big.  Nothing in a profile can divide by 100 (there is no\n'div' op and no 0.01 constant anywhere in the text), so every shape-B money\npattern here captures the RAND PART ONLY and the cents are lost (each figure\nreads up to R0.99 low).  The exact printed strings are kept alongside in the\n*_txt / *_excl_txt native fields so nothing is thrown away.  FIX (two lines\nin _to_decimal, mirroring the code already at line ~11405):\n    if re.fullmatch(r\"-?\\d[\\d ]*,\\d{2}\", s): s = s.replace(\" \", \"\").replace(\",\", \".\")\nAfter that, change the shape-B capture from  (...)(?=,\\d{2})  to\n(...,\\d{2})  in every pattern below and shape B becomes cent-exact.\n\nSECTIONS.  The bold service sub-headings ARE reliable - 'Electricity Basic',\n'Property Rates', 'Refuse Removal' appear on all 10 bills, 'Sanitation' and\n'Electricity Consumption' on all 10, 'Water Consumption' on all 9 shape-B\nbills, 'Interest on Arrears'/'Other'/'Payments' occasionally.  BUT shape B\nrepeats the whole masthead on each of its 3 pages and prints 'Sanitation'\nand 'Electricity Consumption' TWICE, in interleaved order, so plain\nboundary-forming sections would chop the electricity span in half.  Only\nelectricity is a boundary section (it therefore runs from the first\n'Electricity Basic' to the end of the document); every other service is an\n\"overlay\": true section with \"end\": \"\\\\Z\" so it spans to the end and cuts\nnothing.  Each rule then anchors on its own description text, which is\nunique per service, so nothing can leak across services.\n\nRULE ZERO.  Neither shape prints an ex-VAT electricity total, so\ntotal_ex_vat_r (dit_elec_total_ex_r) is the SUM OF ITS OWN PARTS and the\nbuilt-in reconcile is therefore CIRCULAR - it cannot fail.  Four genuine\nidentities were verified instead, at full precision, on all 10 bills:\n (1) printed 'Exclusive' == Debit - VAT per electricity register (9/9\n     shape-B bills, max deviation R0.01) - carried as dit_kwh_excl_delta /\n     dit_kva_excl_delta so it stays visible in the data.\n (2) end_reading - start_reading == the kWh in the description (9/9 exact)\n     - carried as dit_reading_kwh.\n (3) sum of the VAT column over every service row == printed 'VAT Total' /\n     'VAT TOTAL' (10/10 exact).\n (4) Balance Brought Forward + charges - payments == printed AMOUNT DUE,\n     and the seven ageing buckets sum to AMOUNT DUE (10/10 exact).\n\nZERO-VAT LINES.  Where a shape-B line's VAT is zero the PDF prints ',00'\nwith NO leading digit (Effluent, Water Consumption, Property Rates,\nInterest).  The rand-part capture is therefore empty and the numeric *_vat_r\nfield is left BLANK rather than 0.00; the *_vat_txt twin shows ',00' and the\nex-VAT 'sub' computes treat a missing operand as zero, which is correct.\n\nMETER NUMBERS.  Shape B prints two, one per register, on the wrap line:\nkWh '[number removed]' and kVA '[number removed]-' (trailing dash and an extra digit -\ncolumn overflow; [number removed] ends in [number removed], so these are almost certainly\none physical meter).  Canonical 'meter' takes the kWh one, kVA is kept in\ndit_kva_meter.  Shape A prints no meter number at all.\n\nThe file KGA_22962_22962.pdf in this folder is NOT a Kai Garib bill - it is\nthe January 2026 Ditsobotla invoice for this same account, misnamed.",
+ "fingerprint": {
+  "all": [],
+  "any": [
+   "4410109930",
+   "ditsobotla.gov.za",
+   "Ditsobotla Local Municipality"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity (?:Basic|Consumption)[ \\t]*$"
+  },
+  "rates": {
+   "start": "^[ \\t]*Property Rates[ \\t]*$",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "refuse": {
+   "start": "^[ \\t]*Refuse Removal[ \\t]*$",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*Sanitation[ \\t]*$",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "water": {
+   "start": "^[ \\t]*Water Consumption[ \\t]*$",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "sundry": {
+   "start": "^[ \\t]*(?:Other|Payments|Interest on Arrears)[ \\t]*$",
+   "overlay": true,
+   "end": "\\Z"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "header",
+   "patterns": [
+    "^[^\\n]*?Account[ \\t]{2,}(\\d{9,15})(?![\\d])",
+    "Account No[ \\t]*:[\\s\\S]{0,220}?(?<![\\d])(\\d{9,15})(?![\\d])",
+    "Reference[ \\t]*:[ \\t]{2,}(\\d{9,15})(?![\\d])"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Site (street address)",
+   "scope": "header",
+   "patterns": [
+    "^[ \\t]*(\\d{1,4}[A-Z]?[ \\t]+[A-Z][A-Z]+(?:[ \\t]+[A-Z]+)*)[ \\t]{2,}Account[ \\t]{2,}\\d{9,}",
+    "Street No[^\\n]*?[ \\t]{2,}([0-9A-Z][A-Z0-9]*(?:[ \\t]+[A-Z0-9]+)+)[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement date",
+   "scope": "header",
+   "pattern": "Statement Date[\\s\\S]{0,140}?(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "header",
+   "pattern": "Due Date[\\s\\S]{0,120}?(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "dit_month",
+   "label": "Billing month",
+   "scope": "header",
+   "pattern": "Month[/A-Za-z]*[ \\t]*:[ \\t]{2,}([A-Za-z]+[ \\t]+\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "dit_invoice_no",
+   "label": "Invoice number",
+   "scope": "header",
+   "pattern": "Invoice No[ \\t]*:[ \\t]*(INV[ \\t]*\\d+(?:[ \\t]+\\d+)?(?:/\\d+)*)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "dit_erf",
+   "label": "ERF / stand number",
+   "scope": "header",
+   "pattern": "(?:ERF No|Stand No)[^\\n]*?[ \\t]{2,}([0-9]+[ \\t]*--[ \\t]*Ptn_[0-9]+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "dit_category",
+   "label": "Property category",
+   "scope": "header",
+   "pattern": "Category[/A-Za-z ]*[ \\t]{1,}([A-Z]{3,})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "deposit",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit[^\\n]*?R[ \\t]*(\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "dit_vat_total_r",
+   "label": "VAT TOTAL (whole bill)",
+   "scope": "document",
+   "patterns": [
+    "VAT TOTAL[ \\t]{2,}R?[ \\t]*(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])",
+    "VAT Total[ \\t]{2,}R[ \\t]*(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])"
+   ],
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "dit_ageing_current_r",
+   "label": "Ageing: Current column",
+   "scope": "document",
+   "patterns": [
+    "180 Days[^\\n]*\\n[\\s]*(?:-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]+){6}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])",
+    "180 Days[^\\n]*\\n[\\s]*(?:-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]+){6}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "dit_amount_due_r",
+   "label": "AMOUNT DUE",
+   "scope": "document",
+   "patterns": [
+    "AMOUNT DUE[ \\t]{2,}R[ \\t]*(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])",
+    "Amount Due/Verskuldig/[ \\t]{2,}R[ \\t]*(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])"
+   ],
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "dit_ebasic_vat_r",
+    "dit_ebasic_inc_r"
+   ],
+   "label": "Electricity Basic VAT + amount incl VAT",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Electricity Basic[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Basic[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_ebasic_vat_txt",
+    "dit_ebasic_inc_txt"
+   ],
+   "label": "Electricity Basic VAT + amount incl VAT (as printed)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Electricity Basic[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Basic[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_kwh_vat_r",
+    "dit_kwh_inc_r"
+   ],
+   "label": "Electricity Consumption kWh VAT + amount incl VAT",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Electricity Consumption KWH[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumption KWH[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_kwh_vat_txt",
+    "dit_kwh_inc_txt"
+   ],
+   "label": "Electricity Consumption kWh VAT + amount incl VAT (as printed)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Electricity Consumption KWH[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumption KWH[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_kva_vat_r",
+    "dit_kva_inc_r"
+   ],
+   "label": "Electricity Consumption kVA VAT + amount incl VAT",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Electricity Consumption KVA[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumption KVA[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_kva_vat_txt",
+    "dit_kva_inc_txt"
+   ],
+   "label": "Electricity Consumption kVA VAT + amount incl VAT (as printed)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Electricity Consumption KVA[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumption KVA[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "field": "tariff_name",
+   "label": "Tariff (from Basic description)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Basic[ \\t]*-[ \\t]*([A-Za-z][A-Za-z ]*?)[ \\t]*-[ \\t]*Units",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "total_kwh",
+   "label": "Total kWh",
+   "scope": "section:electricity",
+   "pattern": "Electricity Consumption KWH[ \\t]*(\\d+)KWH",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "demand_kva",
+   "label": "Demand kVA",
+   "scope": "section:electricity",
+   "pattern": "Electricity Consumption KVA[ \\t]*(\\d+)KVA",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "start_reading_kwh",
+   "label": "Start reading kWh",
+   "scope": "section:electricity",
+   "pattern": "\\d+KWH[ \\t]*-[ \\t]*\\[[ \\t]*(\\d{4,})[ \\t]+to",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "end_reading_kwh",
+   "label": "End reading kWh",
+   "scope": "section:electricity",
+   "pattern": "\\d+KWH[ \\t]*-[ \\t]*\\[[\\s\\S]{0,320}?(?<![\\d])(\\d{4,})\\]",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "label": "Meter period (kWh row)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d[\\d ]*[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]+(\\d{2}-\\d{2}-\\d{4})[^\\n]*?\\d+KWH[ \\t]*-[ \\t]*\\[",
+   "types": [
+    "date",
+    "date"
+   ],
+   "required": false
+  },
+  {
+   "field": "dit_kwh_meter",
+   "label": "kWh register meter no",
+   "scope": "section:electricity",
+   "pattern": "\\d+KWH[ \\t]*-[ \\t]*\\[[^\\n]*\\n[ \\t]*(\\d{6,})-?[ \\t]{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "dit_kva_meter",
+   "label": "kVA register meter no",
+   "scope": "section:electricity",
+   "pattern": "\\d+KVA[ \\t]*-[ \\t]*\\[[^\\n]*\\n[ \\t]*(\\d{6,})-?[ \\t]{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "reading_type",
+   "label": "Actual / Estimated",
+   "scope": "section:electricity",
+   "pattern": "\\d+KWH[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(Actual|Estimated|Estimate)[ \\t]{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "dit_kwh_txn_date",
+   "label": "kWh row transaction date",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{1,2}/\\d{1,2}/\\d{4})[ \\t]+Electricity Consumption KWH",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "dit_kwh_rate",
+   "label": "kWh rate as printed",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d[\\d ]*[ \\t]+\\d{2}-\\d{2}-\\d{4}[ \\t]+\\d{2}-\\d{2}-\\d{4}[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]+\\d[\\d ]*[ \\t]+([\\d ]+,\\d{2})[ \\t]+[^\\n]*?\\d+KWH",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "dit_kwh_excl_r",
+   "label": "kWh ex-VAT (printed Exclusive)",
+   "scope": "section:electricity",
+   "pattern": "\\d+KWH[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "dit_kva_excl_r",
+   "label": "kVA ex-VAT (printed Exclusive)",
+   "scope": "section:electricity",
+   "pattern": "\\d+KVA[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "dit_kwh_excl_txt",
+   "label": "kWh ex-VAT (as printed)",
+   "scope": "section:electricity",
+   "pattern": "\\d+KWH[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "dit_kva_excl_txt",
+   "label": "kVA ex-VAT (as printed)",
+   "scope": "section:electricity",
+   "pattern": "\\d+KVA[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_rates_vat_r",
+    "dit_rates_inc_r"
+   ],
+   "label": "Property rates VAT + amount incl VAT",
+   "scope": "section:rates",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Property Rates[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Property Rates[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_rates_vat_txt",
+    "dit_rates_inc_txt"
+   ],
+   "label": "Property rates VAT + amount incl VAT (as printed)",
+   "scope": "section:rates",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Property Rates[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Property Rates[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "field": "dit_rates_formula",
+   "label": "Rates formula",
+   "scope": "section:rates",
+   "pattern": "Market Value[ \\t]+([\\d]+[ \\t]+X[ \\t]+[\\d,]+[ \\t]+/[ \\t]+\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_refuse_vat_r",
+    "dit_refuse_inc_r"
+   ],
+   "label": "Refuse removal VAT + amount incl VAT",
+   "scope": "section:refuse",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Refuse Removal[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Refuse Removal[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_refuse_vat_txt",
+    "dit_refuse_inc_txt"
+   ],
+   "label": "Refuse removal VAT + amount incl VAT (as printed)",
+   "scope": "section:refuse",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Refuse Removal[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Refuse Removal[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "field": "dit_refuse_desc",
+   "label": "Refuse description",
+   "scope": "section:refuse",
+   "pattern": "(Refuse Removal[A-Za-z0-9 \\-]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_sewer_basic_vat_r",
+    "dit_sewer_basic_inc_r"
+   ],
+   "label": "Sewer basic charge VAT + amount incl VAT",
+   "scope": "section:sewerage",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Sewer Basic Charge[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Sewer Basic Charge[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_sewer_basic_vat_txt",
+    "dit_sewer_basic_inc_txt"
+   ],
+   "label": "Sewer basic charge VAT + amount incl VAT (as printed)",
+   "scope": "section:sewerage",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Sewer Basic Charge[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Sewer Basic Charge[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_effluent_vat_r",
+    "dit_effluent_inc_r"
+   ],
+   "label": "Effluent VAT + amount incl VAT",
+   "scope": "section:sewerage",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Effluent[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Effluent[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_effluent_vat_txt",
+    "dit_effluent_inc_txt"
+   ],
+   "label": "Effluent VAT + amount incl VAT (as printed)",
+   "scope": "section:sewerage",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Effluent[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Effluent[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "field": "dit_sewer_kl",
+   "label": "Effluent kL",
+   "scope": "section:sewerage",
+   "pattern": "Effluent[ \\t]+([\\d,]+)KL",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_water_vat_r",
+    "dit_water_inc_r"
+   ],
+   "label": "Water consumption VAT + amount incl VAT",
+   "scope": "section:water",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Water Consumption[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Water Consumption[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_water_vat_txt",
+    "dit_water_inc_txt"
+   ],
+   "label": "Water consumption VAT + amount incl VAT (as printed)",
+   "scope": "section:water",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Water Consumption[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Water Consumption[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "field": "dit_water_kl",
+   "label": "Water kL",
+   "scope": "section:water",
+   "pattern": "Water Consumption[ \\t]+([\\d,]+)KL",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "dit_water_meter",
+   "label": "Water meter no",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*([A-Z]-?\\d{3,})[ \\t]+\\d+[ \\t]+\\d{2}-\\d{2}-\\d{4}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_water_start",
+    "dit_water_end"
+   ],
+   "label": "Water readings",
+   "scope": "section:water",
+   "pattern": "Water Consumption[ \\t]+[\\d,]+KL[ \\t]*-[ \\t]*\\[[ \\t]*(\\d+)[ \\t]+to[ \\t]+(\\d+)\\]",
+   "types": [
+    "number",
+    "number"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_interest_vat_r",
+    "dit_interest_inc_r"
+   ],
+   "label": "Interest on arrears VAT + amount incl VAT",
+   "scope": "section:sundry",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Interest(?:[ \\t]+\\d{4}-\\d{2}-\\d{2})?[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Interest(?:[ \\t]+\\d{4}-\\d{2}-\\d{2})?[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "dit_interest_vat_txt",
+    "dit_interest_inc_txt"
+   ],
+   "label": "Interest on arrears VAT + amount incl VAT (as printed)",
+   "scope": "section:sundry",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+Interest(?:[ \\t]+\\d{4}-\\d{2}-\\d{2})?[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Interest(?:[ \\t]+\\d{4}-\\d{2}-\\d{2})?[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "field": "dit_payment_r",
+   "label": "Settlement / payment received",
+   "scope": "section:sundry",
+   "patterns": [
+    "^[ \\t]*\\d{1,2}/\\d{1,2}/\\d{4}[ \\t]+SETTLEMENT[^\\n]*?[ \\t]{2,}-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})(?![\\d])[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+SETTLEMENT[^\\n]*?[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]+(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d.])[ \\t]+-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$"
+   ],
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "dit_ebasic_ex_r",
+   "op": "sub",
+   "of": [
+    "dit_ebasic_inc_r",
+    "dit_ebasic_vat_r"
+   ]
+  },
+  {
+   "field": "dit_kwh_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "dit_kwh_inc_r",
+    "dit_kwh_vat_r"
+   ]
+  },
+  {
+   "field": "dit_kva_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "dit_kva_inc_r",
+    "dit_kva_vat_r"
+   ]
+  },
+  {
+   "field": "dit_std_r_out",
+   "op": "prefer",
+   "of": [
+    "dit_kwh_excl_r",
+    "dit_kwh_ex_calc_r"
+   ]
+  },
+  {
+   "field": "dit_demand_r_out",
+   "op": "prefer",
+   "of": [
+    "dit_kva_excl_r",
+    "dit_kva_ex_calc_r"
+   ]
+  },
+  {
+   "field": "dit_elec_total_ex_r",
+   "op": "sum",
+   "of": [
+    "dit_std_r_out",
+    "dit_demand_r_out",
+    "dit_ebasic_ex_r"
+   ]
+  },
+  {
+   "field": "dit_kwh_excl_delta",
+   "op": "diff",
+   "of": [
+    "dit_kwh_excl_r",
+    "dit_kwh_ex_calc_r"
+   ]
+  },
+  {
+   "field": "dit_kva_excl_delta",
+   "op": "diff",
+   "of": [
+    "dit_kva_excl_r",
+    "dit_kva_ex_calc_r"
+   ]
+  },
+  {
+   "field": "dit_reading_kwh",
+   "op": "diff",
+   "as": "number",
+   "of": [
+    "end_reading_kwh",
+    "start_reading_kwh"
+   ]
+  },
+  {
+   "field": "dit_rates_ex_r",
+   "op": "sub",
+   "of": [
+    "dit_rates_inc_r",
+    "dit_rates_vat_r"
+   ]
+  },
+  {
+   "field": "dit_refuse_ex_r",
+   "op": "sub",
+   "of": [
+    "dit_refuse_inc_r",
+    "dit_refuse_vat_r"
+   ]
+  },
+  {
+   "field": "dit_sewer_ex_r",
+   "op": "sub",
+   "of": [
+    "dit_sewer_basic_inc_r",
+    "dit_sewer_basic_vat_r"
+   ]
+  },
+  {
+   "field": "dit_water_ex_r",
+   "op": "sub",
+   "of": [
+    "dit_water_inc_r",
+    "dit_water_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": [
+   "dit_kwh_meter",
+   "dit_kva_meter"
+  ],
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "dit_std_r_out",
+  "offpeak_r": "_none",
+  "demand_r": "dit_demand_r_out",
+  "nmd_r": "_none",
+  "other_r": "dit_ebasic_ex_r",
+  "total_ex_vat_r": "dit_elec_total_ex_r",
+  "deposit_r": "deposit",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "Balance Brought Forward[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}|-?\\d{0,3}(?:[ ]\\d{3})*)(?=,\\d{2}(?![\\d.])|[ \\t]*$)",
+  "incoming_payment": "SETTLEMENT[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}|-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})[ \\t]+-?\\d",
+  "vat": "VAT TOTAL[ \\t]{2,}R?[ \\t]*(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})|VAT Total[ \\t]{2,}R[ \\t]*(-?\\d{0,3}(?:[ ]\\d{3})*)(?=,\\d{2})",
+  "total_due": "AMOUNT DUE[ \\t]{2,}R[ \\t]*(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})|Amount Due/Verskuldig/[ \\t]{2,}R[ \\t]*(-?\\d{0,3}(?:[ ]\\d{3})*)(?=,\\d{2})",
+  "current_incl": "180 Days[^\\n]*\\n[\\s]*(?:-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]+){6}(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})|180 Days[^\\n]*\\n[\\s]*(?:-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]+){6}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})",
+  "due_date": "Due Date[\\s\\S]{0,120}?(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})"
+ }
+}

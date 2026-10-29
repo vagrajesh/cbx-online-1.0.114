@@ -1,0 +1,61 @@
+{
+  "kind": "table",
+  "title": "data.ledger.title",
+  "scope": "mine",
+  "write": "everyone",
+  "columns": [
+    {
+      "key": "ledger",
+      "label": "col.ledger",
+      "type": "file",
+      "accept": [
+        "xlsx",
+        "xls"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "as_at",
+      "label": "col.as_at",
+      "type": "text",
+      "hint": "hint.as_at"
+    },
+    {
+      "key": "months_back",
+      "label": "col.months_back",
+      "type": "int",
+      "default": 12
+    },
+    {
+      "key": "status",
+      "label": "col.status",
+      "type": "choice",
+      "options": [
+        "New",
+        "Working",
+        "Done",
+        "Failed"
+      ],
+      "default": "New"
+    },
+    {
+      "key": "report",
+      "label": "col.report",
+      "type": "file",
+      "accept": [
+        "xlsx"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "overview",
+      "label": "col.overview",
+      "type": "text"
+    },
+    {
+      "key": "note",
+      "label": "col.note",
+      "type": "text"
+    }
+  ]
+}

@@ -1,0 +1,197 @@
+{
+ "profile_id": "phumelela",
+ "profile_name": "Phumelela Local Municipality (Vrede, Free State)",
+ "short_name": "Phumelela",
+ "_doc": "Phumelela Local Municipality (Vrede/Warden) bills this supply on a bilingual 'TAX INVOICE / STATEMENT OF ACCOUNT' produced with the Eskom-vending account reference (account printed as '<nn>/<digits>ESKOM' next to DATUM/DATE yyyy/mm/dd, 'Tariff: Commercial Conventional'). The charges block lists 'BASIC CHARGE R x' and one 'ELEC CONSUMPTION' line per meter (meter | opening | closing | kWh | R rate | R amount; amounts can be negative on a reversed register), then 'Total Consump <kWh>  BTW / VAT R x', 'Lopend / Current R x' (incl. VAT) and Total Outstanding. Amounts are ex VAT. The built-in eskom profile rejects 'PHUMELELA LOCAL MUNICIPALITY', so these now route here. Fingerprint: the municipality's own 'VAT Reg NO: 4720193293' + 'PHUMELELA'. total_ex_vat_r = BASIC CHARGE + sum of ELEC CONSUMPTION amounts; standard_r = energy, other_r = basic; total_kwh = printed Total Consump (equals the summed meter lines on 6/6). Three meters per bill, so meter is the '/'-joined list and start/end readings are left blank (no single register). IDENTITY phu_ident_ex = Lopend/Current - VAT - interest line: 0.00 on 6/6; VAT = 15% of total_ex on 6/6. No deposit printed. Checked on 6 bills.",
+ "fingerprint": {
+  "all": [
+   "4720193293",
+   "PHUMELELA"
+  ],
+  "any": [],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*(?:BASIC CHARGE\\b|\\d+[ \\t]+ELEC CONSUMPTION\\b)",
+   "require": "ELEC CONSUMPTION"
+  },
+  "sundry": {
+   "start": "Totaal Betaalbaar/"
+  }
+ },
+ "fields": [
+  {
+   "fields": [
+    "account_number",
+    "billing_date"
+   ],
+   "types": [
+    "text",
+    "date"
+   ],
+   "label": "Account no + date",
+   "scope": "document",
+   "pattern": "^[^\\n]*?(\\d{2}/\\d{6,})ESKOM[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+   "required": true
+  },
+  {
+   "field": "phu_tariff",
+   "label": "Tariff",
+   "scope": "document",
+   "pattern": "Tariff:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "phu_street",
+   "label": "Site street",
+   "scope": "document",
+   "pattern": "TO: / AAN:[^\\n]*\\n[ \\t]*(\\S[^\\n]*?)[ \\t]{2,}",
+   "type": "text"
+  },
+  {
+   "field": "phu_town",
+   "label": "Site town",
+   "scope": "document",
+   "pattern": "TO: / AAN:[^\\n]*\\n[^\\n]*\\n[ \\t]*([A-Za-z][^\\n]*?)[ \\t]{2,}",
+   "type": "text"
+  },
+  {
+   "field": "phu_due_date",
+   "label": "Due date",
+   "scope": "document",
+   "pattern": "BETAALBAAR VOOR OF OP[ \\t]+(\\d{1,2}-[A-Za-z]{3}-\\d{2})",
+   "type": "date"
+  },
+  {
+   "field": "phu_basic_r",
+   "label": "BASIC CHARGE",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*BASIC CHARGE[ \\t]+R[ \\t]*(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "phu_kwh_lines",
+    "phu_energy_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "ELEC CONSUMPTION lines (kWh, amount) summed",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d+[ \\t]+ELEC CONSUMPTION[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+(-?[\\d.]+)[ \\t]+R[ \\t]+[\\d.]+[ \\t]+R[ \\t]*(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "phu_meters",
+   "label": "Meter numbers",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(\\d+)[ \\t]+ELEC CONSUMPTION\\b"
+  },
+  {
+   "field": "phu_rate",
+   "label": "Energy rate (R/kWh)",
+   "scope": "section:electricity",
+   "pattern": "ELEC CONSUMPTION[^\\n]*?R[ \\t]+([\\d.]+)[ \\t]+R",
+   "type": "number"
+  },
+  {
+   "field": "phu_total_kwh",
+   "label": "Total Consump",
+   "scope": "document",
+   "pattern": "Total Consump[ \\t]+(-?[\\d.]+)",
+   "type": "number"
+  },
+  {
+   "field": "phu_vat_r",
+   "label": "BTW / VAT",
+   "scope": "document",
+   "pattern": "BTW / VAT[ \\t]+R[ \\t]*(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "phu_current_r",
+   "label": "Lopend / Current (incl. VAT)",
+   "scope": "document",
+   "pattern": "Lopend / Current[ \\t]+R[ \\t]*(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "phu_interest_r",
+   "label": "Interest on outstanding amount",
+   "scope": "document",
+   "pattern": "outstanding amount[ \\t]+R[ \\t]*(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "phu_outstanding_r",
+   "label": "Total Outstanding",
+   "scope": "document",
+   "pattern": "Total Outstanding[ \\t]+R[ \\t]*(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "phu_street",
+    "phu_town"
+   ]
+  },
+  {
+   "field": "phu_elec_ex",
+   "op": "sum",
+   "of": [
+    "phu_basic_r",
+    "phu_energy_r"
+   ]
+  },
+  {
+   "field": "phu_ident_ex",
+   "op": "sub",
+   "of": [
+    "phu_current_r",
+    "phu_vat_r",
+    "phu_interest_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "phu_tariff",
+  "account_number": "account_number",
+  "meter": "phu_meters",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "phu_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "phu_total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "phu_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "phu_basic_r",
+  "total_ex_vat_r": "phu_elec_ex",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

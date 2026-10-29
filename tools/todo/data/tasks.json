@@ -1,0 +1,104 @@
+{
+  "kind": "table",
+  "title": "data.tasks.title",
+  "scope": "mine",
+  "share": {
+    "field": "kind",
+    "value": "Team"
+  },
+  "write": "everyone",
+  "columns": [
+    {
+      "key": "title",
+      "label": "col.title",
+      "type": "text",
+      "required": true
+    },
+    {
+      "key": "kind",
+      "label": "col.kind",
+      "type": "choice",
+      "options": [
+        "Mine",
+        "Team"
+      ],
+      "default": "Mine"
+    },
+    {
+      "key": "status",
+      "label": "col.status",
+      "type": "choice",
+      "options": [
+        "To do",
+        "Doing",
+        "Done"
+      ],
+      "default": "To do"
+    },
+    {
+      "key": "who",
+      "label": "col.who",
+      "type": "person",
+      "who": "team",
+      "default": "me"
+    },
+    {
+      "key": "steps",
+      "label": "col.steps",
+      "type": "checklist"
+    },
+    {
+      "key": "steps_n",
+      "label": "col.steps_n",
+      "type": "calc",
+      "calc": {
+        "fn": "count",
+        "of": "steps"
+      }
+    },
+    {
+      "key": "size",
+      "label": "col.size",
+      "type": "calc",
+      "calc": {
+        "fn": "grade",
+        "of": "steps_n",
+        "grades": [
+          [
+            3,
+            "Small"
+          ],
+          [
+            7,
+            "Medium"
+          ],
+          [
+            null,
+            "Complex"
+          ]
+        ]
+      }
+    },
+    {
+      "key": "due",
+      "label": "col.due",
+      "type": "date"
+    },
+    {
+      "key": "notes",
+      "label": "col.notes",
+      "type": "text"
+    },
+    {
+      "key": "finished",
+      "label": "col.finished",
+      "type": "date"
+    },
+    {
+      "key": "done_by",
+      "label": "col.done_by",
+      "type": "person",
+      "who": "team"
+    }
+  ]
+}

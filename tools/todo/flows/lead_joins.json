@@ -1,0 +1,21 @@
+{
+  "title": "flow.lead_joins.title",
+  "enabled": true,
+  "trigger": {
+    "type": "row_added",
+    "data": "jobs"
+  },
+  "run_as": "starter",
+  "start": "s1",
+  "steps": {
+    "s1": {
+      "type": "add_row",
+      "data": "job_members",
+      "values": {
+        "job": "{{trigger.row.id}}",
+        "person": "{{trigger.row.lead}}",
+        "status": "Active"
+      }
+    }
+  }
+}

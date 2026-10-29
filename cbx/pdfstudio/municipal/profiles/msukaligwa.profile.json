@@ -1,0 +1,484 @@
+{
+ "profile_id": "msukaligwa",
+ "profile_name": "Msukaligwa Local Municipality (Ermelo, Mpumalanga)",
+ "short_name": "Msukaligwa",
+ "fingerprint": {
+  "all": [
+   "4000142374"
+  ],
+  "any": [
+   "MSUKALIGWA LOCAL MUNICIPALITY",
+   "msukaligwa.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*(?:Billing Information|Date[ \\t]+Description[ \\t]+Debit)",
+   "require": "ELEC BUSINESS|ELEC CONSUMPTION \\("
+  }
+ },
+ "fields": [
+  {
+   "field": "msk_dot",
+   "label": "Literal '.' from the bill text (for the comma-decimal rebuild)",
+   "scope": "document",
+   "patterns": [
+    "VAT Reg No(\\.)",
+    "Billing Information[\\s\\S]*?\\d(\\.)\\d",
+    "msukaligwa\\.gov(\\.)za"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "account_number",
+   "label": "Account Number / Reference",
+   "scope": "document",
+   "type": "text",
+   "required": true,
+   "patterns": [
+    "^Account Number ERF[^\\n]*\\n(?:[ \\t]*\\n)*(\\d+)[ \\t]",
+    "Reference:[ \\t]+(\\d+)[ \\t]*$"
+   ]
+  },
+  {
+   "field": "billing_date",
+   "label": "Acc Date / Statement Date",
+   "scope": "document",
+   "type": "date",
+   "required": true,
+   "patterns": [
+    "Acc Date:[ \\t]+(\\d{4}/\\d\\d/\\d\\d)",
+    "Statement Date[ \\t]+(\\d{1,2} [A-Za-z]+ \\d{4})"
+   ]
+  },
+  {
+   "fields": [
+    "site_name",
+    "deposit_r"
+   ],
+   "types": [
+    "text",
+    "money"
+   ],
+   "label": "Print A property row: street, deposit",
+   "scope": "document",
+   "pattern": "DepositWard[ \\t]*\\n(?:[ \\t]*\\n)*\\d+[ \\t]+\\d+[ \\t]+(\\S+(?: \\S+)*)[ \\t]{2,}\\d+[ \\t]+\\d+[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)"
+  },
+  {
+   "field": "site_name",
+   "label": "Print B Street No",
+   "scope": "document",
+   "type": "text",
+   "pattern": "Street No[ \\t]+(\\S[^\\n]*?)[ \\t]*$"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Print B Deposit",
+   "scope": "document",
+   "type": "money",
+   "pattern": "^[ \\t]*Deposit[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)"
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meters (joined)",
+   "scope": "document",
+   "collect": "join_unique",
+   "patterns": [
+    "^[ \\t]+EL[ \\t]+(K?\\d{8})[ \\t]",
+    "^[ \\t]*(K?\\d{8})[ \\t]+(?:0,00|0{3} 0{3},00)[ \\t]"
+   ],
+   "type": "text"
+  },
+  {
+   "fields": [
+    "msk_a_units",
+    "msk_a_rate_x",
+    "msk_a_chg_r",
+    "msk_a_vat_r",
+    "msk_a_tot_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "A: ELEC BUSINESS lines (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^ELEC BUSINESS[ \\t]+([\\d.]+)[ \\t]+([\\d.]+)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "msk_a_fee_chg_r",
+    "msk_a_fee_vat_r",
+    "msk_a_fee_tot_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "A: ELEK DIENS FOOI (service fee, sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^ELEK DIENS FOOI[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "msk_a_kva",
+    "msk_a_kva_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "A: demand line = the ELEC BUSINESS line whose units equal the K-meter's consumption (fallback: units < 100)",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]+EL[ \\t]+K\\d{8}[ \\t][^\\n]*?[ \\t](\\d+)[ \\t]*$[\\s\\S]*?^ELEC BUSINESS[ \\t]+(\\1)\\.000[ \\t]+[\\d.]+[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]",
+    "^ELEC BUSINESS[ \\t]+(\\d{1,2})\\.000[ \\t]+[\\d.]+[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]"
+   ]
+  },
+  {
+   "fields": [
+    "msk_k1_i",
+    "msk_k1_f",
+    "msk_k1_ex_r",
+    "msk_k1_vat_r"
+   ],
+   "types": [
+    "text",
+    "text",
+    "money",
+    "money"
+   ],
+   "label": "B: ELEC CONSUMPTION (KWH) k1 (debit ex VAT + VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+ELEC CONSUMPTION \\(KWH\\)[ \\t]+(\\d+)(?:,(\\d+))?KWH[ \\t]*-[ \\t]*\\[[\\d,]+ to(?: [\\d,]+\\])?[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]+-?\\d{1,3}(?: \\d{3})*,\\d{2}-?[ \\t]*$"
+  },
+  {
+   "fields": [
+    "msk_k1_i",
+    "msk_k1_f",
+    "msk_k1_inc_r"
+   ],
+   "types": [
+    "text",
+    "text",
+    "money"
+   ],
+   "label": "B: ELEC CONSUMPTION (KWH) k1 (debit incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+ELEC CONSUMPTION \\(KWH\\)[ \\t]+(\\d+)(?:,(\\d+))?KWH[ \\t]*-[ \\t]*\\[[\\d,]+ to(?: [\\d,]+\\])?[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]+-?\\d{1,3}(?: \\d{3})*,\\d{2}-?[ \\t]*$"
+  },
+  {
+   "fields": [
+    "msk_k2_i",
+    "msk_k2_f",
+    "msk_k2_ex_r",
+    "msk_k2_vat_r"
+   ],
+   "types": [
+    "text",
+    "text",
+    "money",
+    "money"
+   ],
+   "label": "B: ELEC CONSUMPTION (KVA) k2 (debit ex VAT + VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+ELEC CONSUMPTION \\(KVA\\)[ \\t]+(?=[\\d,]+KVA[ \\t]*-[ \\t]*\\[(?!0 to))(\\d+)(?:,(\\d+))?KVA[ \\t]*-[ \\t]*\\[[\\d,]+ to(?: [\\d,]+\\])?[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]+-?\\d{1,3}(?: \\d{3})*,\\d{2}-?[ \\t]*$"
+  },
+  {
+   "fields": [
+    "msk_k2_i",
+    "msk_k2_f",
+    "msk_k2_inc_r"
+   ],
+   "types": [
+    "text",
+    "text",
+    "money"
+   ],
+   "label": "B: ELEC CONSUMPTION (KVA) k2 (debit incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+ELEC CONSUMPTION \\(KVA\\)[ \\t]+(?=[\\d,]+KVA[ \\t]*-[ \\t]*\\[(?!0 to))(\\d+)(?:,(\\d+))?KVA[ \\t]*-[ \\t]*\\[[\\d,]+ to(?: [\\d,]+\\])?[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]+-?\\d{1,3}(?: \\d{3})*,\\d{2}-?[ \\t]*$"
+  },
+  {
+   "fields": [
+    "msk_dm_i",
+    "msk_dm_f",
+    "msk_dm_ex_r",
+    "msk_dm_vat_r"
+   ],
+   "types": [
+    "text",
+    "text",
+    "money",
+    "money"
+   ],
+   "label": "B: ELEC CONSUMPTION (KVA) dm (debit ex VAT + VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+ELEC CONSUMPTION \\(KVA\\)[ \\t]+(?=[\\d,]+KVA[ \\t]*-[ \\t]*\\[(?=0 to))(\\d+)(?:,(\\d+))?KVA[ \\t]*-[ \\t]*\\[[\\d,]+ to(?: [\\d,]+\\])?[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]+-?\\d{1,3}(?: \\d{3})*,\\d{2}-?[ \\t]*$"
+  },
+  {
+   "fields": [
+    "msk_dm_i",
+    "msk_dm_f",
+    "msk_dm_inc_r"
+   ],
+   "types": [
+    "text",
+    "text",
+    "money"
+   ],
+   "label": "B: ELEC CONSUMPTION (KVA) dm (debit incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+ELEC CONSUMPTION \\(KVA\\)[ \\t]+(?=[\\d,]+KVA[ \\t]*-[ \\t]*\\[(?=0 to))(\\d+)(?:,(\\d+))?KVA[ \\t]*-[ \\t]*\\[[\\d,]+ to(?: [\\d,]+\\])?[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]+-?\\d{1,3}(?: \\d{3})*,\\d{2}-?[ \\t]*$"
+  },
+  {
+   "field": "msk_k2_excl_r",
+   "label": "B: Exclusive under the metered (KVA-labelled) energy line",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+ELEC CONSUMPTION \\(KVA\\)[ \\t]+[\\d,]+KVA[ \\t]*-[ \\t]*\\[(?!0 to)[^\\n]*\\n(?:[^\\n]*\\n){0,5}?[ \\t]*Meter Number[^\\n]*Exclusive[ \\t]*\\n(?:[ \\t]*\\n)*[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "field": "msk_dm_excl_r",
+   "label": "B: Exclusive under the [0 to n] KVA line",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+ELEC CONSUMPTION \\(KVA\\)[ \\t]+[\\d,]+KVA[ \\t]*-[ \\t]*\\[0 to[^\\n]*\\n(?:[^\\n]*\\n){0,5}?[ \\t]*Meter Number[^\\n]*Exclusive[ \\t]*\\n(?:[ \\t]*\\n)*[^\\n]*?[ \\t]{2,}(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "field": "msk_k1_excl_r",
+   "label": "B: Exclusive on the KWH detail row (meter first)",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "^[ \\t]*\\d{8}[ \\t]+0,00[ \\t]+\\d{1,3}(?: \\d{3}){3},00[ \\t]+[\\d,]+[ \\t]+[\\d ]*\\d,\\d\\d[ \\t]{2,}(-?\\d{1,3}(?: \\d{3})*,\\d{2}-?)[ \\t]*$"
+  }
+ ],
+ "computes": [
+  {
+   "field": "msk_a_kwh",
+   "op": "sub",
+   "of": [
+    "msk_a_units",
+    "msk_a_kva"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "msk_a_energy_r",
+   "op": "sub",
+   "of": [
+    "msk_a_chg_r",
+    "msk_a_kva_r"
+   ]
+  },
+  {
+   "field": "msk_a_total_r",
+   "op": "sum",
+   "of": [
+    "msk_a_chg_r",
+    "msk_a_fee_chg_r"
+   ]
+  },
+  {
+   "field": "msk_a_check_r",
+   "op": "sub",
+   "of": [
+    "msk_a_tot_r",
+    "msk_a_vat_r"
+   ]
+  },
+  {
+   "field": "msk_a_check2_r",
+   "op": "sub",
+   "of": [
+    "msk_a_fee_tot_r",
+    "msk_a_fee_vat_r"
+   ]
+  },
+  {
+   "field": "msk_a_check_all_r",
+   "op": "sum",
+   "of": [
+    "msk_a_check_r",
+    "msk_a_check2_r"
+   ]
+  },
+  {
+   "field": "msk_k1_cat",
+   "op": "concat",
+   "of": [
+    "msk_k1_i",
+    "msk_dot",
+    "msk_k1_f"
+   ]
+  },
+  {
+   "field": "msk_k2_cat",
+   "op": "concat",
+   "of": [
+    "msk_k2_i",
+    "msk_dot",
+    "msk_k2_f"
+   ]
+  },
+  {
+   "field": "msk_dm_cat",
+   "op": "concat",
+   "of": [
+    "msk_dm_i",
+    "msk_dot",
+    "msk_dm_f"
+   ]
+  },
+  {
+   "field": "msk_b_kwh",
+   "op": "sum",
+   "of": [
+    "msk_k1_cat",
+    "msk_k2_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "msk_b_kva",
+   "op": "sum",
+   "of": [
+    "msk_dm_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "msk_k1_r",
+   "op": "prefer",
+   "of": [
+    "msk_k1_ex_r",
+    "msk_k1_excl_r"
+   ]
+  },
+  {
+   "field": "msk_k2_r",
+   "op": "prefer",
+   "of": [
+    "msk_k2_ex_r",
+    "msk_k2_excl_r"
+   ]
+  },
+  {
+   "field": "msk_dm_r",
+   "op": "prefer",
+   "of": [
+    "msk_dm_ex_r",
+    "msk_dm_excl_r"
+   ]
+  },
+  {
+   "field": "msk_b_energy_r",
+   "op": "sum",
+   "of": [
+    "msk_k1_r",
+    "msk_k2_r"
+   ]
+  },
+  {
+   "field": "msk_b_total_r",
+   "op": "sum",
+   "of": [
+    "msk_k1_r",
+    "msk_k2_r",
+    "msk_dm_r"
+   ]
+  },
+  {
+   "field": "msk_kwh",
+   "op": "prefer",
+   "of": [
+    "msk_a_kwh",
+    "msk_b_kwh"
+   ]
+  },
+  {
+   "field": "msk_kva",
+   "op": "prefer",
+   "of": [
+    "msk_a_kva",
+    "msk_b_kva"
+   ]
+  },
+  {
+   "field": "msk_energy_r",
+   "op": "prefer",
+   "of": [
+    "msk_a_energy_r",
+    "msk_b_energy_r"
+   ]
+  },
+  {
+   "field": "msk_kva_r",
+   "op": "prefer",
+   "of": [
+    "msk_a_kva_r",
+    "msk_dm_r"
+   ]
+  },
+  {
+   "field": "msk_other_r",
+   "op": "prefer",
+   "of": [
+    "msk_a_fee_chg_r"
+   ]
+  },
+  {
+   "field": "msk_total_r",
+   "op": "prefer",
+   "of": [
+    "msk_a_total_r",
+    "msk_b_total_r"
+   ]
+  },
+  {
+   "field": "msk_identity_r",
+   "op": "prefer",
+   "of": [
+    "msk_a_check_all_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "msk_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "msk_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "msk_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "msk_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "msk_kva_r",
+  "nmd_r": "_none",
+  "other_r": "msk_other_r",
+  "total_ex_vat_r": "msk_total_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "_doc": "Msukaligwa Local Municipality (Ermelo), one account with three electricity meters (two kWh registers and a 'K' kVA meter), two prints. Print A (7 bills): 'TAX INVOICE' with a Property Information row (street, deposit), a Meter Information table (columns often garbled in the text, so readings are not taken) and Afrikaans 'Billing Information' lines 'DESC units tariff charges VAT total'; electricity = every 'ELEC BUSINESS' line (energy and the K-meter demand line, which the bill prices at the energy rate) + 'ELEK DIENS FOOI' (service fee -> other_r). The demand line is the ELEC BUSINESS line whose units equal the K meter's consumption (back-reference), falling back to the line with units < 100 when the meter table is garbled (1 bill). Print B (3 bills, 2 are the same June statement): newer Munsoft ledger with comma decimals; 'ELEC CONSUMPTION (KWH)' plus two '(KVA)'-labelled lines - the one with real readings [a to b] is the main kWh register (rate equal to the energy rate) and is counted as energy, the '[0 to n]' one is demand; the June print has ex-VAT Debit + VAT columns, the April print has VAT-inclusive Debit and the ex-VAT figure only in the detail rows' Exclusive column (used). Units with 3+ decimals are rebuilt via concat with a literal '.' from the bill. No service fee appears on print B. Fingerprint: the municipality's VAT number + name/web domain. Identity (--identity msk_identity_r, print A only): Total column - VAT column per electricity line vs the Charges column: 0.00 on 7/7; print B has no independent figure (VAT % not printed) so its 3 bills are circular (identity blank). Checks 0. Checked on all 10 bills."
+}

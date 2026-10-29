@@ -1,0 +1,534 @@
+{
+ "profile_id": "ulundi",
+ "profile_name": "Ulundi Local Municipality",
+ "short_name": "Ulundi",
+ "_doc": "ULUNDI LOCAL MUNICIPALITY - 'TAX INVOICE / STATEMENT' ledger statement, account E[number removed] (Stand 113, ULUNDI BA, 'Ulundi ETE' in the master list). Same billing vendor as Ditsobotla / uPhongolo / eDumbe, but a DIFFERENT template: there are NO service sub-headings on their own lines - each charge is one ledger row whose DESCRIPTION carries the service, the quantity and the register readings:\n  30-04-2026  Electricity Basic Charge<40KVA                 331,71    2 543,10          -23 932,92\n  30-04-2026  Electricity Demand Charge 0KVA - [0 to 0]         0,00        0,00          -23 932,92\n  30-04-2026  Electricity Consumption 25846KWH - [103600 to 129446]  12 454,93  95 487,79   71 554,87\nLedger columns are Date / Description / VAT / Debit / Credit / Balance. THE DEBIT COLUMN IS VAT-INCLUSIVE and the VAT is printed separately, so every ex-VAT figure is derived per line with a 'sub' compute (never read the inclusive figure into an ex-VAT column).\nUnder the Demand and Consumption rows sits a meter table:\n  Meter Number  Previous/Current Reading Date  Tariff  Consumption   Exclusive\n  E-[number removed]   31-03-2026  30-04-2026   3,21   25 846,00            83 032,86\n  Kwh\nThe register UNIT (Kwh / Kva) is printed on the line BELOW the data row - that is the only way to tell the two meter rows apart, so both rules end in '\\n Kwh$' / '\\n Kva$'. The table prints reading DATES only, never reading values; the register readings come from the description bracket '[103600 to 129446]'. The 'Exclusive' column is the bill's OWN ex-VAT amount and is used in preference to the derived one (they agree to <=R0.01).\nMONEY IS PRINTED COMMA-DECIMAL / SPACE-THOUSANDS ('95 487,79'). The engine's _to_decimal strips the comma as a thousands separator, which would make every figure 100x too big, so - following the Ditsobotla convention - every money pattern captures the RAND PART ONLY '(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}' (each figure therefore reads up to R0.99 LOW) and the exact printed string is kept in a parallel *_txt native field. Quantity columns always end ',00' so kWh/kVA are exact.\nSingle-band industrial supply: one kWh register + one kVA demand register, no TOU. Following the Ekurhuleni/KwaDukuza/Ditsobotla convention the single energy register is routed to the STANDARD band. The bill prints NO reading type, NO NMD, NO TOU bands and NO total-VAT / total-ex-VAT line, so those canonical columns are '_none' and total_ex_vat_r is necessarily the sum of the three parts (Rule Zero: the reconcile check is therefore circular for this municipality - the genuine check is the printed 'Exclusive' column against Debit-VAT, plus VAT/Exclusive = 15%).\nThe bill prints no street address for the site (only Stand Number / Town / Category), so site_name is a concat of the stand number and the town.\n1-page and 2-page renderings of the identical statement both occur (2-page repeats the masthead above the ageing block); 'ULU_113_Statement-30 September 2025_0.pdf' is only 77KB because it is a 1-page rendering - it is a COMPLETE statement, not a nil one, and needs no special handling.\nThe Payment ledger row sits ABOVE the first 'Electricity Basic Charge' row (so it is in the header, not in a section) and a month can carry several ('Payment - Electricity Basic' / '- Electricity Consumption' / '- Electricity Demand Charge'), so the payment rules are 'document' scope with collect:'sum'. Note that summing N rand-truncated figures accumulates the truncation: the payment total can read up to N x R0.99 low.",
+ "fingerprint": {
+  "all": [],
+  "any": [
+   "4840154241",
+   "ULUNDI LOCAL MUNICIPALITY",
+   "ulundi.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity (?:Basic Charge|Demand Charge|Consumption)",
+   "require": "Electricity (?:Basic Charge|Demand Charge|Consumption)"
+  },
+  "sundry": {
+   "start": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+(?:Payment\\b|Interest[ \\t]+\\d{4}-)",
+   "overlay": true,
+   "end": "\\Z"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number (customer reference)",
+   "scope": "document",
+   "patterns": [
+    "Invoice Number\\.?[ \\t]*:[ \\t]*INV[ \\t]+(E\\d{5,})[ \\t]+\\d{6,}",
+    "Reference[ \\t]*:[ \\t]{2,}(E\\d{5,})",
+    "^[ \\t]*TELCOM[^\\n]*?[ \\t]{2,}(E\\d{5,})[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ulu_invoice_no",
+   "label": "Invoice number",
+   "scope": "document",
+   "pattern": "Invoice Number\\.?[ \\t]*:[ \\t]*(INV[ \\t]+E\\d{5,}[ \\t]+\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement date",
+   "scope": "header",
+   "pattern": "Statement Date:[ \\t]{2,}(\\d{4}-\\d{2}-\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "header",
+   "pattern": "Due Date[ \\t]{2,}(\\d{4}-\\d{2}-\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "ulu_month",
+   "label": "Billing month",
+   "scope": "header",
+   "pattern": "Month:[ \\t]{2,}([A-Za-z]+)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "ulu_stand",
+    "ulu_deposit_r",
+    "ulu_market_value_r",
+    "ulu_town",
+    "ulu_category"
+   ],
+   "label": "Stand / Deposit / Market Value / Town / Category row",
+   "scope": "header",
+   "pattern": "^[ \\t]*(\\d{2,7})[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}([A-Z][A-Z ]*?)[ \\t]{2,}([A-Z]{2,})[ \\t]*$",
+   "types": [
+    "text",
+    "money",
+    "money",
+    "text",
+    "text"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ulu_deposit_txt",
+    "ulu_market_value_txt"
+   ],
+   "label": "Deposit / Market Value as printed",
+   "scope": "header",
+   "pattern": "^[ \\t]*\\d{2,7}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}[A-Z][A-Z ]*?[ \\t]{2,}[A-Z]{2,}[ \\t]*$",
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "field": "ulu_total_due_r",
+   "label": "TOTAL AMOUNT DUE",
+   "scope": "document",
+   "pattern": "TOTAL AMOUNT DUE[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ulu_total_due_txt",
+   "label": "TOTAL AMOUNT DUE as printed",
+   "scope": "document",
+   "pattern": "TOTAL AMOUNT DUE[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ulu_balance_bf_r",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "Balance Brought Forward[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ulu_ageing_current_r",
+   "label": "Ageing: Current column",
+   "scope": "document",
+   "pattern": "180 Days[^\\n]*\\n[ \\t]*(?:-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]+){6}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ulu_ageing_30d_r",
+   "label": "Ageing: 30 Days column",
+   "scope": "document",
+   "pattern": "180 Days[^\\n]*\\n[ \\t]*(?:-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]+){5}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "ulu_basic_vat_r",
+    "ulu_basic_inc_r"
+   ],
+   "label": "Electricity Basic Charge: VAT + amount incl VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Basic Charge[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ulu_basic_vat_txt",
+    "ulu_basic_inc_txt"
+   ],
+   "label": "Electricity Basic Charge: VAT + incl VAT as printed",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Basic Charge[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": true
+  },
+  {
+   "field": "ulu_basic_class",
+   "label": "Basic-charge tariff class (>40KVA / <40KVA)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Basic Charge[ \\t]*([<>][ \\t]*\\d+[ \\t]*KVA)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ulu_basic_date",
+   "label": "Basic charge transaction date",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{2}-\\d{2}-\\d{4})[ \\t]+Electricity Basic Charge",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "ulu_kva_vat_r",
+    "ulu_kva_inc_r"
+   ],
+   "label": "Electricity Demand Charge: VAT + amount incl VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Demand Charge[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ulu_kva_vat_txt",
+    "ulu_kva_inc_txt"
+   ],
+   "label": "Electricity Demand Charge: VAT + incl VAT as printed",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Demand Charge[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": true
+  },
+  {
+   "field": "demand_kva",
+   "label": "Demand kVA (from description)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Demand Charge[ \\t]*(\\d+)[ \\t]*KVA",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "ulu_kva_start_reading",
+    "ulu_kva_end_reading"
+   ],
+   "label": "kVA register readings (description bracket)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Demand Charge[ \\t]*\\d+[ \\t]*KVA[ \\t]*-[ \\t]*\\[[ \\t]*(\\d+)[ \\t]+to[ \\t]+(\\d+)[ \\t]*\\]",
+   "types": [
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ulu_kwh_vat_r",
+    "ulu_kwh_inc_r"
+   ],
+   "label": "Electricity Consumption: VAT + amount incl VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Consumption[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ulu_kwh_vat_txt",
+    "ulu_kwh_inc_txt"
+   ],
+   "label": "Electricity Consumption: VAT + incl VAT as printed",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Consumption[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": true
+  },
+  {
+   "field": "total_kwh",
+   "label": "Total kWh (from description)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Consumption[ \\t]*(\\d+)[ \\t]*KWH",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "start_reading_kwh",
+    "end_reading_kwh"
+   ],
+   "label": "kWh register readings (description bracket)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Consumption[ \\t]*\\d+[ \\t]*KWH[ \\t]*-[ \\t]*\\[[ \\t]*(\\d+)[ \\t]+to[ \\t]+(\\d+)[ \\t]*\\]",
+   "types": [
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "field": "ulu_kwh_date",
+   "label": "Consumption transaction date",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{2}-\\d{2}-\\d{4})[ \\t]+Electricity Consumption",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "ulu_kwh_meter",
+    "read_start",
+    "read_end",
+    "ulu_kwh_rate",
+    "ulu_kwh_units",
+    "ulu_kwh_excl_r"
+   ],
+   "label": "kWh meter row (meter / period / tariff / units / Exclusive)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*([A-Z]-?\\d{4,})[ \\t]{2,}(\\d{2}-\\d{2}-\\d{4})[ \\t]{2,}(\\d{2}-\\d{2}-\\d{4})[ \\t]{2,}([\\d ]{1,12},\\d{2})[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]*\\n[ \\t]*Kwh[ \\t]*$",
+   "types": [
+    "text",
+    "date",
+    "date",
+    "text",
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "ulu_kwh_excl_txt",
+   "label": "kWh Exclusive as printed",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[A-Z]-?\\d{4,}[ \\t]{2,}\\d{2}-\\d{2}-\\d{4}[ \\t]{2,}\\d{2}-\\d{2}-\\d{4}[ \\t]{2,}[\\d ]{1,12},\\d{2}[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]*\\n[ \\t]*Kwh[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "ulu_kva_meter",
+    "ulu_kva_read_start",
+    "ulu_kva_read_end",
+    "ulu_kva_rate",
+    "ulu_kva_units",
+    "ulu_kva_excl_r"
+   ],
+   "label": "kVA meter row (meter / period / tariff / units / Exclusive)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*([A-Z]-?\\d{4,})[ \\t]{2,}(\\d{2}-\\d{2}-\\d{4})[ \\t]{2,}(\\d{2}-\\d{2}-\\d{4})[ \\t]{2,}([\\d ]{1,12},\\d{2})[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]*\\n[ \\t]*Kva[ \\t]*$",
+   "types": [
+    "text",
+    "date",
+    "date",
+    "text",
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "ulu_kva_excl_txt",
+   "label": "kVA Exclusive as printed",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[A-Z]-?\\d{4,}[ \\t]{2,}\\d{2}-\\d{2}-\\d{4}[ \\t]{2,}\\d{2}-\\d{2}-\\d{4}[ \\t]{2,}[\\d ]{1,12},\\d{2}[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]*\\n[ \\t]*Kva[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ulu_payment_r",
+   "label": "Payment received (credit column)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Payment[^\\n]*?[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "ulu_payment_txt",
+   "label": "Payment received as printed",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Payment[^\\n]*?[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "type": "text",
+   "collect": "join_unique",
+   "required": false
+  },
+  {
+   "field": "ulu_interest_vat_r",
+   "label": "Interest on arrears: VAT",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Interest[ \\t]+\\d{4}-\\d{2}-\\d{2}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "ulu_interest_inc_r",
+   "label": "Interest on arrears: amount incl VAT",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Interest[ \\t]+\\d{4}-\\d{2}-\\d{2}[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "ulu_basic_ex_r",
+   "op": "sub",
+   "of": [
+    "ulu_basic_inc_r",
+    "ulu_basic_vat_r"
+   ]
+  },
+  {
+   "field": "ulu_kwh_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "ulu_kwh_inc_r",
+    "ulu_kwh_vat_r"
+   ]
+  },
+  {
+   "field": "ulu_kva_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "ulu_kva_inc_r",
+    "ulu_kva_vat_r"
+   ]
+  },
+  {
+   "field": "ulu_std_r_out",
+   "op": "prefer",
+   "of": [
+    "ulu_kwh_excl_r",
+    "ulu_kwh_ex_calc_r"
+   ]
+  },
+  {
+   "field": "ulu_demand_r_out",
+   "op": "prefer",
+   "of": [
+    "ulu_kva_excl_r",
+    "ulu_kva_ex_calc_r"
+   ]
+  },
+  {
+   "field": "ulu_elec_total_ex_r",
+   "op": "sum",
+   "of": [
+    "ulu_std_r_out",
+    "ulu_demand_r_out",
+    "ulu_basic_ex_r"
+   ]
+  },
+  {
+   "field": "ulu_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "ulu_kwh_vat_r",
+    "ulu_kva_vat_r",
+    "ulu_basic_vat_r"
+   ]
+  },
+  {
+   "field": "ulu_elec_total_inc_r",
+   "op": "sum",
+   "of": [
+    "ulu_kwh_inc_r",
+    "ulu_kva_inc_r",
+    "ulu_basic_inc_r"
+   ]
+  },
+  {
+   "field": "ulu_kwh_excl_delta",
+   "op": "diff",
+   "of": [
+    "ulu_kwh_excl_r",
+    "ulu_kwh_ex_calc_r"
+   ]
+  },
+  {
+   "field": "ulu_kva_excl_delta",
+   "op": "diff",
+   "of": [
+    "ulu_kva_excl_r",
+    "ulu_kva_ex_calc_r"
+   ]
+  },
+  {
+   "field": "ulu_reading_kwh",
+   "op": "diff",
+   "as": "number",
+   "of": [
+    "end_reading_kwh",
+    "start_reading_kwh"
+   ]
+  },
+  {
+   "field": "ulu_site",
+   "op": "concat",
+   "of": [
+    "ulu_stand",
+    "ulu_town"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "ulu_site",
+  "billing_date": "billing_date",
+  "tariff_name": "ulu_basic_class",
+  "account_number": "account_number",
+  "meter": [
+   "ulu_kwh_meter",
+   "ulu_kva_meter"
+  ],
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "ulu_std_r_out",
+  "offpeak_r": "_none",
+  "demand_r": "ulu_demand_r_out",
+  "nmd_r": "_none",
+  "other_r": "ulu_basic_ex_r",
+  "total_ex_vat_r": "ulu_elec_total_ex_r",
+  "deposit_r": "ulu_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "Balance Brought Forward[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}[ \\t]*$",
+  "incoming_payment": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Payment[^\\n]*?[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+  "total_due": "TOTAL AMOUNT DUE[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}",
+  "current_incl": "180 Days[^\\n]*\\n[ \\t]*(?:-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]+){6}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}",
+  "due_date": "Due Date[ \\t]{2,}(\\d{4}-\\d{2}-\\d{2})",
+  "deposito": "^[ \\t]*\\d{2,7}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]{2,}[A-Z][A-Z ]*?[ \\t]{2,}[A-Z]{2,}[ \\t]*$"
+ }
+}

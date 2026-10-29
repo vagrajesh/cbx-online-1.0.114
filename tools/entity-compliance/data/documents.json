@@ -1,0 +1,119 @@
+{
+  "title": "data.documents.title",
+  "columns": [
+    {
+      "key": "company",
+      "type": "link",
+      "table": "companies",
+      "show": "name",
+      "label": "col.entity",
+      "required": true
+    },
+    {
+      "key": "doc_type",
+      "type": "link",
+      "table": "doc_types",
+      "show": "name",
+      "label": "col.doc_type"
+    },
+    {
+      "key": "title",
+      "type": "text",
+      "label": "col.title"
+    },
+    {
+      "key": "file",
+      "type": "file",
+      "label": "col.file",
+      "keep": 10,
+      "max_mb": 100,
+      "accept": [
+        "pdf",
+        "png",
+        "jpg",
+        "jpeg",
+        "docx",
+        "doc",
+        "xlsx",
+        "xls",
+        "msg",
+        "eml",
+        "zip"
+      ]
+    },
+    {
+      "key": "expiry",
+      "type": "date",
+      "label": "col.expiry"
+    },
+    {
+      "key": "no_expiry",
+      "type": "bool",
+      "label": "col.no_expiry"
+    },
+    {
+      "key": "warn_days",
+      "type": "int",
+      "label": "col.warn_days",
+      "default": 90
+    },
+    {
+      "key": "required",
+      "type": "bool",
+      "label": "col.required",
+      "default": true
+    },
+    {
+      "key": "status",
+      "type": "calc",
+      "label": "col.status",
+      "calc": {
+        "fn": "expiry",
+        "date": "expiry",
+        "warn": "warn_days",
+        "required": "required",
+        "never": "no_expiry",
+        "file": "file",
+        "off": "archived"
+      }
+    },
+    {
+      "key": "days_left",
+      "type": "calc",
+      "label": "col.days_left",
+      "calc": {
+        "fn": "days",
+        "from": "today",
+        "to": "expiry"
+      }
+    },
+    {
+      "key": "notes",
+      "type": "text",
+      "label": "col.notes",
+      "multiline": true
+    },
+    {
+      "key": "filed_by",
+      "type": "person",
+      "label": "col.filed_by",
+      "default": "me",
+      "who": "everyone"
+    },
+    {
+      "key": "archived",
+      "type": "bool",
+      "label": "col.archived"
+    }
+  ],
+  "write": "everyone",
+  "edit": "seen",
+  "scope": "linked",
+  "link": "company",
+  "unique": [
+    [
+      "company",
+      "doc_type"
+    ]
+  ]
+}

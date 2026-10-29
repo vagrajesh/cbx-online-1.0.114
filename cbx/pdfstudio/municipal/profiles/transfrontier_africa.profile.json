@@ -1,0 +1,223 @@
+{
+ "profile_id": "transfrontier_africa",
+ "profile_name": "Transfrontier Africa NPC (Indlovu Camp, Olifants West)",
+ "short_name": "Transfrontier Africa",
+ "_doc": "Transfrontier Africa NPC landlord invoice (folder 'NDLOVU SAFARIS (PTY) LTD'), one page: header with invoice number, two-line REFERENCE (site), DATE, customer code beside the registration number, Current/Previous meter readings; line items with Quantity@rate, Incl. Price, Disc %, VAT %, Excl. Total, Incl. Total. Electricity lines = Energy Charge (kWh qty, flat -> standard) + Miniflex-style Network Demand (per kWh), Network Capacity, Ancillary Service and Service and Administration fee (-> other_r). Site Rental, Security, Cleaning & Maintenance and Monitoring & Administration are NOT electricity and are excluded from total ex VAT. Labels can be glued to the quantity ('Charge584.20'); patterns allow it. Fingerprint: the landlord's own VAT number + name (the customer VAT printed beside it is never used). Identity tfa_elec_check_r = printed Total Exclusive - non-electricity lines vs electricity total: 11/11 exact. Energy kWh equals Current - Previous reading on 10/11; one bill prints its Current Reading with an extra digit (the bill itself is wrong; value kept as printed). Checked on 11 bills, 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "4520292733"
+  ],
+  "any": [
+   "TRANSFRONTIER AFRICA NPC",
+   "Transfrontier Africa NPC"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Description[ \\t]+Quantity[ \\t]+Incl\\. Price",
+   "require": "^[ \\t]*(?:Energy|Network Demand) Charge\\b"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Customer code (TO column, beside Reg:)",
+   "scope": "header",
+   "pattern": "[ \\t]([A-Z]{2}\\d{6,})[ \\t]{2,}Reg:",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice DATE",
+   "scope": "header",
+   "pattern": "^[ \\t]*DATE:[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "tfa_invoice_no",
+   "label": "Invoice NUMBER",
+   "scope": "header",
+   "pattern": "^[ \\t]*NUMBER:[ \\t]+(INV\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "tfa_ref1",
+    "tfa_ref2"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "REFERENCE (two lines: site)",
+   "scope": "header",
+   "pattern": "^[ \\t]*REFERENCE:[ \\t]+(\\S[^\\n]*?)[ \\t]*\\n[ \\t]+(\\S[^\\n]*?)[ \\t]*$"
+  },
+  {
+   "field": "end_reading_kwh",
+   "label": "Current Reading",
+   "scope": "header",
+   "pattern": "\\bCurrent Reading[ \\t]*:[ \\t]*([\\d.]+)[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "field": "start_reading_kwh",
+   "label": "Previous Reading",
+   "scope": "header",
+   "pattern": "\\bPrevious Reading[ \\t]*:[ \\t]*([\\d.]+)[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "standard_kwh",
+    "standard_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Energy Charge: kWh qty / excl",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "required": true,
+   "pattern": "^[ \\t]*Energy Charge[ \\t]*([\\d.,]+)[ \\t]*@?[^\\n]*?[ \\t]{2,}R-?[\\d,]+\\.\\d{2}[ \\t]+[\\d.]+%[ \\t]+[\\d.]+%[ \\t]+R(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]+R-?[\\d,]+\\.\\d{2}[ \\t]*$"
+  },
+  {
+   "field": "tfa_netdemand_r",
+   "label": "Network Demand Charge (per kWh, Miniflex) excl",
+   "scope": "section:electricity",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Network Demand Charge(?![A-Za-z])[^\\n]*?[ \\t]{2,}R-?[\\d,]+\\.\\d{2}[ \\t]+[\\d.]+%[ \\t]+[\\d.]+%[ \\t]+R(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]+R-?[\\d,]+\\.\\d{2}[ \\t]*$"
+  },
+  {
+   "field": "tfa_netcap_r",
+   "label": "Network Capacity Charge excl",
+   "scope": "section:electricity",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Network Capacity Charge(?![A-Za-z])[^\\n]*?[ \\t]{2,}R-?[\\d,]+\\.\\d{2}[ \\t]+[\\d.]+%[ \\t]+[\\d.]+%[ \\t]+R(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]+R-?[\\d,]+\\.\\d{2}[ \\t]*$"
+  },
+  {
+   "field": "tfa_ancillary_r",
+   "label": "Ancillary Service Charge excl",
+   "scope": "section:electricity",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Ancillary Service Charge(?![A-Za-z])[^\\n]*?[ \\t]{2,}R-?[\\d,]+\\.\\d{2}[ \\t]+[\\d.]+%[ \\t]+[\\d.]+%[ \\t]+R(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]+R-?[\\d,]+\\.\\d{2}[ \\t]*$"
+  },
+  {
+   "field": "tfa_service_r",
+   "label": "Service and Administration fee excl",
+   "scope": "section:electricity",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Service and Administration fee(?![A-Za-z])[^\\n]*?[ \\t]{2,}R-?[\\d,]+\\.\\d{2}[ \\t]+[\\d.]+%[ \\t]+[\\d.]+%[ \\t]+R(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]+R-?[\\d,]+\\.\\d{2}[ \\t]*$"
+  },
+  {
+   "field": "tfa_non_elec_r",
+   "label": "Non-electricity lines (site rental, security, cleaning, monitoring & admin) excl",
+   "scope": "section:electricity",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:Site Rental|Security Charges|Cleaning & Maintenance|Monitoring & Administration Charge)(?![A-Za-z])[^\\n]*?[ \\t]{2,}R-?[\\d,]+\\.\\d{2}[ \\t]+[\\d.]+%[ \\t]+[\\d.]+%[ \\t]+R(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]+R-?[\\d,]+\\.\\d{2}[ \\t]*$"
+  },
+  {
+   "field": "tfa_total_excl_r",
+   "label": "Total Exclusive (whole invoice)",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "\\bTotal Exclusive:[ \\t]+R(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})",
+   "required": true
+  },
+  {
+   "field": "tfa_total_vat_r",
+   "label": "Total VAT",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "\\bTotal VAT:[ \\t]+R(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})"
+  },
+  {
+   "field": "tfa_grand_total_r",
+   "label": "Grand Total",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "\\bGrand Total:[ \\t]+R(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})"
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "tfa_ref1",
+    "tfa_ref2"
+   ]
+  },
+  {
+   "field": "total_kwh",
+   "op": "prefer",
+   "of": [
+    "standard_kwh"
+   ]
+  },
+  {
+   "field": "tfa_kwh_from_readings",
+   "op": "diff",
+   "as": "number",
+   "of": [
+    "end_reading_kwh",
+    "start_reading_kwh"
+   ]
+  },
+  {
+   "field": "other_r",
+   "op": "sum",
+   "of": [
+    "tfa_netdemand_r",
+    "tfa_netcap_r",
+    "tfa_ancillary_r",
+    "tfa_service_r"
+   ]
+  },
+  {
+   "field": "tfa_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "standard_r",
+    "other_r"
+   ]
+  },
+  {
+   "field": "tfa_elec_check_r",
+   "op": "sub",
+   "of": [
+    "tfa_total_excl_r",
+    "tfa_non_elec_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "total_ex_vat_r": "tfa_elec_ex_r",
+  "tariff_name": "_none",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

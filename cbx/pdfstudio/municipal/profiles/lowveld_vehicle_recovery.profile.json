@@ -1,0 +1,129 @@
+{
+ "profile_id": "lowveld_vehicle_recovery",
+ "profile_name": "Lowveld Vehicle Recovery CC",
+ "short_name": "Lowveld Vehicle Recovery",
+ "_doc": "Lowveld Vehicle Recovery CC landlord electricity tax invoice (Softline-generated): one line coded for electricity at the site with Quantity, Unit Price, Tax and Nett Price (excl VAT), then Sub Total, Discount, Amount Excl Tax, Tax and Total. No kWh, meter or period is printed; the Nett amount is the electricity total ex VAT and goes to other_r. Account = the Account code under 'Account / Your Reference'; site = the description after 'Electricity'; billing date dd/mm/yy. Fingerprint: the landlord's own VAT number + name / e-mail domain. Identity lvr_total_less_tax_r = Total - Tax: 6/6 exact. Checked on 6 files (two are byte-identical copies of the same invoice), 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "4470165509"
+  ],
+  "any": [
+   "Lowveld Vehicle Recovery",
+   "lvr-nst.co.za"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Code[ \\t]+Description[ \\t]+Quantity[ \\t]",
+   "require": "^[ \\t]*[A-Z0-9]{3,}[ \\t]+Electricity\\b"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account (landlord's code for the customer)",
+   "scope": "header",
+   "pattern": "^[ \\t]*Account[ \\t]+Your Reference[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*([A-Z]{2,}\\d{2,})[ \\t]",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice Date (dd/mm/yy)",
+   "scope": "header",
+   "pattern": "[ \\t]Date[ \\t]{2,}(\\d{2}/\\d{2}/\\d{2,4})[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "lvr_document_no",
+   "label": "Document No",
+   "scope": "header",
+   "pattern": "\\bDocument No[ \\t]+(IN\\d+)\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Line description after 'Electricity' (site)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[A-Z0-9]{3,}[ \\t]+Electricity[ \\t]+(\\S[^\\n]*?)[ \\t]{2,}[\\d.]+[ \\t]+ea\\b",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "lvr_line_vat_r",
+    "lvr_line_nett_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Electricity line: Tax / Nett Price (excl)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "required": true,
+   "pattern": "^[ \\t]*[A-Z0-9]{3,}[ \\t]+Electricity\\b[^\\n]*?[ \\t]ea[ \\t]+-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]+(?:[\\d.]+[ \\t]+)?(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "field": "lvr_excl_r",
+   "label": "Amount Excl Tax",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "^[ \\t]*Amount Excl Tax[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "lvr_tax_r",
+   "label": "Tax",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "^[ \\t]*Tax[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "lvr_total_r",
+   "label": "Total",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "(?<!Sub)[ \\t]Total[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "lvr_total_less_tax_r",
+   "op": "sub",
+   "of": [
+    "lvr_total_r",
+    "lvr_tax_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "total_ex_vat_r": "lvr_line_nett_r",
+  "other_r": "lvr_line_nett_r",
+  "tariff_name": "_none",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

@@ -1,0 +1,66 @@
+{
+  "title": "flow.ledger.title",
+  "enabled": true,
+  "trigger": {
+    "type": "row_changed",
+    "data": "ledger"
+  },
+  "run_as": "starter",
+  "start": "if1",
+  "steps": {
+    "s1": {
+      "type": "update_row",
+      "data": "ledger",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "status": "Working",
+        "note": ""
+      },
+      "next": "s2"
+    },
+    "s2": {
+      "type": "action",
+      "action": "ifrs16.ledger_check",
+      "data": "ledger",
+      "row": "{{trigger.row.id}}",
+      "in": {
+        "ledger": "ledger",
+        "as_at": "as_at",
+        "months_back": "months_back"
+      },
+      "out": {
+        "report": "report",
+        "overview": "overview"
+      },
+      "fail": {
+        "status": "Failed",
+        "note": "{{error}}"
+      },
+      "next": "s3"
+    },
+    "s3": {
+      "type": "update_row",
+      "data": "ledger",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "status": "Done"
+      }
+    },
+    "if1": {
+      "type": "if",
+      "match": "all",
+      "when": [
+        {
+          "left": "{{trigger.row.ledger}}",
+          "op": "not_empty"
+        },
+        {
+          "left": "{{trigger.row.status}}",
+          "op": "equals",
+          "value": "New"
+        }
+      ],
+      "yes": "s1"
+    }
+  }
+}

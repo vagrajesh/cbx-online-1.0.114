@@ -1,0 +1,170 @@
+{
+ "profile_id": "wattage_metering",
+ "profile_name": "Wattage Metering (Lynnwood Ridge) - electricity recharge",
+ "short_name": "Wattage Metering",
+ "_doc": "Wattage Metering (Lynnwood Ridge) bilingual (Afrikaans/English) BTW FAKTUUR / VAT INVOICE: masthead with Wattage's own VAT Reg. No., Issued date, Account No.; an 'Account for' row (month, consumption period start - end, days, deposit, deposit date); Site Address; one or two meter numbers; a ledger (balance b/f, payment, then one 'ELECTRICITY: <street>  prev  present  kWh  R/kWh  amount' line per meter and a STROOMBREKER KOSTE / CIRCUIT BREAKER CHARGE line), Subtotaal / Sub Total and BTW / VAT. kWh and energy Rands are summed over the meters (standard band); meters are joined with '/'; start/end readings are filled only on single-meter bills (blank on the 5 two-meter bills); circuit breaker charge -> other_r. One bill is a closing/transfer notice (all zero, no period). total_ex_vat_r = electricity lines + circuit breaker. IDENTITY = printed Sub Total: exact on 10/10. Fingerprint: Wattage VAT number + name. 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "4640221380"
+  ],
+  "any": [
+   "WATTAGE METERING"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^ELECTRICITY:[ \\t]",
+   "require": "Sub Total"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Rekening Nr. / Account No.",
+   "scope": "header",
+   "pattern": "Rekening Nr\\. / Account No\\.[ \\t]+([A-Z]{1,4}\\d+)[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Uitgereik / Issued",
+   "scope": "header",
+   "pattern": "Uitgereik / Issued[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "wat_invoice_no",
+   "label": "VAT INVOICE No.",
+   "scope": "header",
+   "pattern": "VAT INVOICE No\\.[ \\t]+(\\d+)"
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end",
+    "wat_days",
+    "wat_deposit_r"
+   ],
+   "label": "Account-for row: consumption period / days / deposit",
+   "scope": "header",
+   "pattern": "^[ \\t]+[A-Z]{3}(?:/[A-Z]{3,4})?[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]+(\\d+)[ \\t]+(-?R[\\d,]*\\d\\.\\d{2})[ \\t]",
+   "types": [
+    "date",
+    "date",
+    "number",
+    "money"
+   ]
+  },
+  {
+   "field": "wat_site",
+   "label": "Site Address (line under the heading)",
+   "scope": "header",
+   "pattern": "Perseeladres / Site Address[ \\t]*\\n[ \\t]*(\\S[^\\n]*?)[ \\t]*$"
+  },
+  {
+   "field": "meter",
+   "label": "Meter numbers (letter + 7+ digits; several joined with /)",
+   "scope": "header",
+   "pattern": "(?:^|(?<=[ \\t]))([A-Z]\\d{7,})(?=[ \\t]*$|[ \\t]{2,}[A-Z]\\d{7,})",
+   "collect": "join_unique"
+  },
+  {
+   "fields": [
+    "wat_start",
+    "wat_end"
+   ],
+   "label": "Previous / present reading (only when the bill has ONE electricity line)",
+   "scope": "section:electricity",
+   "pattern": "\\A(?![\\s\\S]*^ELECTRICITY:[\\s\\S]*^ELECTRICITY:)[\\s\\S]*?^ELECTRICITY:[^\\n]*?[ \\t]{2,}(\\d+)[ \\t]+(\\d+)[ \\t]+\\d+[ \\t]+R[\\d.]+[ \\t]+(-?R[\\d,]*\\d\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "number"
+   ]
+  },
+  {
+   "fields": [
+    "total_kwh",
+    "wat_energy_r"
+   ],
+   "label": "ELECTRICITY lines: consumption kWh + amount (summed over meters)",
+   "scope": "section:electricity",
+   "pattern": "^ELECTRICITY:[^\\n]*?[ \\t]{2,}\\d+[ \\t]+\\d+[ \\t]+(\\d+)[ \\t]+R[\\d.]+[ \\t]+(-?R[\\d,]*\\d\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "tariff_name",
+   "label": "Energy rate R/kWh (as printed; no tariff name on the bill)",
+   "scope": "section:electricity",
+   "pattern": "^ELECTRICITY:[^\\n]*?[ \\t]{2,}\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+(R[\\d.]+)[ \\t]+-?R"
+  },
+  {
+   "field": "wat_breaker_r",
+   "label": "STROOMBREKER KOSTE / CIRCUIT BREAKER CHARGE",
+   "scope": "section:electricity",
+   "pattern": "^STROOMBREKER KOSTE/CIRCUIT BREAKER CHARGE[ \\t]+(-?R[\\d,]*\\d\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "field": "wat_subtotal_r",
+   "label": "Subtotaal / Sub Total (ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "Subtotaal[ \\t]*/[ \\t]*Sub Total[ \\t]+(-?R[\\d,]*\\d\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "wat_vat_r",
+   "label": "BTW / VAT",
+   "scope": "section:electricity",
+   "pattern": "BTW / VAT[ \\t]+(-?R[\\d,]*\\d\\.\\d{2})[ \\t]*$",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "wat_total_ex_r",
+   "label": "electricity lines + circuit breaker charge",
+   "op": "sum",
+   "of": [
+    "wat_energy_r",
+    "wat_breaker_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "wat_site",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "wat_start",
+  "end_reading_kwh": "wat_end",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "wat_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "wat_breaker_r",
+  "total_ex_vat_r": "wat_total_ex_r",
+  "deposit_r": "wat_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

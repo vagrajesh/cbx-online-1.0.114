@@ -1,0 +1,41 @@
+{
+  "title": "data.doc_types.title",
+  "columns": [
+    {
+      "key": "name",
+      "type": "text",
+      "label": "col.type_name",
+      "required": true
+    },
+    {
+      "key": "short",
+      "type": "text",
+      "label": "col.short"
+    },
+    {
+      "key": "order",
+      "type": "int",
+      "label": "col.order",
+      "default": 100
+    },
+    {
+      "key": "warn_days",
+      "type": "int",
+      "label": "col.warn_days",
+      "default": 90
+    },
+    {
+      "key": "shown",
+      "type": "bool",
+      "label": "col.shown",
+      "default": true
+    }
+  ],
+  "write": "admins",
+  "scope": "all",
+  "unique": [
+    [
+      "name"
+    ]
+  ]
+}

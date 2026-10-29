@@ -1,0 +1,80 @@
+{
+  "title": "page.documents.title",
+  "intro": "page.documents.intro",
+  "menu": true,
+  "style": {
+    "width": "normal"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_docs",
+                "type": "table",
+                "source": {
+                  "data": "documents"
+                },
+                "columns": [
+                  {
+                    "key": "company"
+                  },
+                  {
+                    "key": "doc_type"
+                  },
+                  {
+                    "key": "title"
+                  },
+                  {
+                    "key": "file"
+                  },
+                  {
+                    "key": "expiry"
+                  },
+                  {
+                    "key": "days_left"
+                  },
+                  {
+                    "key": "status",
+                    "type": "status"
+                  }
+                ],
+                "filters": [
+                  "company",
+                  "doc_type"
+                ],
+                "search": true,
+                "row_link": true,
+                "actions": [
+                  {
+                    "label": "act.mail",
+                    "kind": "mail",
+                    "to": [
+                      "company.responsible_account",
+                      "company.responsible_email"
+                    ],
+                    "fields": [
+                      "company",
+                      "doc_type",
+                      "title",
+                      "expiry",
+                      "status"
+                    ]
+                  }
+                ],
+                "sort": {
+                  "key": "expiry",
+                  "desc": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

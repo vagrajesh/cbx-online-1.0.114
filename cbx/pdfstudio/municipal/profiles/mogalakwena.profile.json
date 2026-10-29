@@ -1,0 +1,222 @@
+{
+ "profile_id": "mogalakwena",
+ "profile_name": "Mogalakwena Local Municipality (Mokopane, Limpopo)",
+ "short_name": "Mogalakwena",
+ "_doc": "Emunsoft 'TAX INVOICE / STATEMENT OF ACCOUNT' print (layout family A): masthead with the municipality's own 'VAT No', Account Number / Account Date / Tax Invoice No / ERF Description / Street block, an optional METER READINGS table (METER NO | TYPE | OLD | NEW | flag A/E/I | CONSUMPTION | LEVIED AMOUNT | READING DATES), then the ACCOUNT DETAILS ledger ('date code DESCRIPTION units@tariff * value', '*' = vatable, credits with a trailing '-'), one VAT line, an aging strip whose last column is the closing balance, and the remittance stub. The electricity section runs from ACCOUNT DETAILS to REMITTANCE ADVICE and exists only when an electricity ledger line is present. total_ex_vat_r = sum of the electricity ledger lines (interest excluded). IDENTITY emu_balance_elec_r = printed closing balance - OPENING BALANCE - every non-electricity ledger line (payments, VAT, interest, other services); it fails if any ledger line is missed or mis-signed. Fingerprint: VAT 4040106637 + name/site. One commercial meter, one energy line ('COMMERCIAL SMALL BUSINESSES ELECTRICITY', units x tariff = value) mapped to the single (standard) band; interest on arrears is kept separate (emu_interest_r) and not in the total. Result: 4/4 bills routed, identity exact (0.00) on 4/4; second check: the meter table's LEVIED AMOUNT equals the total on 4/4, and VAT/0.15 agrees within 3c. NOTE: CONSUMPTION is 60 x the register advance on every bill (an unprinted CT factor); the billed kWh is CONSUMPTION, which units x tariff confirms. Readings are as printed.",
+ "fingerprint": {
+  "all": [
+   "4040106637"
+  ],
+  "any": [
+   "Mogalakwena Local Municipality",
+   "mogalakwena.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*ACCOUNT DETAILS[ \\t]*$",
+   "require": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+(?=\\S)(?:(?!INTEREST)[^\\n]*?ELECTRICITY)[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$"
+  },
+  "sundry": {
+   "start": "^[ \\t]*REMITTANCE ADVICE\\b"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "^[ \\t]*Account Number:[ \\t]*(\\d{6,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2}[ \\t]+[A-Za-z]{3}[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "emu_tax_invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.?:[ \\t]*(\\d{6,})",
+   "type": "text"
+  },
+  {
+   "field": "emu_erf",
+   "label": "ERF Description",
+   "scope": "document",
+   "pattern": "ERF Description:[ \\t]*(\\S+(?:[ \\t]{1,2}\\S+)*)",
+   "type": "text"
+  },
+  {
+   "field": "emu_due_date",
+   "label": "Total due on or before",
+   "scope": "document",
+   "pattern": "TOTAL DUE ON OR BEFORE:?[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "emu_opening_r",
+   "label": "Opening balance",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*OPENING BALANCE[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "emu_closing_r",
+   "label": "Closing balance / total due (last aging column)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d+\\+[ \\t]*DAYS[^\\n]*(?:CLOSING BALANCE|TOTAL DUE)[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]*(?:\\S+[ \\t]+){5}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "emu_current_r",
+   "label": "Aging CURRENT column",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d+\\+[ \\t]*DAYS[^\\n]*(?:CLOSING BALANCE|TOTAL DUE)[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]*(?:\\S+[ \\t]+){4}(-?[\\d,]*\\.\\d{2}-?)[ \\t]+\\S+[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "emu_vat_r",
+   "label": "VAT line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\w{6}[ \\t]+VAT[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "emu_nonelec_r",
+   "label": "Every ledger line that is NOT electricity (payments, VAT, interest, other services)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+(?=\\S)(?!(?!INTEREST)[^\\n]*?ELECTRICITY)[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "emu_elec_lines_r",
+   "label": "Electricity ledger lines (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+(?=\\S)(?:(?!INTEREST)[^\\n]*?ELECTRICITY)[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "emu_site",
+   "label": "Street (site)",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(?:\\.[ \\t]*)?(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]*([\\d,]*\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "emu_meter",
+    "emu_old_reading",
+    "emu_new_reading",
+    "emu_read_type",
+    "emu_cons_kwh",
+    "emu_levied_r",
+    "emu_read_from",
+    "emu_read_to"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "text",
+    "number",
+    "money",
+    "date",
+    "date"
+   ],
+   "label": "Meter readings row (ELECTRICITY)",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\S+)[ \\t]+ELECTRICITY[ \\t]+([\\d.]+)[ \\t]+([\\d.]+)[ \\t]+([AEI])[ \\t]+([\\d.]+)[ \\t]+([\\d,]*\\.\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})"
+  },
+  {
+   "fields": [
+    "emu_tariff",
+    "emu_energy_kwh",
+    "emu_energy_r"
+   ],
+   "types": [
+    "text",
+    "number",
+    "money"
+   ],
+   "label": "Energy line (description / units / value)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+((?!INTEREST)[^\\n]*?ELECTRICITY)[^\\n]*?[ \\t]{2,}(-?[\\d.]+-?)@?[ \\t]*[\\d,]*\\.\\d+[ \\t]*\\*?[ \\t]+(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "field": "emu_interest_r",
+   "label": "Interest on electricity arrears (not in total)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+(?=\\S)(?:INTEREST[^\\n]*?ELECTRICITY)[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "emu_balance_elec_r",
+   "op": "sub",
+   "of": [
+    "emu_closing_r",
+    "emu_opening_r",
+    "emu_nonelec_r"
+   ]
+  },
+  {
+   "field": "emu_levied_check_r",
+   "op": "sum",
+   "of": [
+    "emu_levied_r",
+    "emu_basic_r",
+    "emu_cn_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "deposit_r": "deposit_r",
+  "other_r": "_none",
+  "start_reading_kwh": "emu_old_reading",
+  "end_reading_kwh": "emu_new_reading",
+  "read_start": "emu_read_from",
+  "read_end": "emu_read_to",
+  "reading_type": "emu_read_type",
+  "meter": "emu_meter",
+  "total_kwh": "emu_cons_kwh",
+  "site_name": "emu_site",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "total_ex_vat_r": "emu_elec_lines_r",
+  "tariff_name": "emu_tariff",
+  "standard_kwh": "emu_energy_kwh",
+  "standard_r": "emu_energy_r"
+ }
+}

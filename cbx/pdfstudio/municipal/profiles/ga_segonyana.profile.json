@@ -1,0 +1,478 @@
+{
+ "profile_id": "ga_segonyana",
+ "profile_name": "Ga-Segonyana Local Municipality (Kuruman, Northern Cape)",
+ "short_name": "Ga-Segonyana",
+ "_doc": "GA-SEGONYANA (Kuruman, Northern Cape) - 'TAX INVOICE/STATEMENT OF ACCOUNT', the eMunsoft/Munsoft ledger family (same vendor as KwaDukuza / Abaqulusi / Alfred Duma / Bela-Bela / Emalahleni / Modimolle-Mookgophong). Account [number removed], 10 bills AUG 2025 - JUL 2026, all one site.\n\nFINGERPRINT: masthead 'GASEGONYANA MUNICIPALITY' (one word, no hyphen - the hyphenated form only appears in the banking block) AND VAT No 4890117197. Both strings were checked against every one of the 487 PDFs in the Telkom tree: each occurs in exactly these 10 files and nowhere else.\n\nONE TEMPLATE ONLY. All 10 bills are the SAME shape - unlike Phokwane/Emalahleni there is no A/B split here:\n- masthead 'GASEGONYANA MUNICIPALITY' / 'PRIVATE BAG X1522 KURUMAN 8460' / 'TEL:' / 'FAX:' / 'VAT No.:4890117197'\n- heading 'TAX INVOICE/STATEMENT OF ACCOUNT' (no spaces round the slash)\n- labels with dots: 'Tax Invoice No.:', 'Vat Registration No.:' (always blank), 'Internet PIN:'\n- METER READINGS columns: METER NO. / METER TYPE / OLD READING / NEW READING / READING DATE / READING TYPE / CONSUMPTION. This is family shape 1 - a SINGLE reading date, no date range, so canonical Start Date is genuinely not printed and is mapped '_none'. There is no LEVIED AMOUNT column.\n- no eMunsoft portal URL, no Suburb value, no rates line, no interest line.\nOne bill ('(13)', 31 OCT 2025) renders as 2 PDF pages; the text layer is identical in shape, so nothing special is needed.\n\nMETERS: exactly two, every month. ELECTRICITY [number removed] (kWh, 7-digit dial) and WATER [number removed] (kL). No KVA register anywhere on this account, and no demand or NMD charge in the ledger, so Demand kVA / Demand Rands / NMD are '_none' - correctly blank, not a miss. Meter row ORDER varies between bills (water first on 5 bills, electricity first on 5); every meter rule is anchored on the METER TYPE word, never on row position.\n\nREADING TYPE letters seen: 'I' on 19 of 20 meter rows, 'E' once (electricity, 26 NOV 2025 bill). TRANSLATE has entries for A and E only, so 'E' translates to 'Estimated' and 'I' is passed through EXACTLY as printed. 'I' is NOT guessed at (this vendor's letter set is undocumented; Emalahleni prints 'S' and 'N', Phokwane 'I' and 'N'). The reading chain is continuous month to month with genuine varying consumption, so the 'I' rows are real readings whatever the letter means.\n\nACCOUNT DETAILS LEDGER: DATE / CODE / DESCRIPTION / UNITS / TARIFF / VALUE. The TARIFF column IS printed here (unlike Emalahleni) but there is NO '@' character and NO '*' VAT flag - so neither the '@' discriminator nor the '*' VAT-flag trick from the sibling profiles is available. The CODE is the discriminator, and the VAT base has to be built as 'every dated ledger line whose code is not 008888/009008/009009'.\nTariff formatting drifts between renders (3,483.[number removed] in 2026 bills, 3483.120000 in 2025 bills, .000000 on payment lines) - all covered by [\\d,]*\\.\\d+.\nCredits print a TRAILING minus ('33,647.69-').\n\nLEDGER CODES SEEN (all 10 bills, complete - Ga-Segonyana's OWN codes, not copied from a sibling)\n  000517 ELECTRICITY      units = metered kWh EXACTLY, tariff 2.[number removed]  -> standard energy\n  000207 BASIC ELECTRICI  units 1.000, R3,483.12 (R3,681.66 from JUL 2026) -> other_r\n  000711 WATER            units = metered kL, tariff 32.75              -> water consumption\n  000411 BASIC WATER      units 1.000, R113.36 (R124.70 from JUL 2026)  -> water basic\n  000618 SEWERAGE         units = metered water kL, tariff 20.96        -> sewerage\n  008888 DIRECT DEPOSIT PAYMENT - THANK YOU, trailing minus             -> payments\n  009008 VAT (no date, no units)                                        -> tax line\nThere is NO rates code (Market Value prints 0.00), NO refuse code and NO interest code on this account, so those sections are absent by design rather than missed.\n\nNO +1 UNIT QUIRK: unlike Emalahleni, 000517 units equal the meter CONSUMPTION exactly on all 10 bills, and 000618/000711 units equal the WATER meter consumption exactly. Total kWh and Standard kWh therefore agree.\n\nPRIOR-PERIOD LINES: there are NONE in these 10 bills - no correction, rebate, adjustment, reversal or re-levy line of any kind; every dated levy line carries the current statement's own account date. So no include/exclude decision was needed. Because the '@' discriminator does not exist on this layout, the guard against a future one is the pair of catch-all rules gas_other_elec_r / gas_water_other_r / gas_sewer_other_r: any dated ledger line whose description contains ELECTRIC / WATER / SEWER on a code OTHER than the known ones is summed there, lands in Other Charges Rands, and shows up in the fill rates instead of being silently dropped. All three are 0/10 on this folder.\n\nNOT PRINTED ANYWHERE (mapped '_none'): tariff name, TOU bands (peak / off-peak kWh and Rands), demand kVA, NMD, cash, guarantee, security held, period start date, and any per-service or ex-VAT subtotal. Deposit prints as 0.00 on every bill (a real printed zero, not a miss).\n\nSITE NAME: Street = 'H/A STEWART & KERKSTRAAT 0' on all 10 bills; the 'Suburb:' label is present but its value is empty on every bill, so gas_suburb is 0/10 and site_name = concat(Street, Suburb) = 'H/A STEWART & KERKSTRAAT 0'. Consumer Name is always 'T FMC(PTY)LT'; the ERF Description ('09 [number removed] 000000 0000') is kept separately as gas_erf.\n\nRULE ZERO / RECONCILE IS CIRCULAR: the bill prints no per-service subtotal and no ex-VAT electricity total, so total_ex_vat_r (gas_elec_ex_r) is the SUM of the same 000517 + 000207 parts the Rand columns hold. The app's reconcile check therefore proves nothing here and is not claimed as evidence. The three GENUINE, non-circular checks used instead are:\n  (1) ELECTRICITY LINE IDENTITY - the ledger 000517 VALUE equals meter-table CONSUMPTION x printed TARIFF. Three separately printed numbers from two different tables; nothing in the chain is constructed by this profile. Max deviation 0.01 (per-line rounding) across all 10 bills.\n  (2) VAT - printed 009008 equals the sum of 15% of each vatable ledger line, rounded per line. Exact on all 10 bills.\n  (3) ROLL-FORWARD - Opening Balance + 008888 payments + all five levy lines + printed VAT = printed TOTAL DUE. Exact on all 10 bills.\n\nAGEING ROW is 6 money columns (120+ / 90 / 60 / 30 / CURRENT / TOTAL DUE). CURRENT is NOT the current levy: on 9 of 10 bills it happens to equal current charges incl VAT, but on the 31 JUL 2026 bill an overpayment (R67,192.81 against a R44,506.81 opening balance) is absorbed into it and CURRENT = 23,294.66 while current charges incl VAT = 45,980.66. So recon 'current_ex' is deliberately left unmapped.\n\nNOTE the mixed-case 'Opening Balance' on this layout. extract_recon compiles with re.M but NOT re.I, so every recon pattern below carries an inline (?i).",
+ "fingerprint": {
+  "all": [
+   "GASEGONYANA MUNICIPALITY",
+   "4890117197"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "requires Adobe Reader 8 or higher",
+   "Prepayment Account Update",
+   "EMALAHLENI LOCAL MUNICIPALITY",
+   "MODIMOLLE MOOKGOPHONG",
+   "ABAQULUSI MUNICIPALITY",
+   "ALFRED DUMA LOCAL MUNICIPALITY",
+   "BELA-BELA MUNICIPALITY",
+   "KWADUKUZA MUNICIPALITY",
+   "Phokwane Local Municipality"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "require": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]|^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000(?:517|207)[ \\t]"
+  },
+  "water": {
+   "overlay": true,
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "end": "^[ \\t]*009008[ \\t]+VAT[ \\t]",
+   "require": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000(?:711|411)[ \\t]"
+  },
+  "sewerage": {
+   "overlay": true,
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000618[ \\t]",
+   "end": "^[ \\t]*009008[ \\t]+VAT[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account Number:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gas_consumer_name",
+   "label": "Consumer Name",
+   "scope": "document",
+   "pattern": "Consumer Name:[ \\t]*(.+?)(?=[ \\t]{2,}|[ \\t]*$)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gas_street",
+   "label": "Street",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(.+?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gas_suburb",
+   "label": "Suburb (label present, value always empty)",
+   "scope": "document",
+   "pattern": "Suburb:[ \\t]+(\\S.*?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "gas_erf",
+   "label": "ERF Description",
+   "scope": "document",
+   "pattern": "ERF Description:[ \\t]+(.+?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2} [A-Z]{3} \\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gas_invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.?:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gas_internet_pin",
+   "label": "Internet PIN",
+   "scope": "document",
+   "pattern": "Internet PIN:[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "gas_market_value",
+   "label": "Market Value",
+   "scope": "document",
+   "pattern": "Market Value:[ \\t]+([\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gas_land_area",
+   "label": "Land Area",
+   "scope": "document",
+   "pattern": "Land Area:[ \\t]+([\\d,]*\\.\\d+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]+([\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "due_date",
+   "label": "Due Date",
+   "scope": "document",
+   "pattern": "TOTAL DUE ON OR BEFORE:?[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "total_due",
+   "label": "Total Due (remittance advice)",
+   "scope": "document",
+   "pattern": "^[ \\t]*TOTAL DUE:[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "vat_r",
+   "label": "VAT (009008)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*009008[ \\t]+VAT[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gas_opening_balance",
+   "label": "Opening Balance",
+   "scope": "document",
+   "pattern": "^[ \\t]*Opening Balance[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gas_payments_r",
+   "label": "Payments (008888, summed, signed)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+008888[ \\t]+[^\\n]*?[ \\t]((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "gas_age_120",
+    "gas_age_90",
+    "gas_age_60",
+    "gas_age_30",
+    "gas_age_current",
+    "gas_age_total_due"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Ageing row",
+   "scope": "document",
+   "pattern": "^[ \\t]*120\\+ DAYS[^\\n]*\\n[ \\t]*(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gas_vatable_r",
+   "label": "VAT base (every dated levy line: code not 008888/009008/009009)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?!008888|009008|009009)\\d{6}[ \\t]+[^\\n]*?[ \\t]((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meter number(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+ELECTRICITY[ \\t]",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "start_reading_kwh",
+   "label": "OLD READING kWh (summed over ELECTRICITY rows)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+((?<![\\d.])[\\d,]*\\.\\d{3})[ \\t]+[\\d,]*\\.\\d{3}",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "end_reading_kwh",
+   "label": "NEW READING kWh (summed over ELECTRICITY rows)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+((?<![\\d.])[\\d,]*\\.\\d{3})",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "gas_meter_kwh",
+   "label": "Meter-table CONSUMPTION kWh (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+((?<![\\d.])-?[\\d,]*\\.\\d{3}-?)",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "gas_read_types",
+   "label": "READING TYPE letter(s), as printed",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+([A-Z])[ \\t]+[\\d,]*\\.\\d{3}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "read_end",
+   "label": "READING DATE (single date, this layout)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+[A-Z][ \\t]",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "gas_energy_units",
+    "gas_energy_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "000517 ELECTRICITY energy (units + value)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000517[ \\t]+ELECTRICITY[ \\t]+((?<![\\d.,])-?[\\d,]*\\.\\d{3}-?)[ \\t]+[\\d,]*\\.\\d+[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gas_energy_rate",
+   "label": "000517 ELECTRICITY tariff (R/kWh, no collect - text/rate column)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000517[ \\t]+ELECTRICITY[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+([\\d,]*\\.\\d+)[ \\t]+(?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "gas_basic_elec_r",
+   "label": "000207 BASIC ELECTRICI",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000207[ \\t]+BASIC ELECTRICI[^\\n]*?[ \\t]((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gas_other_elec_r",
+   "label": "Catch-all: any OTHER ledger line whose description mentions ELECTRIC (guard, 0/10 here)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?!000517|000207)\\d{6}[ \\t]+[^\\n]*ELECTRIC[^\\n]*?[ \\t]((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gas_water_meter",
+   "label": "Water meter number",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+WATER[ \\t]",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "gas_water_kl",
+   "label": "Water meter CONSUMPTION kL (summed)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+WATER[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+((?<![\\d.])-?[\\d,]*\\.\\d{3}-?)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "gas_water_units",
+    "gas_water_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "000711 WATER consumption charge",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000711[ \\t]+WATER[ \\t]+((?<![\\d.,])-?[\\d,]*\\.\\d{3}-?)[ \\t]+[\\d,]*\\.\\d+[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gas_water_basic_r",
+   "label": "000411 BASIC WATER",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000411[ \\t]+BASIC WATER[^\\n]*?[ \\t]((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gas_water_other_r",
+   "label": "Catch-all: any OTHER WATER-described ledger line (guard, 0/10 here)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?!000711|000411)\\d{6}[ \\t]+[^\\n]*WATER[^\\n]*?[ \\t]((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "gas_sewer_units",
+    "gas_sewer_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "000618 SEWERAGE",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000618[ \\t]+SEWERAGE[ \\t]+((?<![\\d.,])-?[\\d,]*\\.\\d{3}-?)[ \\t]+[\\d,]*\\.\\d+[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gas_sewer_other_r",
+   "label": "Catch-all: any OTHER SEWER-described ledger line (guard, 0/10 here)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?!000618)\\d{6}[ \\t]+[^\\n]*SEWER[^\\n]*?[ \\t]((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "gas_site",
+   "op": "concat",
+   "of": [
+    "gas_street",
+    "gas_suburb"
+   ]
+  },
+  {
+   "field": "gas_other_r",
+   "op": "sum",
+   "of": [
+    "gas_basic_elec_r",
+    "gas_other_elec_r"
+   ]
+  },
+  {
+   "field": "gas_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "gas_energy_r",
+    "gas_basic_elec_r",
+    "gas_other_elec_r"
+   ]
+  },
+  {
+   "field": "gas_reading_diff_kwh",
+   "op": "diff",
+   "of": [
+    "end_reading_kwh",
+    "start_reading_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "gas_water_total_r",
+   "op": "sum",
+   "of": [
+    "gas_water_r",
+    "gas_water_basic_r",
+    "gas_water_other_r"
+   ]
+  },
+  {
+   "field": "gas_sewer_total_r",
+   "op": "sum",
+   "of": [
+    "gas_sewer_r",
+    "gas_sewer_other_r"
+   ]
+  },
+  {
+   "field": "gas_current_incl_vat_r",
+   "op": "sum",
+   "of": [
+    "gas_vatable_r",
+    "vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "gas_site",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "gas_read_types",
+  "read_start": "_none",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": [
+   "gas_meter_kwh",
+   "gas_energy_units"
+  ],
+  "peak_kwh": "_none",
+  "standard_kwh": "gas_energy_units",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "gas_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "gas_other_r",
+  "total_ex_vat_r": "gas_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?i)^[ \\t]*Opening Balance[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "(?i)^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+008888[ \\t]+DIRECT DEPOSIT PAYMENT[^\\n]*?[ \\t](-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "vat": "(?i)^[ \\t]*009008[ \\t]+VAT[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "total_due": "(?i)^[ \\t]*TOTAL DUE:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)",
+  "due_date": "(?i)TOTAL DUE ON OR BEFORE:?[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+  "deposito": "(?i)Deposit:[ \\t]+([\\d, ]+\\.\\d{2})"
+ }
+}

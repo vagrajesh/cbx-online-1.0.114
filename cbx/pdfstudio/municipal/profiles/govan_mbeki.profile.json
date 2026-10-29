@@ -1,0 +1,796 @@
+{
+ "profile_id": "govan_mbeki",
+ "profile_name": "Govan Mbeki Local Municipality (Secunda, Mpumalanga)",
+ "short_name": "Govan Mbeki",
+ "_doc": "GOVAN MBEKI LOCAL MUNICIPALITY (Secunda, Mpumalanga) - \"TAX INVOICE/STATEMENT OF ACCOUNT\".\nSame eMunsoft ledger family as KwaDukuza / Abaqulusi / Alfred Duma / Bela-Bela / Emalahleni /\nGa-Segonyana / Phokwane / Modimolle-Mookgophong / Steve Tshwete: masthead + \"TAX INVOICE/STATEMENT\nOF ACCOUNT\" heading, METER READINGS table, ACCOUNT DETAILS ledger, 009008 VAT line, 120+ DAYS\nageing row, REMITTANCE ADVICE / BANKING DETAILS footer, EasyPay barcode.\n\nFINGERPRINT: \"4000142424\" (the municipality's VAT number) OR \"GOVAN MBEKI MUNICIPALITY\" (masthead)\nOR \"Govan Mbeki Municipality\" (the BANKING DETAILS account name). Verified over the whole 221-PDF\nTelkom tree: all three strings occur in exactly the 12 Govan Mbeki bills and nowhere else. Note the\nVAT number is NOT written as the substring \"VAT No.:4000142424\" on the scans - OCR renders it\n\"VAT FAX: No.:4000142424\" - so the fingerprint uses the bare 10-digit number.\nDO NOT confuse with Emalahleni's VAT 4000142457: the first eight digits are identical, the\nsubstring test is not.\n\nTWO PHYSICAL SHAPES IN THE FOLDER\n- 10 of 12 bills (~118 KB, 2 pages) have an intact text layer.\n- 2 of 12 - GMM_MAR 2026.pdf and GMM_APR 2026.pdf (~675 KB) - are SCANNED IMAGES with no text\n  layer at all (0 chars via page.get_text, 8 images/page). read_pdf(ocr=\"auto\") returns ~2,185\n  chars of Tesseract output; every row from them is force-flagged with exception code OCR.\n  The scan resolution is fine - a 300 dpi render is perfectly legible to a human - but the bill's\n  two data tables are drawn with full gridlines, and Tesseract reads the rules as characters and\n  merges adjacent rows. On both scans the HEADER block and the REMITTANCE ADVICE footer come out\n  essentially clean, while the METER READINGS and ACCOUNT DETAILS tables are destroyed\n  (\"sioaraozs sroar2026 Jotooat [020085 [ELECTRIGITY-OFF-PEAK [WATER ...\").\n  DELIBERATE DECISION: this profile extracts NO money and NO consumption from a scanned page.\n  Every money/units pattern demands strict comma-grouped digits ending in exactly two decimals\n  (\"74,.126.50\" and \"8.678.00\" - both real OCR output here - yield nothing), so the two scanned\n  months come out with correct identity fields (account, site, statement date, invoice no, deposit,\n  due date, TOTAL DUE - all hand-verified against the page images) and BLANK consumption/charges,\n  with red required-misses in Diagnostics. See the report: one OCR'd figure happened to be right\n  and its neighbour on the same line was wrong, so there is no honest way to tell them apart.\n\nHEADER BLOCK (label:value pairs sharing lines, both shapes)\n  Account Number: [number removed]      Account Date: 22 AUG 2025   -> billing_date, kept as printed\n  Consumer Name: STREEKHOOFBESTUURDER(1TF)SEC AES             (Afrikaans for Regional Head Manager;\n                                                               identifies the department, not the site)\n  Tax Invoice No.: [number removed]   = account number + statement YYYYMM (-> gmm_invoice_period).\n                                        NOTE this is the STATEMENT month, one month AFTER the\n                                        consumption month the filename names.\n  Vat Registration No.: (blank on every bill)   ERF Description: 01032 [number removed] 000000 0000\n  Suburb: SECUNDA PROPER   Street: 1 VAN BELKUMSTRAAT   Market Value: 6,590,000.00\n  Land Area: 2679.0000   Deposit: 0.00   Internet PIN: [number removed]   Postal Code: 46\n  site_name = concat(Street, Suburb) = \"1 VAN BELKUMSTRAAT SECUNDA PROPER\". Consumer Name is kept\n  separately as gmm_consumer_name.\n\nMETER READINGS TABLE - SHAPE A of this family: METER NO. / METER TYPE / OLD READING / NEW READING /\nREADING DATE / READING TYPE / CONSUMPTION. ONE reading date only -> canonical End Date; there is no\nperiod start anywhere on the bill, so Start Date is \"_none\". (Shape B of the family - CONSUMPTION +\nLEVIED AMOUNT + a \"01/06/2026 - 01/07/2026\" range - does NOT occur here; checked all 12 bills.)\n  THE ROWS ARE IN RANDOM ORDER on every bill, so nothing may depend on row position.\n  Five meters, five rows, on all 12 bills:\n    [number removed]P  ELECTRICITY   -> the PEAK register     (suffix P)\n    [number removed]S        ELECTRICITY   -> the STANDARD register (suffix S)\n    [number removed]OP       ELECTRICITY   -> the OFF-PEAK register (suffix OP)\n    9999 [D23]       KVA           -> maximum demand: OLD .000, NEW = the kVA level, CONSUMPTION = NEW\n    3 [D124]         WATER         -> the water register (kL)\n  Meter numbers contain letters and brackets, so the meter token is a generic\n  \"\\S+(?:[ \\t]+\\[...\\])?\" rather than \"\\d{9,}\". The suffix->band mapping is PROVEN on all 12\n  bills (see identity 1) but is NOT used to fill the canonical band columns - those come from the\n  ledger codes. It is captured into gmm_peak_meter_kwh / gmm_std_meter_kwh / gmm_offpeak_meter_kwh\n  purely so the three-way cross-check can be run in a spreadsheet.\n  Start/End Reading kWh are the SUM of the three electricity registers (CoJ convention); their\n  difference equals Total kWh exactly on all 10 text bills.\n  READING TYPE letters: electricity + KVA are \"A\" on 12/12 (-> \"Actual\" via TRANSLATE's exact-match\n  path). WATER is \"E\" on 8 bills and \"M\" on 2 (NOV 2025, JAN 2026). \"M\" is NOT in TRANSLATE and is\n  NOT guessed at - it is passed through as printed on the water row. Water reading type never\n  touches the canonical electricity column.\n\nACCOUNT DETAILS LEDGER: DATE / CODE / DESCRIPTION / UNITS / TARIFF / VALUE. Every real levy prints\n\"@ <tariff>\" between UNITS and VALUE; VAT-able levies carry a \"*\" flag just before VALUE. Credits\nprint a TRAILING minus (\"245,356.34-\"). Money is comma-grouped with a period decimal throughout -\nno space thousands, no comma decimals.\n  The CODE column is NOT always six digits - RATES is coded \"00BUSS\" - so code patterns use\n  [0-9A-Z]{6} / explicit literals, never \\d{6}.\n  TARIFF PRECISION DRIFTS: bills up to JAN 2026 print 6 decimals (\".022461\", \"123.520000\"); from\n  FEB 2026 they print 8 decimals with comma grouping (\"0.[number removed]\", \"3,358.[number removed]\"). Tariff\n  patterns are therefore \"[\\d,]*\\.\\d+\".\n\nLEDGER CODES SEEN (complete, all 10 text bills + both scans read off the page images)\n  00BUSS  RATES                                units = Market Value @ 0.022461  -> rates. NO \"*\" flag.\n  020F01  ELECTRICITY NETWORK CHARGE           1.000 @ 123.52                   -> electricity, Other\n  020053  ELECTRICITY - PEAK                   units = P register consumption    -> Peak kWh / Rands\n  020054  ELECTRICITY - STANDARD               units = S register consumption    -> Standard kWh / Rands\n  020055  ELECTRICITY - OFF-PEAK               units = OP register consumption   -> Off-Peak kWh / Rands\n  020K54  ELECTRICITY KVA                      units = KVA register consumption  -> Demand kVA / Rands\n  020054  ELECTRICITY - STANDARD BASIC CHARGE  1.000 @ 3,358.06                 -> electricity, Other\n  010041  WATER                                units = water kL @ 38.16          -> water volumetric\n  010B41  BASIC WATER   1.000 @ 135.63                                           -> water availability\n  010B41  BASIC WATER   <kL> @ 1.23                                              -> water per-kL step\n  010F01  FIXED CHARGE / STAND BASIC CHARGE    1.000 @ 23.98                     -> water (see below)\n  070041  SEWERAGE                             units = water kL @ 13.41          -> sewerage volumetric\n  070B41  BASIC SEWERAGE                       1.000 @ 57.01                     -> sewerage availability\n  060044 / 060045  REFUSE                      3.000 @ 647.30 (060045 @ 798.58 on the MAY 2025 bill)\n  008888  DIRECT DEPOSIT PAYMENT - THANK YOU   trailing minus                    -> payments\n  009008  VAT                                                                    -> tax line\n  RATES ARITHMETIC: 6,590,000.000 @ 0.022461 = 148,017.99, but the printed VALUE is 12,334.83 -\n  EXACTLY one twelfth. The rates tariff is an ANNUAL rate levied monthly (UNITS x TARIFF / 12 ==\n  VALUE on 10/10 text bills). Every other levy line satisfies UNITS x TARIFF == VALUE to the cent\n  (130/130). Do not \"fix\" the rates column by multiplying valuation by tariff.\n  ONE CODE, TWO MEANINGS: 020054 is BOTH \"ELECTRICITY - STANDARD\" (energy) and \"ELECTRICITY -\n  STANDARD BASIC CHARGE\" (a flat monthly charge), and 010B41 is BOTH the R135.63 availability\n  charge and the per-kL step. The discriminators are structural, not positional: for 020054 the\n  description must be followed directly by the UNITS column (so \"STANDARD BASIC CHARGE\" cannot\n  match the energy rule), and for 010B41 the availability line is the one whose tariff has two or\n  more digits before the decimal point (135.63 vs 1.23). Both hold on 12/12.\n  010F01 \"FIXED CHARGE / STAND BASIC CHARGE\" is classified as WATER purely on its 010 code prefix\n  (020F01 is the electricity fixed charge, so F01 is \"fixed charge\" within each service family).\n  The wording could equally be a property/stand charge. It is kept in its own field\n  gmm_stand_basic_r so it can be moved to rates with a one-line canonical edit - flagged for Edwin.\n\nPRIOR-PERIOD LINES - NONE EXIST in these 12 bills. Every levy line is dated the statement date and\ncarries \"@ <tariff>\"; there is no correction, rebate, reversal or adjustment line anywhere, so no\ninclusion/exclusion decision was needed. Rather than assume that holds forever, each service has a\nCATCH-ALL guard field that sums any ledger line with that service's code prefix and an unrecognised\ndescription: gmm_other_elec_r (02x), gmm_water_other_r (01x), gmm_sewer_other_r (07x),\ngmm_refuse_other_r (06x), gmm_rates_other_r (00BUSS). All five are 0/12 on this folder. A future\ncorrection line lands in the guard field and in Other Charges instead of being silently dropped.\n\nRULE ZERO - RECONCILE IS CIRCULAR HERE AND I AM SAYING SO. The bill prints no per-service subtotal\nand no ex-VAT electricity total. total_ex_vat_r is the sum of the same five parts the Rand columns\nhold, so the app's \"peak+std+off+demand+other == total\" check is structurally true and would also\n\"pass\" with every column blank. The FOUR genuine checks, all against figures the extraction does\nnot construct:\n  1. THREE-WAY kWh IDENTITY: for each band, ledger UNITS == meter CONSUMPTION == NEW - OLD.\n     Exact (0.000) on all 10 text bills x 4 registers. This is the strongest check on the bill\n     because it ties the Rand columns to two independently printed number columns.\n  2. LINE ARITHMETIC: UNITS x TARIFF == VALUE, to the cent, on every levy line of all 10 text bills.\n  3. VAT IDENTITY: printed 009008 VAT == 15% of gmm_vatable_r (the sum of every \"*\"-flagged line;\n     RATES is excluded because it carries no \"*\"). Max deviation R0.03 over the folder - per-line\n     rounding.\n  4. ROLL-FORWARD: OPENING BALANCE + payments + RATES + every \"*\" line + printed VAT == printed\n     CLOSING BALANCE. Closes to R0.00 on all 10 text bills. Exposed as gmm_rollforward_r so it can\n     be compared with gmm_closing_balance in one spreadsheet column.\n  5. FIVE-SERVICE SUM: electricity_ex + water_total + sewer_total + refuse_total + rates_total ==\n     gmm_vatable_r + gmm_rates_ex_r (the ledger's own levy sum, built by two completely different\n     document-scope rules). R0.00 on all 10 text bills. This is the check that caught a\n     catch-all-guard regex bug the app's reconcile check happily reported as OK.\n  6. TWO CROSS-MONTH CHAINS: each bill's CLOSING BALANCE == the next bill's OPENING BALANCE\n     (11 of 11 links exact, including both scans via their extracted TOTAL DUE), and each bill's\n     summed END reading == the next bill's summed START reading (9 of 9 links exact).\n\nGUARD-FIELD REGEX TRAP (recorded so it is not reintroduced): the five catch-all guards must be\nwritten \"<code>[ \t](?![ \t]*(?:KNOWN|DESCRIPTIONS)[ \t])\", NOT \"<code>[ \t]+(?!KNOWN...)\".\nWith [ \t]+ the engine backtracks to a single space and the negative lookahead then sees\n\" ELECTRICITY - PEAK\" instead of \"ELECTRICITY - PEAK\", so it succeeds and the guard swallows every\nknown line. That put the whole electricity charge into gmm_other_elec_r (R178,411.41) and doubled\ntotal_ex_vat_r - and the app's reconcile check still said OK, because other_r and total_ex_vat_r\nare built from the same parts. Identity 5 is what exposed it.\n\nAGEING ROW is 6 money columns (120+/90/60/30/CURRENT/CLOSING BALANCE). On this account the previous\nbalance is settled in full every month, so CURRENT == CLOSING BALANCE == TOTAL DUE on all 10 text\nbills - but CURRENT is still a net BALANCE, not the current levy, so recon \"current_ex\" is left\nunmapped (the bill prints no ex-VAT current-charges figure). recon \"subtotal\" reads the CLOSING\nBALANCE column via a 5-groups-skipped pattern (extract_recon only ever takes capture group 1).\n\nNOT PRINTED ANYWHERE (mapped \"_none\"): tariff name, period start date, NMD kVA, NMD Rands, cash,\nguarantee, security held. Deposit is printed and is 0.00 on all 12 bills - a real zero, not a miss.\n\nKNOWN APP LIMITATION (not fixable in a profile): _exc_date cannot parse \"22 AUG 2025\", the only\nstatement-date format this bill prints, so DUE<BILL / BILL-FUTURE / BILL-OLD can never fire on\nGovan Mbeki rows. Adding \"%d %b %Y\" to _exc_date's format list would fix it for this whole family.\n",
+ "fingerprint": {
+  "all": [],
+  "any": [
+   "4000142424",
+   "GOVAN MBEKI MUNICIPALITY",
+   "Govan Mbeki Municipality"
+  ],
+  "reject_if_text": [
+   "requires Adobe Reader 8 or higher",
+   "Prepayment Account Update"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$|^[ \\t]*ACCOUNT DETAILS[ \\t]*$|^[ \\t]*METERNO\\.",
+   "require": "ELECTRI[CG]IT[YV]"
+  },
+  "water": {
+   "overlay": true,
+   "start": "^[ \\t]*(?:\\S+(?:[ \\t]+\\[[^\\]\\n]+\\])?)[ \\t]+WATER[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$|^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+010(?:041|B41|F01)[ \\t]",
+   "end": "^[ \\t]*009008[ \\t]+VAT[ \\t]"
+  },
+  "sewerage": {
+   "overlay": true,
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+070(?:041|B41)[ \\t]",
+   "end": "^[ \\t]*009008[ \\t]+VAT[ \\t]"
+  },
+  "refuse": {
+   "overlay": true,
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+06[0-9A-Z]{4}[ \\t]+REFUSE[ \\t]",
+   "end": "^[ \\t]*009008[ \\t]+VAT[ \\t]"
+  },
+  "rates": {
+   "overlay": true,
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+00BUSS[ \\t]",
+   "end": "^[ \\t]*009008[ \\t]+VAT[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account Number:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gmm_consumer_name",
+   "label": "Consumer Name",
+   "scope": "document",
+   "pattern": "Consumer Name:[ \\t]*(.+?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gmm_street",
+   "label": "Street",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(.+?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gmm_suburb",
+   "label": "Suburb",
+   "scope": "document",
+   "pattern": "Suburb:[ \\t]+(.+?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gmm_erf",
+   "label": "ERF Description",
+   "scope": "document",
+   "pattern": "ERF Description:[ \\t]+(.+?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2} [A-Z]{3} \\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gmm_invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gmm_invoice_period",
+   "label": "Invoice period (YYYYMM in the invoice no)",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.:[ \\t]*\\d{6,}(20\\d{2}(?:0[1-9]|1[0-2]))(?![\\d])",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "gmm_market_value",
+   "label": "Market Value",
+   "scope": "document",
+   "pattern": "Market Value:[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gmm_land_area",
+   "label": "Land Area",
+   "scope": "document",
+   "pattern": "Land Area:[ \\t]+([\\d,]+\\.\\d+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gmm_internet_pin",
+   "label": "Internet PIN",
+   "scope": "document",
+   "pattern": "Internet PIN:[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "gmm_postal_code",
+   "label": "Postal Code",
+   "scope": "document",
+   "pattern": "Postal Code:[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "due_date",
+   "label": "Total Due On Or Before",
+   "scope": "document",
+   "pattern": "ON OR[^\\n]*?(\\d{2}/\\d{2}/\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "total_due",
+   "label": "Total Due",
+   "scope": "document",
+   "pattern": "TOTAL DUE:[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "vat_r",
+   "label": "VAT (009008)",
+   "scope": "document",
+   "pattern": "^[ \\t]*009008[ \\t]+VAT[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gmm_opening_balance",
+   "label": "Opening Balance",
+   "scope": "document",
+   "pattern": "^[ \\t]*OPENING BALANCE[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gmm_payments_r",
+   "label": "Payments (008888)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+008888[ \\t]+[^\\n]*?[ \\t]((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "gmm_age_120",
+    "gmm_age_90",
+    "gmm_age_60",
+    "gmm_age_30",
+    "gmm_age_current",
+    "gmm_closing_balance"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Ageing row",
+   "scope": "document",
+   "pattern": "^[ \\t]*120\\+ DAYS[^\\n]*\\n[ \\t]*((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gmm_rates_ex_r",
+   "label": "RATES value (00BUSS, document scope - feeds the roll-forward)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+00BUSS[ \\t]+RATES[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gmm_vatable_r",
+   "label": "VAT base (every '*'-flagged levy line)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+[0-9A-Z]{6}[ \\t]+[^\\n]*?\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meter numbers",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(\\S+(?:[ \\t]+\\[[^\\]\\n]+\\])?)[ \\t]+ELECTRICITY[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})[ \\t]+[A-Z][ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "gmm_start_reading",
+    "gmm_end_reading",
+    "gmm_meter_kwh"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "Electricity registers (OLD/NEW/CONSUMPTION, summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\S+(?:[ \\t]+\\[[^\\]\\n]+\\])?)[ \\t]+ELECTRICITY[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})[ \\t]+[A-Z][ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "read_end",
+   "label": "Reading date",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:\\S+(?:[ \\t]+\\[[^\\]\\n]+\\])?)[ \\t]+ELECTRICITY[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+[A-Z][ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "gmm_reading_type",
+   "label": "Reading type letter(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(?:\\S+(?:[ \\t]+\\[[^\\]\\n]+\\])?)[ \\t]+ELECTRICITY[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})[ \\t]+([A-Z])[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "gmm_peak_meter_kwh",
+   "label": "Meter consumption, register ...P",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d+P[ \\t]+ELECTRICITY[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "gmm_std_meter_kwh",
+   "label": "Meter consumption, register ...S",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d+S[ \\t]+ELECTRICITY[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "gmm_offpeak_meter_kwh",
+   "label": "Meter consumption, register ...OP",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d+OP[ \\t]+ELECTRICITY[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "gmm_kva_meter",
+   "label": "kVA meter number",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(\\S+(?:[ \\t]+\\[[^\\]\\n]+\\])?)[ \\t]+KVA[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})[ \\t]+[A-Z][ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "gmm_kva_old",
+    "gmm_kva_new",
+    "gmm_kva_meter_cons"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "kVA register (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\S+(?:[ \\t]+\\[[^\\]\\n]+\\])?)[ \\t]+KVA[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})[ \\t]+[A-Z][ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "gmm_peak_kwh",
+    "gmm_peak_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "020053 ELECTRICITY - PEAK",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+020053[ \\t]+ELECTRICITY - PEAK[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "gmm_standard_kwh",
+    "gmm_standard_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "020054 ELECTRICITY - STANDARD",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+020054[ \\t]+ELECTRICITY - STANDARD[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "gmm_offpeak_kwh",
+    "gmm_offpeak_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "020055 ELECTRICITY - OFF-PEAK",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+020055[ \\t]+ELECTRICITY - OFF-PEAK[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "gmm_demand_kva",
+    "gmm_demand_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "020K54 ELECTRICITY KVA",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+020K54[ \\t]+ELECTRICITY KVA[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "gmm_std_basic_units",
+    "gmm_std_basic_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "020054 ELECTRICITY - STANDARD BASIC CHARGE",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+020054[ \\t]+ELECTRICITY - STANDARD BASIC CHARGE[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "gmm_network_units",
+    "gmm_network_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "020F01 ELECTRICITY NETWORK CHARGE",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+020F01[ \\t]+ELECTRICITY NETWORK CHARGE[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "gmm_other_elec_r",
+   "label": "Any other 02x electricity ledger line (guard)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+02[0-9A-Z]{4}[ \\t](?![ \\t]*(?:ELECTRICITY - PEAK|ELECTRICITY - STANDARD|ELECTRICITY - OFF-PEAK|ELECTRICITY KVA|ELECTRICITY - STANDARD BASIC CHARGE|ELECTRICITY NETWORK CHARGE)[ \\t])[^\\n]*?[ \\t]((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gmm_elec_tariffs",
+   "label": "Energy/demand tariffs (R per unit)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+020(?:053|054|055|K54)[ \\t]+ELECTRICITY[^\\n]*?[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*([\\d,]*\\.\\d+)[ \\t]+\\*",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "gmm_water_meter",
+   "label": "Water meter number",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(\\S+(?:[ \\t]+\\[[^\\]\\n]+\\])?)[ \\t]+WATER[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})[ \\t]+[A-Z][ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "gmm_water_start",
+    "gmm_water_end",
+    "gmm_water_meter_kl"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "Water register (summed)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\S+(?:[ \\t]+\\[[^\\]\\n]+\\])?)[ \\t]+WATER[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})[ \\t]+[A-Z][ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "gmm_water_read_date",
+   "label": "Water reading date",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*(?:\\S+(?:[ \\t]+\\[[^\\]\\n]+\\])?)[ \\t]+WATER[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+[A-Z][ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "gmm_water_reading_type",
+   "label": "Water reading type",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(?:\\S+(?:[ \\t]+\\[[^\\]\\n]+\\])?)[ \\t]+WATER[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})[ \\t]+([A-Z])[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "gmm_water_usage_kl",
+    "gmm_water_usage_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "010041 WATER (volumetric)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+010041[ \\t]+WATER[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gmm_water_basic_r",
+   "label": "010B41 BASIC WATER - availability charge (tariff >= R10)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+010B41[ \\t]+BASIC WATER[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*\\d{2,}(?:,\\d{3})*\\.\\d+[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "gmm_water_step_kl",
+    "gmm_water_step_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "010B41 BASIC WATER - per-kL step (tariff < R10)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+010B41[ \\t]+BASIC WATER[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*\\d\\.\\d+[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gmm_stand_basic_r",
+   "label": "010F01 FIXED CHARGE / STAND BASIC CHARGE",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+010F01[ \\t]+FIXED CHARGE / STAND BASIC CHARGE[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gmm_water_other_r",
+   "label": "Any other 01x water ledger line (guard)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+01[0-9A-Z]{4}[ \\t](?![ \\t]*(?:WATER|BASIC WATER|FIXED CHARGE / STAND BASIC CHARGE)[ \\t])[^\\n]*?[ \\t]((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "gmm_sewer_kl",
+    "gmm_sewer_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "070041 SEWERAGE (volumetric)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+070041[ \\t]+SEWERAGE[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gmm_sewer_basic_r",
+   "label": "070B41 BASIC SEWERAGE",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+070B41[ \\t]+BASIC SEWERAGE[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gmm_sewer_other_r",
+   "label": "Any other 07x sewer ledger line (guard)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+07[0-9A-Z]{4}[ \\t](?![ \\t]*(?:SEWERAGE|BASIC SEWERAGE)[ \\t])[^\\n]*?[ \\t]((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "gmm_refuse_units",
+    "gmm_refuse_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "06xxxx REFUSE",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+06[0-9A-Z]{4}[ \\t]+REFUSE[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+\\*[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gmm_refuse_other_r",
+   "label": "Any other 06x refuse ledger line (guard)",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+06[0-9A-Z]{4}[ \\t](?![ \\t]*(?:REFUSE)[ \\t])[^\\n]*?[ \\t]((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "gmm_rates_valuation",
+    "gmm_rates_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "00BUSS RATES",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+00BUSS[ \\t]+RATES[ \\t]+((?<![\\d.,])\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*(?:[\\d,]*\\.\\d+-?)[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "gmm_rates_tariff",
+   "label": "Rates tariff (c/R of value)",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+00BUSS[ \\t]+RATES[ \\t]+(?:\\d*(?:,\\d{3})*\\.\\d{3})[ \\t]+@[ \\t]*([\\d,]*\\.\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "gmm_rates_other_r",
+   "label": "Any other 00BUSS ledger line (guard)",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+00BUSS[ \\t](?![ \\t]*(?:RATES)[ \\t])[^\\n]*?[ \\t]((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "gmm_site",
+   "op": "concat",
+   "of": [
+    "gmm_street",
+    "gmm_suburb"
+   ]
+  },
+  {
+   "field": "gmm_other_r",
+   "op": "sum",
+   "of": [
+    "gmm_network_r",
+    "gmm_std_basic_r",
+    "gmm_other_elec_r"
+   ]
+  },
+  {
+   "field": "gmm_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "gmm_peak_r",
+    "gmm_standard_r",
+    "gmm_offpeak_r",
+    "gmm_demand_r",
+    "gmm_other_r"
+   ]
+  },
+  {
+   "field": "gmm_ledger_total_kwh",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "gmm_peak_kwh",
+    "gmm_standard_kwh",
+    "gmm_offpeak_kwh"
+   ]
+  },
+  {
+   "field": "gmm_reading_diff_kwh",
+   "op": "diff",
+   "as": "number",
+   "of": [
+    "gmm_end_reading",
+    "gmm_start_reading"
+   ]
+  },
+  {
+   "field": "gmm_water_total_r",
+   "op": "sum",
+   "of": [
+    "gmm_water_usage_r",
+    "gmm_water_basic_r",
+    "gmm_water_step_r",
+    "gmm_stand_basic_r",
+    "gmm_water_other_r"
+   ]
+  },
+  {
+   "field": "gmm_sewer_total_r",
+   "op": "sum",
+   "of": [
+    "gmm_sewer_r",
+    "gmm_sewer_basic_r",
+    "gmm_sewer_other_r"
+   ]
+  },
+  {
+   "field": "gmm_refuse_total_r",
+   "op": "sum",
+   "of": [
+    "gmm_refuse_r",
+    "gmm_refuse_other_r"
+   ]
+  },
+  {
+   "field": "gmm_rates_total_r",
+   "op": "sum",
+   "of": [
+    "gmm_rates_r",
+    "gmm_rates_other_r"
+   ]
+  },
+  {
+   "field": "gmm_current_levy_ex_r",
+   "op": "sum",
+   "of": [
+    "gmm_vatable_r",
+    "gmm_rates_ex_r"
+   ]
+  },
+  {
+   "field": "gmm_current_levy_inc_r",
+   "op": "sum",
+   "of": [
+    "gmm_vatable_r",
+    "gmm_rates_ex_r",
+    "vat_r"
+   ]
+  },
+  {
+   "field": "gmm_rollforward_r",
+   "op": "sum",
+   "of": [
+    "gmm_opening_balance",
+    "gmm_payments_r",
+    "gmm_vatable_r",
+    "gmm_rates_ex_r",
+    "vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "gmm_site",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "gmm_reading_type",
+  "read_start": "_none",
+  "read_end": "read_end",
+  "start_reading_kwh": "gmm_start_reading",
+  "end_reading_kwh": "gmm_end_reading",
+  "total_kwh": [
+   "gmm_meter_kwh",
+   "gmm_ledger_total_kwh"
+  ],
+  "peak_kwh": "gmm_peak_kwh",
+  "standard_kwh": "gmm_standard_kwh",
+  "offpeak_kwh": "gmm_offpeak_kwh",
+  "demand_kva": [
+   "gmm_demand_kva",
+   "gmm_kva_meter_cons"
+  ],
+  "nmd_kva": "_none",
+  "peak_r": "gmm_peak_r",
+  "standard_r": "gmm_standard_r",
+  "offpeak_r": "gmm_offpeak_r",
+  "demand_r": "gmm_demand_r",
+  "nmd_r": "_none",
+  "other_r": "gmm_other_r",
+  "total_ex_vat_r": "gmm_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?i)^[ \\t]*OPENING BALANCE[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "(?i)^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+008888[ \\t]+DIRECT DEPOSIT PAYMENT[^\\n]*?[ \\t]((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+  "vat": "(?i)^[ \\t]*009008[ \\t]+VAT[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+  "subtotal": "(?i)^[ \\t]*120\\+ DAYS[^\\n]*\\n[ \\t]*(?:(?:-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]+){5}((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+  "total_due": "(?i)TOTAL DUE:[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)",
+  "due_date": "(?i)ON OR[^\\n]*?(\\d{2}/\\d{2}/\\d{4})",
+  "deposito": "(?i)Deposit:[ \\t]+((?<![\\d.,])-?\\d{1,3}(?:,\\d{3})*\\.\\d{2}-?)"
+ }
+}

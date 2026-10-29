@@ -1,0 +1,164 @@
+{
+ "profile_id": "letsemeng",
+ "profile_name": "Letsemeng Local Municipality (Koffiefontein, Free State)",
+ "short_name": "Letsemeng",
+ "_doc": "Letsemeng LM (Koffiefontein) bilingual 'TAX INVOICE / BELASTINGFAKTUUR' ledger (Date / Description / VAT / Debit / Credit / Balance, comma decimals, space thousands), service group headings, and a meter detail row (meter, factor, date from/to, units, '<kWh>KW - [from to]' (may wrap), reading type, Exclusive). Electricity = 'Electricity Consumed/Elektrisiteit Verbruik <kWh>KW' (ex = Debit - VAT -> standard). Fingerprint: own VAT number + name. One bill (older 'TAX INVOICE / STATEMENT' print, payment allocations only) has no electricity charge, so it yields no electricity row; account/date patterns cover that print too. IDENTITY x_exclusive = the meter row's printed Exclusive amount: 0.00 on 8 of 10, 0.01 on 2 (VAT rounding). 11 bills checked.",
+ "fingerprint": {
+  "all": [
+   "4000846396"
+  ],
+  "any": [
+   "Letsemeng Local Municipality"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity Consumption[ \\t]*$",
+   "require": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumed/"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Reference / Account",
+   "scope": "document",
+   "patterns": [
+    "Reference:[ \\t]+(\\d{4,}-\\d{4,})",
+    "Account(?: Number:)?[ \\t]+(\\d{4,}-\\d{4,})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "patterns": [
+    "Statement Date/Staat Datum:[ \\t]+(\\d{1,2} [A-Za-z]+ \\d{4})",
+    "Statement Date:[ \\t]+(\\d{4}/\\d{2}/\\d{2})"
+   ],
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "ls_month",
+   "label": "Month",
+   "scope": "document",
+   "pattern": "Month/Maand:[ \\t]+([A-Za-z]+ \\d{4})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "site_name",
+   "label": "Street No (site)",
+   "scope": "document",
+   "pattern": "Street No/ Straat Nr[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "ls_kwh",
+    "ls_vat",
+    "ls_debit"
+   ],
+   "label": "Electricity Consumed (kWh, VAT, Debit)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumed/Elektrisiteit Verbruik[ \\t]+(\\d[\\d ]*(?:,\\d+)?)KW\\b[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "meter",
+    "read_start",
+    "read_end",
+    "reading_type",
+    "x_exclusive"
+   ],
+   "label": "Electricity meter detail row",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+\\d+[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]+(\\d{2}-\\d{2}-\\d{4})[^\\n]*?KW[ \\t]*-[^\\n]*?[ \\t]{2,}(Actual|Average|Estimated?|Interim)[ \\t]+(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]*$",
+   "types": [
+    "text",
+    "date",
+    "date",
+    "text",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "start_r",
+    "end_r"
+   ],
+   "label": "Readings [from to]",
+   "scope": "section:electricity",
+   "patterns": [
+    "KW[ \\t]*-[ \\t]*\\[(\\d[\\d,.]*) to[ \\t]+(\\d[\\d,.]*)\\]",
+    "KW[ \\t]*-[ \\t]*\\[(\\d[\\d,.]*) to[ \\t]{2,}[^\\n]*\\n[^\\n]*?[ \\t](\\d[\\d,.]*)\\][ \\t]*$"
+   ],
+   "types": [
+    "number",
+    "number"
+   ],
+   "required": false
+  },
+  {
+   "field": "ls_interest",
+   "label": "Interest",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Interest[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]*$",
+   "types": [
+    "money"
+   ],
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "ls_total_ex",
+   "op": "sub",
+   "of": [
+    "ls_debit",
+    "ls_vat"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_r",
+  "end_reading_kwh": "end_r",
+  "total_kwh": "ls_kwh",
+  "standard_kwh": "ls_kwh",
+  "standard_r": "ls_total_ex",
+  "total_ex_vat_r": "ls_total_ex",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "_none",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "tariff_name": "_none"
+ }
+}

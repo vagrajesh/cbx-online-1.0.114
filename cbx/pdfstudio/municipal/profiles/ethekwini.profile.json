@@ -1,0 +1,655 @@
+{
+  "profile_id": "ethekwini",
+  "profile_name": "eThekwini",
+  "short_name": "eThekwini",
+  "_doc": "eThekwini / Durban Metro Bill, Bulk Electricity TOU. Energy Peak/Standard/Off-peak captured individually from the Description block (kWh + rand each). Demand from Network Demand charge; NAC from Network Access charge; NMD from header.",
+  "fingerprint": {
+    "all": [
+      "THE METRO BILL"
+    ],
+    "any": [
+      "durban.gov.za",
+      "Bulk Electricity",
+      "Metro Bill account"
+    ]
+  },
+  "sections": {
+    "electricity": {
+      "start": "Bulk Electricity\\nFor Bulk Electricity|^\\s*Business And Residential Electricity\\s*$"
+    },
+    "water": {
+      "start": "^Water and Sanitation\\s*$"
+    },
+    "sewerage": {
+      "start": "^Sewage Disposal\\s*$"
+    },
+    "rates": {
+      "start": "^Rates\\s*$"
+    }
+  },
+  "canonical": {
+    "deposit_r": "deposit",
+    "guarantee_r": "guarantee",
+    "site_name": "supply_desc",
+    "tariff_name": "tariff",
+    "reading_type": "sm_reading_type",
+    "days": "sm_days",
+    "total_kwh": "total_kwh",
+    "peak_kwh": "peak_kwh",
+    "standard_kwh": "std_kwh_out",
+    "offpeak_kwh": "offpeak_kwh",
+    "peak_r": "peak_r",
+    "standard_r": "std_r_out",
+    "offpeak_r": "offpeak_r",
+    "demand_kva": "demand_kva_out",
+    "demand_r": "demand_r_out",
+    "nmd_kva": "nmd_kva",
+    "nmd_r": "nac_r",
+    "meter": "meter_out",
+    "read_start": "read_start_out",
+    "read_end": "read_end_out",
+    "start_reading_kwh": "start_reading_out",
+    "end_reading_kwh": "end_reading_out",
+    "other_r": "other_out",
+    "total_ex_vat_r": "elec_ex_out"
+  },
+  "fields": [
+    {
+      "field": "invoice_number",
+      "label": "Tax Invoice No",
+      "scope": "document",
+      "pattern": "Tax Invoice No\\.?\\s*:\\s*(\\S+)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "account_number",
+      "label": "Account Number",
+      "scope": "document",
+      "patterns": [
+        "(\\d{11})\\s+4680101146",
+        "Account Number[^\\n]*\\n\\s*\\d{4}/\\d{2}/\\d{2}\\s+(\\d{11})"
+      ],
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "billing_date",
+      "label": "Bill Date",
+      "scope": "document",
+      "pattern": "Your Bill Details.*?\\n.*?\\n\\s*(\\d{4}/\\d{2}/\\d{2})",
+      "type": "date",
+      "required": true
+    },
+    {
+      "field": "due_date",
+      "label": "Due Date",
+      "scope": "document",
+      "pattern": "payable by (\\d{4}/\\d{2}/\\d{2})",
+      "type": "date",
+      "required": false
+    },
+    {
+      "field": "deposit",
+      "label": "Deposit",
+      "scope": "document",
+      "pattern": "Deposit \\(R\\)\\s*\\n.*?\\s([\\d,]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "guarantee",
+      "label": "Guarantee",
+      "scope": "document",
+      "pattern": "Guarantee \\(R\\).*?\\n\\s*\\S+\\s+\\d+\\s+\\d+\\s+([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "total_current_r",
+      "label": "Total Current Charges",
+      "scope": "document",
+      "pattern": "Total current month's charges\\s+([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": true
+    },
+    {
+      "field": "total_due",
+      "label": "Total",
+      "scope": "document",
+      "pattern": "Total\\s+([\\d,]+\\.\\d{2})\\s*\\n-{5,}",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "reference",
+      "label": "Supply Reference",
+      "scope": "section:electricity",
+      "pattern": "Reference - (\\d+)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "supply_desc",
+      "label": "Supply Location",
+      "scope": "section:electricity",
+      "patterns": [
+        "Reference - \\d+\\s*,\\s*(.+?)\\s*,",
+        "Reference - \\w+ (.+?)\\s*$"
+      ],
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "meter",
+      "label": "Meter No",
+      "scope": "section:electricity",
+      "pattern": "^(\\d+)\\s+\\|Energy Std",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "nmd_kva",
+      "label": "Notified Max Demand kVA",
+      "scope": "section:electricity",
+      "pattern": "Notified Maximum Demand\\s+\\|\\s+([\\d.]+)",
+      "type": "number",
+      "required": false
+    },
+    {
+      "field": "supply_voltage",
+      "label": "Supply Voltage",
+      "scope": "section:electricity",
+      "pattern": "Supply Voltage\\s+\\|\\s+(\\d+)V",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "read_start",
+        "read_end"
+      ],
+      "label": "Meter Reading Period",
+      "scope": "section:electricity",
+      "pattern": "Meter reading period from (\\d{4}/\\d{2}/\\d{2}) to (\\d{4}/\\d{2}/\\d{2})",
+      "type": "date",
+      "required": false
+    },
+    {
+      "fields": [
+        "peak_kwh",
+        "peak_rate",
+        "peak_r"
+      ],
+      "types": [
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "Peak kWh/rate/R",
+      "scope": "section:electricity",
+      "pattern": "Active energy - peak\\s+([\\d.]+) kWh\\s+([\\d.]+) /kWh\\s+([\\d,]+\\.\\d{2})",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "standard_kwh",
+        "standard_rate",
+        "standard_r"
+      ],
+      "types": [
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "Standard kWh/rate/R",
+      "scope": "section:electricity",
+      "pattern": "Active energy - standard\\s+([\\d.]+) kWh\\s+([\\d.]+) /kWh\\s+([\\d,]+\\.\\d{2})",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "offpeak_kwh",
+        "offpeak_rate",
+        "offpeak_r"
+      ],
+      "types": [
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "Off-peak kWh/rate/R",
+      "scope": "section:electricity",
+      "pattern": "Active energy - off-peak\\s+([\\d.]+) kWh\\s+([\\d.]+) /kWh\\s+([\\d,]+\\.\\d{2})",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "demand_kva",
+        "demand_rate",
+        "demand_r"
+      ],
+      "types": [
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "Network Demand kVA/rate/R",
+      "scope": "section:electricity",
+      "pattern": "Network Demand charge\\s+([\\d.]+) kVA\\s+([\\d.]+) /kVA\\s+([\\d,]+\\.\\d{2})",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "nac_kva",
+        "nac_rate",
+        "nac_r"
+      ],
+      "types": [
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "Network Access kVA/rate/R",
+      "scope": "section:electricity",
+      "pattern": "Network Access charge\\s+([\\d.]+) kVA\\s+([\\d.]+) /kVA\\s+([\\d,]+\\.\\d{2})",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "volt_surcharge_base",
+        "volt_surcharge_pct",
+        "volt_surcharge_r"
+      ],
+      "types": [
+        "money",
+        "number",
+        "money"
+      ],
+      "label": "Voltage Surcharge base/%/R",
+      "scope": "section:electricity",
+      "pattern": "Voltage Surcharge\\s+R ([\\d.]+)\\s+([\\d.]+)%\\s+([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "service_r",
+      "label": "Service Charge R",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "(?<!Less : )(?<!Less:)Service charge(?: for estimated consumption)?\\s+-\\s+[\\d.]+ p\\.m\\s+([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "elec_ex_r",
+      "label": "Sub-total (Ex VAT)",
+      "scope": "section:electricity",
+      "pattern": "Sub-total\\s+([\\d,]+\\.\\d{2})\\s*\\n\\s*(?:\\d+\\s+)?VAT raised",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "elec_vat_r",
+      "label": "VAT on Bulk Electricity",
+      "scope": "section:electricity",
+      "pattern": "VAT [Rr]aised on items marked with (?:an asterisk\\s*\\(\\*\\)|ASTERISK\\(\\*\\))\\s+([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "elec_total_r",
+      "label": "Total Bulk Electricity (Inc VAT)",
+      "scope": "section:electricity",
+      "pattern": "Total Bulk Electricity\\s+([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "tariff",
+      "label": "Tariff",
+      "scope": "section:electricity",
+      "pattern": "Reference - [^\\n]+\\n\\s*([A-Z][^\\n|]{3,60}?)\\s*$",
+      "type": "text",
+      "required": false
+    },
+    {
+      "fields": [
+        "b_start_reading",
+        "b_end_reading"
+      ],
+      "label": "Bulk: Std register readings",
+      "scope": "section:electricity",
+      "pattern": "\\|Energy Std\\s+\\|\\d{4}/\\d{2}/\\d{2}\\|\\s*([\\d.]+)\\|\\d{4}/\\d{2}/\\d{2}\\|\\s*([\\d.]+)\\|",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "sm_meter",
+        "sm_read_start",
+        "sm_start_reading",
+        "sm_read_end",
+        "sm_end_reading"
+      ],
+      "label": "Small: meter row",
+      "scope": "section:electricity",
+      "pattern": "^(\\w+)\\s*\\|Energy\\s+\\|(\\d{4}/\\d{2}/\\d{2})\\|\\s*([\\d.]+)\\|(\\d{4}/\\d{2}/\\d{2})\\|\\s*([\\d.]+)\\|",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "sm_usage_basic_kwh",
+      "label": "Small: Basic register kWh (Two-Rate)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "\\|Energy Basic\\|[^\\n]*\\|\\s*([\\d.]+) kWh\\|",
+      "type": "number",
+      "required": false
+    },
+    {
+      "field": "sm_usage_kwh",
+      "label": "Small: usage kWh",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "\\|\\s*([\\d.]+) kWh\\|",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "sm_energy_kwh",
+        "sm_energy_r"
+      ],
+      "types": [
+        "number",
+        "money"
+      ],
+      "label": "Small: energy charge",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^(?!Less)[^\\n]*?Energy charge(?:\\s*-\\s*[\\w/]+)?(?: for \\w+)?(?: consumption)?\\s+([\\d.]+) kWh\\s+[\\d.]+ /kWh\\s+([\\d,]+\\.\\d{2}(?:Cr)?)",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "sm_demand_kva",
+        "sm_demand_rate",
+        "sm_demand_r"
+      ],
+      "types": [
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "Small: maximum demand charge",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^(?!Less)[^\\n]*?Maximum Demand charge\\s+([\\d.]+) kVA\\s+([\\d.]+) /kVA\\s+([\\d,]+\\.\\d{2}(?:Cr)?)",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "sm_demand_cr",
+      "label": "Small: demand discount",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "Restricted Demand discount[^\\n]*?([\\d,]+\\.\\d{2}Cr)",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "sm_basic_kwh",
+      "label": "Small: basic-energy kWh",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^(?!Less)[^\\n]*?Energy Charge\\s*-\\s*Basic[^\\n]*?([\\d.]+) kWh",
+      "type": "number",
+      "required": false
+    },
+    {
+      "field": "sm_energy_cr",
+      "label": "Small: energy reversal",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^Less\\s*:?\\s*Energy charge[^\\n]*?([\\d,]+\\.\\d{2}Cr)\\s*\\*?\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "sm_service_cr",
+      "label": "Small: service reversal",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^Less\\s*:?\\s*Service charge[^\\n]*?([\\d,]+\\.\\d{2}Cr)",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "sm_fixed_r",
+      "label": "Small: fixed charge",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^(?<!Less estimated )Fixed charge\\s+\\d+ days\\s+[\\d.]+ /day\\s+([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "sm_fixed_cr",
+      "label": "Small: fixed reversal",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^Less estimated Fixed charge[^\\n]*?([\\d,]+\\.\\d{2}Cr)\\s*\\*?\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "sm_rebate_cr",
+      "label": "Small: percentage rebate",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "Percentage rebate[^\\n]*?([\\d,]+\\.\\d{2}Cr)",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "sm_serv_start",
+        "sm_serv_end",
+        "sm_days"
+      ],
+      "label": "Small: service period",
+      "scope": "section:electricity",
+      "pattern": "Service from (\\d{4}/\\d{2}/\\d{2}) to (\\d{4}/\\d{2}/\\d{2})\\s+(\\d+) days",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "sm_meter2",
+      "label": "Small: meter id (even if Not Read)",
+      "scope": "section:electricity",
+      "pattern": "^(\\w+)\\s*\\|Energy\\b",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "sm_reading_type",
+      "label": "Small: reading type",
+      "scope": "section:electricity",
+      "collect": "join_unique",
+      "patterns": [
+        "Energy charge(?:\\s*-\\s*[\\w/]+)? for (estimated|actual)",
+        "Service charge for (estimated|actual) consumption"
+      ],
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "sm_elec_summary_r",
+      "label": "Small: summary Electricity R",
+      "scope": "document",
+      "pattern": "^\\s*Electricity\\s+(-?[\\d,]+\\.\\d{2}(?:Cr)?)\\s*$",
+      "type": "money",
+      "required": false
+    }
+  ],
+  "computes": [
+    {
+      "field": "total_kwh_bands",
+      "op": "sum",
+      "as": "number",
+      "of": [
+        "peak_kwh",
+        "standard_kwh",
+        "offpeak_kwh"
+      ]
+    },
+    {
+      "field": "energy_r",
+      "op": "sum",
+      "of": [
+        "peak_r",
+        "standard_r",
+        "offpeak_r"
+      ]
+    },
+    {
+      "field": "sm_energy_net",
+      "op": "sum",
+      "of": [
+        "sm_energy_r",
+        "sm_energy_cr"
+      ]
+    },
+    {
+      "field": "std_r_out",
+      "op": "prefer",
+      "of": [
+        "standard_r",
+        "sm_energy_net"
+      ]
+    },
+    {
+      "field": "std_kwh_out",
+      "op": "prefer",
+      "of": [
+        "standard_kwh",
+        "sm_basic_kwh",
+        "sm_usage_basic_kwh",
+        "sm_usage_kwh"
+      ]
+    },
+    {
+      "field": "sm_demand_net",
+      "op": "sum",
+      "of": [
+        "sm_demand_r",
+        "sm_demand_cr"
+      ]
+    },
+    {
+      "field": "demand_r_out",
+      "op": "prefer",
+      "of": [
+        "demand_r",
+        "sm_demand_net"
+      ]
+    },
+    {
+      "field": "demand_kva_out",
+      "op": "prefer",
+      "of": [
+        "demand_kva",
+        "sm_demand_kva"
+      ]
+    },
+    {
+      "field": "total_kwh",
+      "op": "prefer",
+      "of": [
+        "total_kwh_bands",
+        "sm_basic_kwh",
+        "sm_usage_basic_kwh",
+        "sm_usage_kwh",
+        "sm_energy_kwh"
+      ]
+    },
+    {
+      "field": "meter_out",
+      "op": "prefer",
+      "of": [
+        "meter",
+        "sm_meter",
+        "sm_meter2"
+      ]
+    },
+    {
+      "field": "read_start_out",
+      "op": "prefer",
+      "of": [
+        "read_start",
+        "sm_serv_start",
+        "sm_read_start"
+      ]
+    },
+    {
+      "field": "read_end_out",
+      "op": "prefer",
+      "of": [
+        "read_end",
+        "sm_serv_end",
+        "sm_read_end"
+      ]
+    },
+    {
+      "field": "start_reading_out",
+      "op": "prefer",
+      "of": [
+        "b_start_reading",
+        "sm_start_reading"
+      ]
+    },
+    {
+      "field": "end_reading_out",
+      "op": "prefer",
+      "of": [
+        "b_end_reading",
+        "sm_end_reading"
+      ]
+    },
+    {
+      "field": "other_out",
+      "op": "sum",
+      "of": [
+        "volt_surcharge_r",
+        "service_r",
+        "sm_fixed_r",
+        "sm_service_cr",
+        "sm_fixed_cr",
+        "sm_rebate_cr"
+      ]
+    },
+    {
+      "field": "elec_ex_out",
+      "op": "prefer",
+      "of": [
+        "elec_ex_r",
+        "sm_elec_summary_r"
+      ]
+    }
+  ],
+  "recon": {
+    "prev_balance": "Balance brought forward\\s+(-?[\\d,]+\\.\\d{2})",
+    "incoming_payment": "Payment - Thank you[^\\n]*?([\\d,]+\\.\\d{2}Cr)",
+    "vat": "\\bVAT\\s+([\\d,]+\\.\\d{2})",
+    "current_incl": "Total current month's charges\\s+([\\d,]+\\.\\d{2})",
+    "account": "Account Number[^\\n]*\\n\\s*\\d{4}/\\d{2}/\\d{2}\\s+(\\d{6,})",
+    "deposit": "Deposit \\(R\\)[\\s\\S]{0,60}?\\d{4}/\\d{2}/\\d{2}\\s+\\d{6,}\\s+\\S+\\s+[\\d,]+\\.\\d{2}\\s+([\\d,]+\\.\\d{2})"
+  }
+}

@@ -1,0 +1,153 @@
+{
+ "profile_id": "billson_properties_pe",
+ "profile_name": "Billson Properties PE (Pty) Ltd",
+ "short_name": "Billson Properties",
+ "_doc": "Billson Properties PE (Pty) Ltd landlord electricity invoice (folder 'DEAL PARTY'): a one-page Word-style tax invoice with Availability and Consumption (both excl VAT, no kWh or meter), 'Period: d - d Month yyyy', Total, 15% vat and Total Due. No account number is printed (only a running invoice number 'Bid nnn'), so account_number stays blank; billing date is the dd.m.yyyy line under the landlord VAT number. Availability + Consumption = total ex VAT, placed in other_r (no kWh to support an energy column). Fingerprint: the landlord's own VAT number + name. Identity bil_due_less_vat_r = Total Due - vat: 2 exact, 1 within R0.01. Checked on 3 bills, 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "4500277662"
+  ],
+  "any": [
+   "Billson Properties PE"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Availability[ \\t]+R",
+   "require": "^[ \\t]*Consumption[ \\t]+R"
+  }
+ },
+ "fields": [
+  {
+   "field": "bil_invoice_no",
+   "label": "Tax invoice number (no account number is printed)",
+   "scope": "header",
+   "pattern": "^[ \\t]*Tax Invoice[ \\t]+(Bid[ \\t]*\\d+)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice date (line under the landlord VAT number)",
+   "scope": "header",
+   "pattern": "Vat Reg no:[ \\t]*\\d+[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]*(\\d{1,2}\\.\\d{1,2}\\.\\d{4})[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "bil_availability_r",
+   "label": "Availability (excl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Availability[ \\t]+R[ \\t]*(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "bil_consumption_r",
+   "label": "Consumption (excl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Consumption[ \\t]+R[ \\t]*(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "bil_d1",
+    "bil_d2",
+    "bil_my"
+   ],
+   "types": [
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Period: d \u2013 d Month yyyy",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Period:[ \\t]*(\\d{1,2})[ \\t]*\\S[ \\t]*(\\d{1,2})[ \\t]+([A-Za-z]+[ \\t]+\\d{4})[ \\t]*$"
+  },
+  {
+   "field": "bil_total_r",
+   "label": "Total (excl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Total[ \\t]+R[ \\t]*(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "bil_vat_r",
+   "label": "15% vat",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d+% vat[ \\t]+R[ \\t]*(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "bil_due_r",
+   "label": "Total Due (incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Total Due[ \\t]+R[ \\t]*(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "read_start",
+   "op": "concat",
+   "of": [
+    "bil_d1",
+    "bil_my"
+   ]
+  },
+  {
+   "field": "read_end",
+   "op": "concat",
+   "of": [
+    "bil_d2",
+    "bil_my"
+   ]
+  },
+  {
+   "field": "bil_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "bil_availability_r",
+    "bil_consumption_r"
+   ]
+  },
+  {
+   "field": "bil_due_less_vat_r",
+   "op": "sub",
+   "of": [
+    "bil_due_r",
+    "bil_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "account_number": "_none",
+  "site_name": "_none",
+  "total_ex_vat_r": "bil_elec_ex_r",
+  "other_r": "bil_elec_ex_r",
+  "tariff_name": "_none",
+  "meter": "_none",
+  "reading_type": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

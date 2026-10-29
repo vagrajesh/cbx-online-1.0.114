@@ -1,0 +1,298 @@
+{
+  "profile_id": "emfuleni",
+  "profile_name": "Emfuleni Local Municipality (Vanderbijlpark)",
+  "short_name": "Emfuleni",
+  "fingerprint": {
+    "all": [
+      "Vat Reg No. 4860193491"
+    ]
+  },
+  "sections": {
+    "rates": {
+      "start": "^\\s+ASSESSMENT RATES\\s*$"
+    },
+    "refuse": {
+      "start": "^\\s+REFUSE\\s*$"
+    },
+    "electricity": {
+      "start": "^\\s+ELECTRICITY\\s*$",
+      "require": "(?:ELECTRICITY|INTERIM)\\s+[\\d,]+\\.\\d{3}\\s+kwh|BASIC ELECTRIC"
+    },
+    "water": {
+      "start": "^\\s+WATER SERVICES\\s*$"
+    },
+    "sewerage": {
+      "start": "^\\s+SEWERAGE\\s*$"
+    }
+  },
+  "fields": [
+    {
+      "field": "em_elec_ex_r",
+      "label": "Electricity (ex VAT, summed)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "(?:(?:ELECTRICITY|INTERIM)\\s+[\\d,]+\\.\\d{3}\\s+kwh|BASIC ELECTRIC[A-Z ]*)\\s+(-?[\\d,]+\\.\\d{2})\\s+-?[\\d,]+\\.\\d{2}\\s+-?[\\d,]+\\.\\d{2}\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "account_number",
+      "label": "Account Number",
+      "scope": "document",
+      "pattern": "Account Number\\s+(\\d+)",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "site_name",
+      "label": "Name",
+      "scope": "document",
+      "pattern": "Name\\s+([A-Z][A-Z ().-]+?)\\s{2,}",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "street",
+      "label": "Street Address",
+      "scope": "document",
+      "pattern": "^\\s+([A-Z]+/\\d+ [A-Z][A-Z ]+?)\\s*$",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "invoice_number",
+      "label": "Invoice Number",
+      "scope": "document",
+      "pattern": "Invoice Number\\s+(\\d+/?\\d*/?\\d*)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "billing_date",
+      "label": "Statement Date",
+      "scope": "document",
+      "pattern": "Statement Date\\s*\\n[^\\n]*\\n?\\s*(\\d{4}/\\d{2}/\\d{2})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "due_date",
+      "label": "Due Date",
+      "scope": "document",
+      "pattern": "Due Date\\s+(\\d{4}/\\d{2}/\\d{2})",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "total_due",
+      "label": "Amount Payable",
+      "scope": "document",
+      "pattern": "Amount Payable\\s+(-?[\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": true
+    },
+    {
+      "fields": [
+        "levy_ex_r",
+        "levy_vat_r",
+        "levy_inc_r"
+      ],
+      "types": [
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "TOTAL CURRENT LEVY",
+      "scope": "document",
+      "pattern": "TOTAL CURRENT LEVY\\s+(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": true
+    },
+    {
+      "fields": [
+        "elec_ex_r",
+        "elec_vat_r",
+        "elec_inc_r"
+      ],
+      "types": [
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "Electricity charges",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^\\d{4}/\\d{2}/\\d{2}\\s+[A-Z][^\\n]*?(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": true
+    },
+    {
+      "fields": [
+        "water_ex_r",
+        "water_vat_r",
+        "water_inc_r"
+      ],
+      "types": [
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "Water charges",
+      "scope": "section:water",
+      "collect": "sum",
+      "pattern": "^\\d{4}/\\d{2}/\\d{2}\\s+[A-Z][^\\n]*?(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "sewer_ex_r",
+        "sewer_vat_r",
+        "sewer_inc_r"
+      ],
+      "types": [
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "Sewerage charges",
+      "scope": "section:sewerage",
+      "collect": "sum",
+      "pattern": "^\\d{4}/\\d{2}/\\d{2}\\s+[A-Z][^\\n]*?(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "refuse_ex_r",
+        "refuse_vat_r",
+        "refuse_inc_r"
+      ],
+      "types": [
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "Refuse charges",
+      "scope": "section:refuse",
+      "collect": "sum",
+      "pattern": "^\\d{4}/\\d{2}/\\d{2}\\s+[A-Z][^\\n]*?(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "rates_ex_r",
+        "rates_vat_r",
+        "rates_inc_r"
+      ],
+      "types": [
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "Rates charges",
+      "scope": "section:rates",
+      "collect": "sum",
+      "pattern": "^\\d{4}/\\d{2}/\\d{2}\\s+[A-Z][^\\n]*?(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "em_kwh",
+      "label": "kWh (sum of kwh lines)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "(?:ELECTRICITY|INTERIM)\\s+([\\d ,.]+?)\\s*kwh",
+      "type": "number",
+      "required": false
+    },
+    {
+      "field": "em_meter",
+      "label": "Meter number(s)",
+      "scope": "section:electricity",
+      "collect": "join_unique",
+      "pattern": "METER-NO:\\s*(\\S+)\\s+TARIFF: ELEC",
+      "type": "text",
+      "required": false
+    },
+    {
+      "fields": [
+        "em_end_read",
+        "em_start_read"
+      ],
+      "label": "Curr/Prev reading (first non-KVA meter)",
+      "scope": "section:electricity",
+      "pattern": "METER-NO:\\s*\\S+\\s+TARIFF: ELEC(?:(?!KVA)[^\\n])*\\n\\s*Curr = ([\\d.]+) Prev = ([\\d.]+)",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "em_read_end",
+        "em_read_start"
+      ],
+      "label": "Reading dates (Curr/Prev)",
+      "scope": "section:electricity",
+      "pattern": "Reading dates: Curr (\\d{4}/\\d{2}/\\d{2}) Prev (\\d{4}/\\d{2}/\\d{2})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "em_demand_kva",
+      "label": "Demand (D-meter Cons)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "METER-NO:\\s*D\\S+\\s+TARIFF: ELEC[^\\n]*\\n\\s*Curr = [\\d.]+ Prev = [\\d.]+ Cons = ([\\d.]+)",
+      "type": "number",
+      "required": false
+    },
+    {
+      "field": "em_tariff",
+      "label": "Tariff (S-meter)",
+      "scope": "section:electricity",
+      "pattern": "METER-NO:\\s*S\\S+\\s+TARIFF:\\s*(ELEC[^\\n(]{3,60}?)\\s*(?:\\(|$)",
+      "type": "text",
+      "required": false
+    }
+  ],
+  "computes": [
+    {
+      "field": "em_kwh_out",
+      "op": "sub",
+      "as": "number",
+      "of": [
+        "em_kwh",
+        "em_demand_kva"
+      ]
+    },
+    {
+      "field": "em_elec_ex_r",
+      "op": "prefer",
+      "of": [
+        "em_elec_ex_r",
+        "elec_ex_r"
+      ]
+    }
+  ],
+  "canonical": {
+    "meter": "em_meter",
+    "read_start": "em_read_start",
+    "read_end": "em_read_end",
+    "start_reading_kwh": "em_start_read",
+    "end_reading_kwh": "em_end_read",
+    "demand_kva": "em_demand_kva",
+    "total_kwh": "em_kwh_out",
+    "site_name": "site_name",
+    "tariff_name": "em_tariff",
+    "reading_type": "_none",
+    "other_r": "em_elec_ex_r",
+    "total_ex_vat_r": "em_elec_ex_r"
+  },
+  "recon": {
+    "prev_balance": "BALANCE BROUGHT FORWARD\\s+([\\d,]+\\.\\d{2})",
+    "subtotal": "SUB TOTAL\\s+(-?[\\d,]+\\.\\d{2})",
+    "current_ex": "TOTAL CURRENT LEVY\\s+([\\d,]+\\.\\d{2})",
+    "due_date": "Due Date\\s+(\\d{4}/\\d{2}/\\d{2})"
+  }
+}

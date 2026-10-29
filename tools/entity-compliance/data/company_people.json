@@ -1,0 +1,34 @@
+{
+  "title": "data.company_people.title",
+  "columns": [
+    {
+      "key": "company",
+      "type": "link",
+      "table": "companies",
+      "show": "name",
+      "label": "col.entity",
+      "required": true
+    },
+    {
+      "key": "person",
+      "type": "person",
+      "label": "col.person",
+      "who": "everyone",
+      "required": true
+    },
+    {
+      "key": "note",
+      "type": "text",
+      "label": "col.note"
+    }
+  ],
+  "write": "admins",
+  "scope": "linked",
+  "link": "company",
+  "unique": [
+    [
+      "company",
+      "person"
+    ]
+  ]
+}

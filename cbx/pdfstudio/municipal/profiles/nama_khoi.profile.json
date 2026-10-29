@@ -1,0 +1,708 @@
+{
+ "profile_id": "nama_khoi",
+ "profile_name": "Nama Khoi Local Municipality (Springbok / Nababeep, Northern Cape)",
+ "short_name": "Nama Khoi",
+ "_doc": "TWO COMPLETELY DIFFERENT BILLING SYSTEMS, one account ([number removed], Telkom TFMC\nNababeep / \"OP DIE BERG\" / site suffix (MOUNTAIN)), 10 PDFs. Both are genuine Nama Khoi\nLocal Municipality tax invoices and both are fingerprinted on Nama Khoi's OWN VAT\nregistration 4890198585.\n\nFINGERPRINT: \"4890198585\" alone. Verified over all 487 PDFs in the Telkom tree: it\nappears in exactly 10 files, all of them this folder, and in NO other folder. The four\nsibling municipalities that share the same Sebata print stream carry different numbers\n(Joe Gqabi 4280128101, Tokologo 4000846479, George 4630193664, Ubuntu 4870197581), so a\nfingerprint on the VAT number cannot cross-route. NEVER fingerprint on the addressee\nblock (TELKOM SA / PRIVAATSAK X137 / CENTURION / Telkom's own VAT 4680101146) or on\n[address removed] - both appear on dozens of other municipalities'\nbills in this tree. \"NC062\" (Nama Khoi's demarcation code) is also unique to this folder\nbut only appears on the 6 new-ERP bills, so it is not used as the primary marker; it is\ncaptured as a native field (nkb_munic_code) instead.\n\nSHAPE A - \"Sebata\" ledger statement, 2 pages, ~355 KB, filenames\nNKM_13251_<YYYYMMDD>_<seq>_13251_<docno>.pdf (4 files, Oct 2024 - Jan 2025).\nMasthead \"Nama Khoi Municipality ... Municipality VAT Nr: 4890198585\",\n\"Computer Generated Tax Invoice for: <Month> <Year>\", \"Account No. [number removed]\",\n\"Old Account No. [number removed]\". Page 1 is a per-service summary table with the columns\nAmount(excl.Vat) | Vat | Amount(Incl.Vat); the only service rows are\n\"Electricity Basic\", \"Electricity Metered\" and (sometimes) \"Journals\" /\n\"Adv. Payment Allocation\" / \"Advance Allocation\". Page 2 is the transaction detail:\neach charge block is\n    <dd/mm/yyyy> Reading dates: Cur dd/mm/yyyy Prev dd/mm/yyyy (n days)   R ex   R vat   R incl\n                 Cur <reading> Prev <reading> Cons <qty> KWH|KVA\n                 Meter <no>|<register>||<old account>\n                   Factor: 1.000000\n                  Dwelling Units: 1\n                 <qty> x <rate> = <amount>\n                     Tariff: Elec KWH Faktor | Elec KVA | Basic Elec KVA\nThe \"Elec KWH Faktor\" block is the energy charge (kWh); the \"Elec KVA\" block is the\nMAXIMUM DEMAND charge (its Cons is in kVA); \"Basic Elec KVA\" is the fixed monthly levy.\nMoney is printed with SPACE thousands and a DOT decimal (R 23 427.16) - there is NO\ncomma-decimal notation anywhere in this folder, so the _to_decimal 100x trap does not\napply. Credits are accountant parentheses: (R 19 911.13).\ntotal_ex_vat_r on shape A is the INDEPENDENTLY PRINTED \"Total Amount(B)\" ex-VAT column.\nNama Khoi bills this account for electricity ONLY (no water/refuse/rates/sewer rows\nexist), so Total Amount(B) IS the electricity total - reconcile on shape A is a genuine\ncheck, not a circular one.\n\nSHAPE B - new ERP / utility-portal tax invoice, 1 page, ~81 KB, filenames\n13251.pdf, 13251 (1).pdf, 5-75-00531-06-5.pdf, Invoice.pdf, Invoice_0.pdf,\nTELKOM TFMC (NABABEEP) (1).pdf (6 files, Mar 2025 - Aug 2026).\nHeader is a badly-laid-out label grid: \"Company Reg. No:\" (older files) or\n\"Municipal Code:\" (2026 files) sits above \"NC062\", and the phone number (027) 718 8100\nis printed in the Company-Reg slot - i.e. the header labels are mis-wired in the source\ntemplate. The VAT number IS printed, but the label and the value land on DIFFERENT\nLINES (\"VAT Reg. No:\" ... newline ... \"4890198585\"), which is why a\n\"VAT[^\\n]*4\\d{9}\" style probe finds nothing. Fingerprinting is on the bare digits so\nthe line break is irrelevant.\nCharge lines (all ex-VAT, the column is headed \"Excl. VAT\", the words\n\", Vat @ 15.00%\" are part of the DESCRIPTION and not a separate column):\n    ELECTRICITY - [SG ]<sg> - <meter> @ <tariff code+name>            Excl. VAT\n    [Start Reading <n> End Reading <n>]\n    Consumption for period <d Mon yyyy> to <d Mon yyyy> 23:59 = <n> Units\n    Basic Charge <n> @ <rate> R/Month|R/Day , Vat @ 15.00%            R <amt>\n    Energy Charge - Summer|Winter <kWh> @ <rate> R/kWh , ...          R <amt>\n      (2024/25 flat tariff \"2.6 Commercial Large 10>40kVA<\")\n    Active Energy-Hi Season - Peak|Standard|Off Peak <kWh> @ <rate>   R <amt>\n      (2026 TOU tariff \"10 Commercial & Other Prepaid/Postpaid TOU (60 A 3Ph)\")\n    Demand Charge <d Mon yyyy hh:mm> <kVA> @ <rate> R/kVA , ...       R <amt>\n    Sub Total                                                         R <amt>\nthen a footer block: VATable items / Non-VATable items / VAT / Total (for billing\nperiod) / Opening Balance / Interest / Total due for payment.\nSummer+Winter (flat) bills route their single band to STANDARD kWh/Rands, the same\nconvention CoJ flat-rate and Ekurhuleni use. TOU bills fill peak/standard/offpeak.\nOnly 2 of the 6 shape-B bills print Start/End Reading; the other 4 print consumption\nonly - blank reading columns there are the bill's silence.\n5-75-00531-06-5.pdf carries TWO ELECTRICITY blocks (a meter changeover [number removed] ->\n[number removed] on 13 Mar 2025) with two Sub Totals; every shape-B charge rule is\ncollect:\"sum\" so the two blocks aggregate, the meter rule is join_unique, and\nread_start/read_end take the FIRST period start and the LAST period end (the read_end\npattern uses a greedy ^[\\s\\S]* prefix so it lands on the last \"Consumption for\nperiod\" line).\ntotal_ex_vat_r on shape B is the independently printed \"VATable items\" figure - again a\ngenuine reconcile. On the two-block bill VATable items (23 182.78) is 1 cent below the\nsum of the two printed Sub Totals (23 182.79); that 1c is the municipality's own\nrounding, not an extraction error, and VATable items is the figure the printed VAT and\nTotal agree with.\n13251 (1).pdf prints an EMPTY \"Tax Invoice Date:\" and \"Due Date\" (confirmed against the\nunsorted PyMuPDF text: the labels exist, the values were never rendered), so\nbilling_date/due_date are legitimately blank on that one bill.\nNOTHING in this folder is scanned - read_pdf(ocr=\"auto\") reports ocr:False\nscanned:False on all 10 files, so ocr is left at the app default.\nreading_type: neither shape prints an Actual/Estimate flag for this account (shape A's\nlayout supports a \"(Estimate)\" suffix after the meter number but never uses it here), so\nthat canonical column is mapped \"_none\". nmd_kva/nmd_r, deposit/cash/guarantee/security\nare likewise never printed as usable values (shape A prints Deposit 0.00 / Guarantee\n0.00 in a header grid, shape B prints \"Deposit: R\" with no value) and are mapped\n\"_none\".",
+ "fingerprint": {
+  "all": [
+   "4890198585"
+  ],
+  "any": [],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity Basic[ \\t]{2,}\\(?R|^ELECTRICITY[ \\t]*-[ \\t]*(?:SG[ \\t]*)?\\d+[ \\t]*-"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "patterns": [
+    "(?<!Old )Account No\\.[ \\t]{2,}(\\d{9,})",
+    "Reference No\\.?:[ \\t]{2,}(\\d{9,})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "nka_invoice_no",
+   "label": "A: invoice number",
+   "scope": "document",
+   "pattern": "(?<!Tax )Invoice No\\.[ \\t]{2,}(\\S+)",
+   "type": "text"
+  },
+  {
+   "field": "nkb_invoice_no",
+   "label": "B: tax invoice number",
+   "scope": "document",
+   "pattern": "Tax Invoice No:[ \\t]{2,}(\\d+)",
+   "type": "text"
+  },
+  {
+   "field": "nka_old_account",
+   "label": "A: old account number",
+   "scope": "document",
+   "pattern": "Old Account No\\.[ \\t]{2,}(\\S+)",
+   "type": "text"
+  },
+  {
+   "field": "nkb_munic_code",
+   "label": "B: municipal demarcation code",
+   "scope": "document",
+   "pattern": "^[ \\t]*(NC0\\d{2})\\b",
+   "type": "text"
+  },
+  {
+   "field": "nka_site",
+   "label": "A: addressee / site",
+   "scope": "document",
+   "pattern": "Old Account No\\.[ \\t]{2,}\\S+[ \\t]*\\n[ \\t]*\\n[ \\t]*([A-Za-z][^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "nkb_site1",
+   "label": "B: addressee",
+   "scope": "document",
+   "pattern": "^[ \\t]*(TFMC-TELKOM SA)\\b",
+   "type": "text"
+  },
+  {
+   "field": "nkb_site2",
+   "label": "B: site suffix",
+   "scope": "document",
+   "pattern": "Full Name:[\\s\\S]{0,300}?(\\([A-Z][A-Z][A-Z ]*\\))",
+   "type": "text"
+  },
+  {
+   "field": "nka_month",
+   "label": "A: statement month",
+   "scope": "document",
+   "pattern": "Computer Generated Tax Invoice for:[ \\t]*([A-Za-z]+[ \\t]+\\d{4})",
+   "type": "text"
+  },
+  {
+   "field": "nkb_inv_date",
+   "label": "B: tax invoice date",
+   "scope": "document",
+   "pattern": "Tax Invoice Date:[ \\t]{2,}(\\d{1,2} [A-Za-z]{3} \\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]*Due Date[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+    "Tax Invoice No:[ \\t]*\\d+[^\\n]*?[ \\t]{2,}(\\d{1,2} [A-Za-z]{3} \\d{4})"
+   ],
+   "type": "date"
+  },
+  {
+   "field": "nka_property_id",
+   "label": "A: property id",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{12})[ \\t]{2,}C\\d{3}/",
+   "type": "text"
+  },
+  {
+   "field": "nka_sg_number",
+   "label": "A: SG number",
+   "scope": "document",
+   "pattern": "(C\\d{3}/\\d{4}/\\d+)",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "nka_town",
+    "nka_days"
+   ],
+   "label": "A: town/suburb + days",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{12}[ \\t]{2,}C\\d{3}/\\d{4}/\\d+[ \\t]{2,}(\\S[^\\n]*?)[ \\t]{2,}(\\d+)[ \\t]*$",
+   "types": [
+    "text",
+    "number"
+   ]
+  },
+  {
+   "field": "nka_physical",
+   "label": "A: physical address",
+   "scope": "document",
+   "pattern": "^Physical Address[^\\n]*\\n[ \\t]*([A-Za-z0-9][^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "nkb_sg",
+   "label": "B: SG code",
+   "scope": "document",
+   "pattern": "^ELECTRICITY[ \\t]*-[ \\t]*(?:SG[ \\t]*)?(\\d+)[ \\t]*-",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "nka_basic_r",
+    "nka_basic_vat"
+   ],
+   "label": "A: Electricity Basic",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity Basic[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "nka_metered_r",
+    "nka_metered_vat"
+   ],
+   "label": "A: Electricity Metered",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity Metered[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "field": "nka_journal_r",
+   "label": "A: Journals",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Journals[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "type": "money"
+  },
+  {
+   "field": "nka_adv_pay_r",
+   "label": "A: Adv. Payment Allocation",
+   "scope": "document",
+   "pattern": "^[ \\t]*Adv\\. Payment Allocation[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "type": "money"
+  },
+  {
+   "field": "nka_adv_alloc_r",
+   "label": "A: Advance Allocation",
+   "scope": "document",
+   "pattern": "^[ \\t]*Advance Allocation[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "type": "money"
+  },
+  {
+   "field": "nka_vat_base",
+   "label": "A: VAT Services base",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*VAT Services[ \\t]+([\\d ,]+\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "nka_total_b_ex",
+    "nka_total_b_vat",
+    "nka_total_b_incl"
+   ],
+   "label": "A: Total Amount(B)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Total Amount\\(B\\)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "nka_payable_ex",
+    "nka_payable_vat",
+    "nka_payable_incl"
+   ],
+   "label": "A: Total Amount Payable(A+B)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Total Amount Payable\\(A\\+B\\)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "nka_read_cur",
+    "nka_read_prev",
+    "nka_days_kwh"
+   ],
+   "label": "A: kWh reading dates",
+   "scope": "section:electricity",
+   "pattern": "Reading dates:[ \\t]*Cur[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*Prev[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*\\((\\d+) days\\)[^\\n]*\\n[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b",
+   "types": [
+    "date",
+    "date",
+    "number"
+   ]
+  },
+  {
+   "field": "nka_end_reading",
+   "label": "A: kWh end register (newest block)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Cur[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b",
+   "type": "number"
+  },
+  {
+   "field": "nka_start_reading",
+   "label": "A: kWh start register (oldest block)",
+   "scope": "section:electricity",
+   "pattern": "^[\\s\\S]*^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b",
+   "type": "number"
+  },
+  {
+   "field": "nka_total_kwh",
+   "label": "A: kWh consumption (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KWH\\b",
+   "type": "number"
+  },
+  {
+   "field": "nka_energy_r",
+   "label": "A: kWh energy Rands (Elec KWH Faktor)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Reading dates:[^\\n]*?[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,}\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]*$\\n[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b",
+   "type": "money"
+  },
+  {
+   "field": "nka_demand_kva",
+   "label": "A: kVA demand (Cons KVA)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KVA\\b",
+   "type": "number"
+  },
+  {
+   "field": "nka_demand_r",
+   "label": "A: kVA demand Rands (Elec KVA)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Reading dates:[^\\n]*?[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,}\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]*$\\n[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KVA\\b",
+   "type": "money"
+  },
+  {
+   "field": "nka_meters",
+   "label": "A: meter numbers",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Meter[ \\t]+((?:\\*|\\d)[^\\s|]*)(?:(?!^[ \\t]*(?:Meter[ \\t]+(?:\\*|\\d)|Tariff:))[\\s\\S])*?^[ \\t]*Tariff:[ \\t]*(?:Basic )?Elec"
+  },
+  {
+   "field": "nka_tariffs",
+   "label": "A: tariff names",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Tariff:[ \\t]*((?:Basic )?Elec[^\\n]*?)[ \\t]*$"
+  },
+  {
+   "field": "nkb_meter",
+   "label": "B: meter number",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^ELECTRICITY[ \\t]*-[ \\t]*(?:SG[ \\t]*)?\\d+[ \\t]*-[ \\t]*(\\S+)[ \\t]*@"
+  },
+  {
+   "field": "nkb_tariff",
+   "label": "B: tariff",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^ELECTRICITY[ \\t]*-[ \\t]*(?:SG[ \\t]*)?\\d+[ \\t]*-[ \\t]*\\S+[ \\t]*@[ \\t]*(\\S[^\\n]*?)[ \\t]{2,}Excl\\. VAT"
+  },
+  {
+   "field": "nkb_period_start",
+   "label": "B: period start",
+   "scope": "section:electricity",
+   "pattern": "^Consumption for period[ \\t]+(\\d{1,2} [A-Za-z]{3} \\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "nkb_period_end",
+   "label": "B: period end (last block)",
+   "scope": "section:electricity",
+   "pattern": "^[\\s\\S]*^Consumption for period[^\\n]*?[ \\t]to[ \\t]+(\\d{1,2} [A-Za-z]{3} \\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "nkb_units",
+   "label": "B: consumption units",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^Consumption for period[^\\n]*=[ \\t]*([\\d ,]+\\.\\d+)[ \\t]*Units",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "nkb_start_read",
+    "nkb_end_read"
+   ],
+   "label": "B: start/end reading",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^Start Reading[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+End Reading[ \\t]+([\\d ,]+\\.\\d+)",
+   "types": [
+    "number",
+    "number"
+   ]
+  },
+  {
+   "field": "nkb_basic_r",
+   "label": "B: Basic Charge",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^Basic Charge[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "nkb_flat_kwh",
+    "nkb_flat_r"
+   ],
+   "label": "B: Energy Charge Summer/Winter",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^Energy Charge[ \\t]*-[ \\t]*(?:Summer|Winter)[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*@[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "nkb_peak_kwh",
+    "nkb_peak_r"
+   ],
+   "label": "B: Active Energy Peak",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^Active Energy[^\\n]*?-[ \\t]*Peak[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*@[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "nkb_std_kwh",
+    "nkb_std_r"
+   ],
+   "label": "B: Active Energy Standard",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^Active Energy[^\\n]*?-[ \\t]*Standard[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*@[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "nkb_off_kwh",
+    "nkb_off_r"
+   ],
+   "label": "B: Active Energy Off Peak",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^Active Energy[^\\n]*?-[ \\t]*Off Peak[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*@[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "nkb_demand_kva",
+    "nkb_demand_r"
+   ],
+   "label": "B: Demand Charge",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^Demand Charge[ \\t]+(?:\\d{1,2} [A-Za-z]{3} \\d{4}[ \\t]+\\d{2}:\\d{2}[ \\t]+)?([\\d ,]+\\.\\d+)[ \\t]*@[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "field": "nkb_subtotal_r",
+   "label": "B: Sub Total(s)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^Sub Total[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "nkb_vatable_r",
+   "label": "B: VATable items",
+   "scope": "section:electricity",
+   "pattern": "VATable items[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "nkb_nonvatable_r",
+   "label": "B: Non-VATable items",
+   "scope": "section:electricity",
+   "pattern": "Non-VATable items[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "nkb_vat_r",
+   "label": "B: VAT",
+   "scope": "section:electricity",
+   "pattern": "(?<![A-Za-z])VAT[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "nkb_total_period_r",
+   "label": "B: Total for billing period",
+   "scope": "section:electricity",
+   "pattern": "Total \\(for billing period\\)[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "nkb_opening_r",
+   "label": "B: Opening Balance",
+   "scope": "section:electricity",
+   "pattern": "Opening Balance[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "nkb_interest_r",
+   "label": "B: Interest",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Interest[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "nkb_total_due_r",
+   "label": "B: Total due for payment",
+   "scope": "section:electricity",
+   "pattern": "Total due for payment[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "nkb_site",
+   "op": "concat",
+   "of": [
+    "nkb_site1",
+    "nkb_site2"
+   ]
+  },
+  {
+   "field": "nk_site",
+   "op": "prefer",
+   "of": [
+    "nka_site",
+    "nkb_site"
+   ]
+  },
+  {
+   "field": "nk_billing_date",
+   "op": "prefer",
+   "of": [
+    "nkb_inv_date",
+    "nka_month"
+   ]
+  },
+  {
+   "field": "nk_tariff",
+   "op": "prefer",
+   "of": [
+    "nkb_tariff",
+    "nka_tariffs"
+   ]
+  },
+  {
+   "field": "nk_meter",
+   "op": "prefer",
+   "of": [
+    "nkb_meter",
+    "nka_meters"
+   ]
+  },
+  {
+   "field": "nk_read_start",
+   "op": "prefer",
+   "of": [
+    "nka_read_prev",
+    "nkb_period_start"
+   ]
+  },
+  {
+   "field": "nk_read_end",
+   "op": "prefer",
+   "of": [
+    "nka_read_cur",
+    "nkb_period_end"
+   ]
+  },
+  {
+   "field": "nk_start_reading",
+   "op": "prefer",
+   "of": [
+    "nka_start_reading",
+    "nkb_start_read"
+   ]
+  },
+  {
+   "field": "nk_end_reading",
+   "op": "prefer",
+   "of": [
+    "nka_end_reading",
+    "nkb_end_read"
+   ]
+  },
+  {
+   "field": "nk_total_kwh",
+   "op": "prefer",
+   "of": [
+    "nka_total_kwh",
+    "nkb_units"
+   ]
+  },
+  {
+   "field": "nk_std_kwh",
+   "op": "prefer",
+   "of": [
+    "nkb_std_kwh",
+    "nkb_flat_kwh",
+    "nka_total_kwh"
+   ]
+  },
+  {
+   "field": "nk_std_r",
+   "op": "prefer",
+   "of": [
+    "nkb_std_r",
+    "nkb_flat_r",
+    "nka_energy_r"
+   ]
+  },
+  {
+   "field": "nk_demand_kva",
+   "op": "prefer",
+   "of": [
+    "nka_demand_kva",
+    "nkb_demand_kva"
+   ]
+  },
+  {
+   "field": "nk_demand_r",
+   "op": "prefer",
+   "of": [
+    "nka_demand_r",
+    "nkb_demand_r"
+   ]
+  },
+  {
+   "field": "nk_other_r",
+   "op": "sum",
+   "of": [
+    "nka_basic_r",
+    "nka_journal_r",
+    "nka_adv_pay_r",
+    "nka_adv_alloc_r",
+    "nkb_basic_r"
+   ]
+  },
+  {
+   "field": "nk_total_ex_r",
+   "op": "prefer",
+   "of": [
+    "nka_total_b_ex",
+    "nkb_vatable_r"
+   ]
+  },
+  {
+   "field": "nk_vat_r",
+   "op": "prefer",
+   "of": [
+    "nka_total_b_vat",
+    "nkb_vat_r"
+   ]
+  },
+  {
+   "field": "nk_vat_base_r",
+   "op": "prefer",
+   "of": [
+    "nka_vat_base",
+    "nkb_vatable_r"
+   ]
+  },
+  {
+   "field": "nk_parts_sum_r",
+   "op": "sum",
+   "of": [
+    "nkb_peak_r",
+    "nk_std_r",
+    "nkb_off_r",
+    "nk_demand_r",
+    "nk_other_r"
+   ]
+  },
+  {
+   "field": "nk_read_diff_kwh",
+   "op": "diff",
+   "of": [
+    "nk_end_reading",
+    "nk_start_reading"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nk_band_kwh",
+   "op": "sum",
+   "of": [
+    "nkb_peak_kwh",
+    "nk_std_kwh",
+    "nkb_off_kwh"
+   ],
+   "as": "number"
+  }
+ ],
+ "canonical": {
+  "site_name": "nk_site",
+  "billing_date": "nk_billing_date",
+  "tariff_name": "nk_tariff",
+  "account_number": "account_number",
+  "meter": "nk_meter",
+  "reading_type": "_none",
+  "read_start": "nk_read_start",
+  "read_end": "nk_read_end",
+  "start_reading_kwh": "nk_start_reading",
+  "end_reading_kwh": "nk_end_reading",
+  "total_kwh": "nk_total_kwh",
+  "peak_kwh": "nkb_peak_kwh",
+  "standard_kwh": "nk_std_kwh",
+  "offpeak_kwh": "nkb_off_kwh",
+  "demand_kva": "nk_demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "nkb_peak_r",
+  "standard_r": "nk_std_r",
+  "offpeak_r": "nkb_off_r",
+  "demand_r": "nk_demand_r",
+  "nmd_r": "_none",
+  "other_r": "nk_other_r",
+  "total_ex_vat_r": "nk_total_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "Opening Balance[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,})?\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2}\\)?)",
+  "incoming_payment": "Receipts[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,})?\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2})",
+  "subtotal": "Sub Totals\\(A\\)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,})?\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2})",
+  "current_ex": "(?:Total Amount\\(B\\)|VATable items)[ \\t]{2,}\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2}\\)?)",
+  "vat": "(?:Total Amount\\(B\\)[ \\t]{2,}\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}|(?<![A-Za-z])VAT[ \\t]{2,})\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2}\\)?)",
+  "total_due": "(?:Amount Payable[ \\t]{2,}|Total due for payment[ \\t]{2,})\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2}\\)?)",
+  "due_date": "(?:^[ \\t]*Due Date[ \\t]{2,}|Tax Invoice No:[ \\t]*\\d+[^\\n]*?[ \\t]{2,})(\\d{2}/\\d{2}/\\d{4}|\\d{1,2} [A-Za-z]{3} \\d{4})"
+ }
+}

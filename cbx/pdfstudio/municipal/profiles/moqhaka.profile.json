@@ -1,0 +1,248 @@
+{
+ "profile_id": "moqhaka",
+ "profile_name": "Moqhaka Local Municipality (Kroonstad, Free State)",
+ "short_name": "Moqhaka",
+ "fingerprint": {
+  "all": [
+   "4000846578",
+   "KROONSTAD"
+  ],
+  "any": [],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*SERVICE[ \\t]+BALANCEOPENING",
+   "require": "ELECTRICITY METER READINGS"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "ACCOUNT NUMBER",
+   "scope": "document",
+   "pattern": "ACCOUNT NUMBER[ \\t]+(\\d{5,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "DATE OF STATEMENT",
+   "scope": "document",
+   "pattern": "DATE OF STATEMENT[ \\t]+(\\d{4}/\\d\\d/\\d\\d)",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "deposit_r",
+   "label": "DEPOSIT",
+   "scope": "document",
+   "pattern": "[ \\t]DEPOSIT[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "moq_desc",
+   "label": "Property DESC",
+   "scope": "document",
+   "pattern": "^[ \\t]+DESC[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "moq_suburb",
+   "label": "Property SUBURB",
+   "scope": "document",
+   "pattern": "^[ \\t]+SUBURB[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "moq_water_tariff",
+   "label": "Water tariff (tariff box 'n.nnnn @ 0')",
+   "scope": "document",
+   "pattern": "^[^\\n]*CLIENT VAT NO\\.[^\\n]*?[ \\t](\\d+\\.\\d{4})[ \\t]*@[ \\t]*\\d+[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end",
+    "moq_w_prev",
+    "moq_w_pres",
+    "moq_water_kl",
+    "moq_kva_prev",
+    "moq_kva_pres",
+    "moq_kwh",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "demand_kva"
+   ],
+   "types": [
+    "date",
+    "date",
+    "number",
+    "number",
+    "number",
+    "number",
+    "number",
+    "number",
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "Electricity/water meter readings block",
+   "scope": "section:electricity",
+   "pattern": "ELECTRICITY METER READINGS[^\\n]*\\n[^\\n]*CONSUMPTION[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]+(\\d{4}/\\d\\d/\\d\\d)[ \\t]+(\\d{4}/\\d\\d/\\d\\d)[ \\t]*\\n(?:[ \\t]*\\n)*[^\\n]*?[ \\t](\\d+)[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]*\\n(?:[ \\t]*\\n)*[^\\n]*?[ \\t](\\d+)[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "moq_metered_r",
+    "moq_metered_vat_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Row 1: metered services (electricity kWh + kVA + water kL)",
+   "scope": "section:electricity",
+   "pattern": "BALANCECLOSING[ \\t]*\\n(?:[ \\t]*\\n)*^[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "moq_row2_r",
+   "label": "Row 2 (fixed service)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+CODE[ \\t]+PREVIOUS",
+   "type": "money"
+  },
+  {
+   "field": "moq_row3_r",
+   "label": "Row 3 (fixed service)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "moq_rates_r",
+   "label": "Rates row (VAT 0, before BS row)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]+BS[ \\t]",
+   "type": "money"
+  },
+  {
+   "field": "moq_bs_r",
+   "label": "BS row",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+BS[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "moq_be_r",
+    "moq_be_vat_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "BE row (basic electricity)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+BE[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)"
+  },
+  {
+   "field": "moq_in_r",
+   "label": "IN row (interest)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+IN[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "moq_total_month_r",
+    "moq_total_vat_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "TOTAL row (this month, VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]+AMOUNT[ \\t]+DISCONNECTION"
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "moq_desc",
+    "moq_suburb"
+   ]
+  },
+  {
+   "field": "moq_water_r",
+   "op": "mul",
+   "of": [
+    "moq_water_kl",
+    "moq_water_tariff"
+   ]
+  },
+  {
+   "field": "moq_elec_metered_r",
+   "op": "sub",
+   "of": [
+    "moq_metered_r",
+    "moq_water_r"
+   ]
+  },
+  {
+   "field": "moq_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "moq_elec_metered_r",
+    "moq_be_r"
+   ]
+  },
+  {
+   "field": "moq_elec_check_r",
+   "op": "sub",
+   "of": [
+    "moq_total_month_r",
+    "moq_row2_r",
+    "moq_row3_r",
+    "moq_rates_r",
+    "moq_bs_r",
+    "moq_in_r",
+    "moq_water_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "moq_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "moq_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "moq_elec_metered_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "moq_be_r",
+  "total_ex_vat_r": "moq_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "_doc": "Moqhaka Local Municipality (Kroonstad) pre-printed TAX INVOICE: the service labels are printed on the stationery, so the text carries only the numbers. A service summary (BALANCE OPENING / PAYMENT / THIS MONTH / VAT / ADJUSTMENT / BALANCE CLOSING) has unlabelled rows plus coded rows BS, BE and IN; a tariff box prints the water tariff ('n.nnnn @ 0'); ELECTRICITY / WATER METER READINGS print a date pair, a water row and two electricity registers (kWh and kVA) whose values interleave in the text. Row 1 is the METERED-services row: on all bills it equals 1.55 x kWh + 505.21 x kVA + water tariff x kL exactly (fitted on 9 bills), i.e. electricity energy + demand AND water consumption together. So the electricity metered charge = row 1 - (water kL x printed water tariff) (computed with mul/sub from printed figures) and is mapped to standard_r (energy and demand are NOT printed separately, so demand_r stays blank and standard_r holds energy+demand); other_r = the 'BE' row, taken as the basic electricity charge (code only - an inference from the billing codes, BS/BE/IN, not a printed label); total_ex_vat_r = their sum. Readings: read_start/read_end, kWh start/end/consumption and kVA come from the readings block. Fingerprint: the municipality's VAT number (the bill prints no municipal name) + 'KROONSTAD'; the bill also prints the customer's VAT - never used. Identity (--identity moq_elec_check_r): TOTAL row 'THIS MONTH' minus every other printed row (2, 3, rates, BS, IN) minus water: 0.00 on 10/10; checks 0. Checked on all 10 bills."
+}

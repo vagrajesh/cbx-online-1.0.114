@@ -1,0 +1,163 @@
+{
+  "title": "page.admin.title",
+  "intro": "page.admin.intro",
+  "menu": false,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "today",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "admin_today",
+                "type": "metrics",
+                "title": "w.admin_today.title",
+                "items": [
+                  {
+                    "metric": "system.attention"
+                  },
+                  {
+                    "metric": "flows.waiting_for_me"
+                  },
+                  {
+                    "metric": "requests.new"
+                  },
+                  {
+                    "metric": "compliance.due"
+                  },
+                  {
+                    "metric": "signin.failed_24h"
+                  },
+                  {
+                    "metric": "people.locked"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "work",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "admin_work",
+                "type": "metrics",
+                "title": "w.admin_work.title",
+                "items": [
+                  {
+                    "metric": "requests.open"
+                  },
+                  {
+                    "metric": "build.tickets_open"
+                  },
+                  {
+                    "metric": "pdf.to_check"
+                  },
+                  {
+                    "metric": "sheets.exceptions"
+                  },
+                  {
+                    "metric": "people.no_two_step"
+                  },
+                  {
+                    "metric": "flows.failed_7d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "lists",
+        "columns": [
+          {
+            "width": 7,
+            "widgets": [
+              {
+                "id": "admin_attention",
+                "type": "table",
+                "title": "w.admin_attention.title",
+                "source": {
+                  "provider": "core.attention"
+                },
+                "columns": [
+                  {
+                    "key": "level",
+                    "label": "col.level"
+                  },
+                  {
+                    "key": "text",
+                    "label": "col.text"
+                  }
+                ],
+                "search": false,
+                "row_link": true,
+                "limit": 8
+              }
+            ]
+          },
+          {
+            "width": 5,
+            "widgets": [
+              {
+                "id": "admin_requests",
+                "type": "table",
+                "title": "w.admin_requests.title",
+                "source": {
+                  "provider": "core.my_requests"
+                },
+                "columns": [
+                  {
+                    "key": "number",
+                    "label": "col.number"
+                  },
+                  {
+                    "key": "title",
+                    "label": "col.title"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  }
+                ],
+                "search": false,
+                "row_link": true,
+                "limit": 6
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "canvas": {
+    "widgets": {
+      "admin_today": {
+        "x": 250,
+        "y": 420
+      },
+      "admin_work": {
+        "x": 250,
+        "y": 510
+      },
+      "admin_attention": {
+        "x": 250,
+        "y": 600
+      },
+      "admin_requests": {
+        "x": 250,
+        "y": 690
+      }
+    }
+  }
+}

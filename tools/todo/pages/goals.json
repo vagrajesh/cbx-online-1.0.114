@@ -1,0 +1,246 @@
+{
+  "title": "page.goals.title",
+  "intro": "page.goals.intro",
+  "menu": true,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_goals",
+                "type": "progress",
+                "title": "w.w_goals.title",
+                "source": {
+                  "data": "goals"
+                },
+                "label": "title",
+                "target": "target",
+                "fields": [
+                  "reward",
+                  "ends"
+                ],
+                "where": [
+                  {
+                    "field": "counts",
+                    "op": "not_equals",
+                    "value": "The team"
+                  }
+                ],
+                "count": {
+                  "data": "tasks",
+                  "where": [
+                    {
+                      "field": "status",
+                      "op": "equals",
+                      "value": "Done"
+                    },
+                    {
+                      "field": "done_by",
+                      "op": "equals",
+                      "value": "{{person.id}}"
+                    },
+                    {
+                      "field": "finished",
+                      "op": "gte",
+                      "value": "{{row.starts}}"
+                    },
+                    {
+                      "field": "finished",
+                      "op": "lte",
+                      "value": "{{row.ends}}"
+                    },
+                    {
+                      "field": "size",
+                      "op": "equals",
+                      "value": "{{row.size}}",
+                      "skip_empty": true
+                    }
+                  ]
+                },
+                "actions": [
+                  {
+                    "label": "w.w_goals.a0",
+                    "flow": "book_day",
+                    "reached": true,
+                    "ask": [
+                      {
+                        "key": "answer",
+                        "type": "date",
+                        "label": "w.w_goals.ask0"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_teamgoals",
+                "type": "progress",
+                "title": "w.w_teamgoals.title",
+                "source": {
+                  "data": "goals"
+                },
+                "label": "title",
+                "target": "target",
+                "fields": [
+                  "reward",
+                  "ends"
+                ],
+                "where": [
+                  {
+                    "field": "counts",
+                    "op": "equals",
+                    "value": "The team"
+                  }
+                ],
+                "count": {
+                  "data": "tasks",
+                  "where": [
+                    {
+                      "field": "status",
+                      "op": "equals",
+                      "value": "Done"
+                    },
+                    {
+                      "field": "kind",
+                      "op": "equals",
+                      "value": "Team"
+                    },
+                    {
+                      "field": "finished",
+                      "op": "gte",
+                      "value": "{{row.starts}}"
+                    },
+                    {
+                      "field": "finished",
+                      "op": "lte",
+                      "value": "{{row.ends}}"
+                    },
+                    {
+                      "field": "size",
+                      "op": "equals",
+                      "value": "{{row.size}}",
+                      "skip_empty": true
+                    }
+                  ]
+                },
+                "actions": [
+                  {
+                    "label": "w.w_teamgoals.a0",
+                    "flow": "book_day",
+                    "reached": true,
+                    "ask": [
+                      {
+                        "key": "answer",
+                        "type": "date",
+                        "label": "w.w_goals.ask0"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "columns": [
+          {
+            "width": 7,
+            "widgets": [
+              {
+                "id": "w_goallist",
+                "type": "table",
+                "title": "w.w_goallist.title",
+                "source": {
+                  "data": "goals"
+                },
+                "columns": [
+                  {
+                    "key": "title",
+                    "label": "col.title"
+                  },
+                  {
+                    "key": "counts",
+                    "label": "col.counts"
+                  },
+                  {
+                    "key": "target",
+                    "label": "col.target"
+                  },
+                  {
+                    "key": "size",
+                    "label": "col.size"
+                  },
+                  {
+                    "key": "starts",
+                    "label": "col.starts"
+                  },
+                  {
+                    "key": "ends",
+                    "label": "col.ends"
+                  },
+                  {
+                    "key": "reward",
+                    "label": "col.reward"
+                  }
+                ],
+                "search": false
+              }
+            ]
+          },
+          {
+            "width": 5,
+            "widgets": [
+              {
+                "id": "w_rewards",
+                "type": "table",
+                "title": "w.w_rewards.title",
+                "source": {
+                  "data": "reward_days"
+                },
+                "columns": [
+                  {
+                    "key": "goal",
+                    "label": "col.goal"
+                  },
+                  {
+                    "key": "person",
+                    "label": "col.person"
+                  },
+                  {
+                    "key": "day",
+                    "label": "col.day"
+                  }
+                ],
+                "sort": {
+                  "key": "day",
+                  "desc": true
+                },
+                "search": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "order": 5
+}

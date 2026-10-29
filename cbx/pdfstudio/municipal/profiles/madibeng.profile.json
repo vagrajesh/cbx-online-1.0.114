@@ -1,0 +1,241 @@
+{
+ "profile_id": "madibeng",
+ "profile_name": "Madibeng Local Municipality (Brits / Hartbeespoort, North West)",
+ "short_name": "Madibeng",
+ "_doc": "Madibeng LM (Brits / Hartbeespoort) 'Belastingfaktuur / Tax Invoice' with Account and Invoice Detail lines (date, description, meter, prev, current, tariff code, factor, units, AMOUNT ex VAT, VAT, TOTAL; credits as '123.45 -' or '123.45-'), two prints (5 bills each) that differ only in spacing and the ageing block. Electricity = the 'KVA BULK ...' line pair with an EL tariff code: the line with two non-zero readings is kWh (-> standard), the line with a zero reading is kVA demand (-> demand); 'KVA SERVICE CHARGE' -> other. Deposit guarantee and reading period print on 6 bills (garbled on the rest; read_end falls back to the kWh line date). Fingerprint: own VAT number + name. IDENTITY x_elec_ex_id = ageing AMOUNT - BALANCE B/FWD - all non-electricity lines incl. receipts: 0.00 on 10/10. 10 bills checked; the Aug-2025 bill prints its kWh readings swapped (current lower than previous; consumption = the difference) and is flagged READ-down as printed.",
+ "fingerprint": {
+  "all": [
+   "4500115847"
+  ],
+  "any": [
+   "Local Municipality of Madibeng",
+   "Madibeng Local Municipality",
+   "MADIBENG"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "Account and Invoice Detail",
+   "require": "[ \\t]EL\\d+[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account Number[ \\t]+(\\d{5,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Issued on",
+   "scope": "document",
+   "pattern": "Issued on[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(\\d{4}/\\d{2}/\\d{2})\\b",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "md_month",
+   "label": "Account Month",
+   "scope": "document",
+   "pattern": "Account Number[ \\t]+\\d{5,}[ \\t]+([A-Za-z]+ \\d{4})[ \\t]",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "invoice_no",
+   "label": "Invoice No",
+   "scope": "document",
+   "pattern": "Invoice No\\.:[ \\t]+(\\d+/\\d{2}/\\d{4})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "md_township",
+    "md_street"
+   ],
+   "label": "Township / Street",
+   "scope": "document",
+   "pattern": "Issued on[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]{2,}(\\S[^\\n]*?)[ \\t]{2,}(\\S[^\\n]*?)[ \\t]{2,}\\d",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit Guarantee",
+   "scope": "document",
+   "pattern": "Deposit Guarantee[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*\\d+[ \\t]+\\d+[ \\t]+(\\d+\\.\\d{2})[ \\t]",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "read_start",
+    "md_period_end"
+   ],
+   "label": "Reading Period",
+   "scope": "document",
+   "pattern": "Reading Period[^\\n]*\\n(?:[ \\t]*\\n)*[^\\n]*?(\\d{4}/\\d{2}/\\d{2})[ \\t]+TO[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+   "types": [
+    "date",
+    "date"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "tariff_name",
+    "meter",
+    "start_r",
+    "end_r",
+    "md_kwh",
+    "md_energy_r",
+    "md_energy_vat"
+   ],
+   "label": "kWh meter line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(\\S[^\\n]*?)[ \\t]{2,}(\\d{4,})[ \\t]+((?!0\\.000[ \\t])\\d+\\.\\d{3})[ \\t]+((?!0\\.000[ \\t])\\d+\\.\\d{3})[ \\t]+EL\\w+[ \\t]+\\d+[ \\t]+(\\d+\\.\\d{3})[ \\t]+(\\d+\\.\\d{2}(?: ?-)?)[ \\t]+(\\d+\\.\\d{2}(?: ?-)?)[ \\t]+\\d+\\.\\d{2}(?: ?-)?[ \\t]*$",
+   "types": [
+    "text",
+    "text",
+    "number",
+    "number",
+    "number",
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "field": "md_line_date",
+   "label": "kWh line date (reading date)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{4}/\\d{2}/\\d{2})[ \\t]+\\S[^\\n]*?[ \\t]{2,}\\d{4,}[ \\t]+(?!0\\.000[ \\t])\\d+\\.\\d{3}[ \\t]+(?!0\\.000[ \\t])\\d+\\.\\d{3}[ \\t]+EL\\w+",
+   "type": "date",
+   "required": false
+  },
+  {
+   "fields": [
+    "md_kva",
+    "md_demand_r",
+    "md_demand_vat"
+   ],
+   "label": "kVA demand line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+\\S[^\\n]*?[ \\t]{2,}\\d{4,}[ \\t]+(?:0\\.000[ \\t]+\\d+\\.\\d{3}|\\d+\\.\\d{3}[ \\t]+0\\.000)[ \\t]+EL\\w+[ \\t]+\\d+[ \\t]+(\\d+\\.\\d{3})[ \\t]+(\\d+\\.\\d{2}(?: ?-)?)[ \\t]+(\\d+\\.\\d{2}(?: ?-)?)[ \\t]+\\d+\\.\\d{2}(?: ?-)?[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "md_service_r",
+    "md_service_vat"
+   ],
+   "label": "KVA service charge",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+[^\\n]*?(?:KVA|ELEC)[^\\n]*?SERVICE CHARGE[^\\n]*?[ \\t]+(\\d+\\.\\d{2}(?: ?-)?)[ \\t]+(\\d+\\.\\d{2}(?: ?-)?)[ \\t]+\\d+\\.\\d{2}(?: ?-)?[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "x_bbf",
+   "label": "Balance b/fwd",
+   "scope": "document",
+   "pattern": "BALANCE B/FWD[ \\t]+(\\d+\\.\\d{2}(?: ?-)?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_nonelec",
+   "label": "Non-electricity lines incl. receipts (amount)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(?=[A-Za-z0-9])(?!BALANCE B/FWD|\\d+\\.\\d{2}[ \\t])(?![^\\n]*(?:KVA|ELEC|[ \\t]EL\\d+[ \\t]))[^\\n]*?[ \\t](\\d+\\.\\d{2}(?: ?-)?)[ \\t]+\\d+\\.\\d{2}(?: ?-)?[ \\t]+\\d+\\.\\d{2}(?: ?-)?[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "x_amount",
+   "label": "AMOUNT (excl. VAT, incl. balance)",
+   "scope": "document",
+   "pattern": "AMOUNT[ \\t]+Total ?VAT ?Payable[ \\t]+TOTAL[^\\n]*\\n(?:[^\\n]*\\n){0,3}?[^\\n]*?[ \\t](\\d+\\.\\d{2}(?: ?-)?)[ \\t]+\\d+\\.\\d{2}(?: ?-)?[ \\t]+\\d+\\.\\d{2}(?: ?-)?[ \\t]*$",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "read_end",
+   "op": "prefer",
+   "of": [
+    "md_period_end",
+    "md_line_date"
+   ]
+  },
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "md_street",
+    "md_township"
+   ]
+  },
+  {
+   "field": "md_total_ex",
+   "op": "sum",
+   "of": [
+    "md_energy_r",
+    "md_demand_r",
+    "md_service_r"
+   ]
+  },
+  {
+   "field": "x_elec_ex_id",
+   "op": "sub",
+   "of": [
+    "x_amount",
+    "x_bbf",
+    "x_nonelec"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "meter": "meter",
+  "tariff_name": "tariff_name",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_r",
+  "end_reading_kwh": "end_r",
+  "total_kwh": "md_kwh",
+  "standard_kwh": "md_kwh",
+  "standard_r": "md_energy_r",
+  "demand_kva": "md_kva",
+  "demand_r": "md_demand_r",
+  "other_r": "md_service_r",
+  "total_ex_vat_r": "md_total_ex",
+  "deposit_r": "deposit_r",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "nmd_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "reading_type": "_none"
+ }
+}

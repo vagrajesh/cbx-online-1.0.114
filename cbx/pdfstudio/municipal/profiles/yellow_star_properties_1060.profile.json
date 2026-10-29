@@ -1,0 +1,147 @@
+{
+ "profile_id": "yellow_star_properties_1060",
+ "profile_name": "Yellow Star Properties 1060 (Pty) Ltd (landlord; managed by Business Partners Property Brokers, MRI statement) - electricity recharge",
+ "short_name": "Yellow Star Properties",
+ "_doc": "Yellow Star Properties 1060 (Pty) Ltd landlord 'Tax Invoice & Statement' (MRI Real Estate software, managed by Business Partners Property Brokers): entity block with the landlord's own VAT number, tenant/Property/Unit No. block, Deposit and Bank Guarantee, 'Statement Date / Tax Invoice No / For the Month' line, a ledger (Balance B/f, receipts, a monthly 'Electricity' line with Exclusive / Tax / Inclusive), Current Month Charges row, aging strip, remittance block with Payment Reference (= account). A fixed monthly electricity recharge: no kWh, meter or readings printed, so the ex-VAT amount goes to other_r and total_ex_vat_r; site = Property + Unit; deposit and bank guarantee mapped to deposit_r / guarantee_r. IDENTITY = printed Current Month Charges exclusive: exact on 10/10 (only circular in the sense that electricity is the only charge on these statements). Fingerprint: landlord VAT number + 'Yellow Star Properties 1060' / 'Business Partners Property'. 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "4280213572"
+  ],
+  "any": [
+   "Yellow Star Properties 1060",
+   "Business Partners Property"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Date[ \\t]+Allocation[ \\t]+Remarks[ \\t]+Exclusive",
+   "require": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Payment Reference (remittance block); fallback Tax Invoice No prefix",
+   "scope": "document",
+   "patterns": [
+    "Payment Reference[ \\t]*\\n(?:[ \\t]*\\n)*[^\\n]*?[ \\t]{2,}(\\d{3,})[ \\t]*$",
+    "Tax Invoice No:[ \\t]*(\\d{3,})/"
+   ],
+   "required": true
+  },
+  {
+   "field": "ys_tax_invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "header",
+   "pattern": "Tax Invoice No:[ \\t]*(\\S+)"
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "header",
+   "pattern": "Statement Date:[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "ys_month",
+   "label": "For the Month",
+   "scope": "header",
+   "pattern": "For the Month:[ \\t]*([A-Za-z]+ \\d{4})"
+  },
+  {
+   "fields": [
+    "ys_deposit_r",
+    "ys_guarantee_r"
+   ],
+   "label": "Deposit / Bank Guarantee",
+   "scope": "header",
+   "pattern": "Deposit[ \\t]+Bank Guarantee[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]*(-?\\d[\\d,]*\\.\\d{2})[ \\t]+(-?\\d[\\d,]*\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "ys_property",
+    "ys_unit"
+   ],
+   "label": "Property / Unit No.",
+   "scope": "header",
+   "pattern": "Property[ \\t]+Unit No\\.[^\\n]*\\n[^\\n]*?[ \\t]{3,}(\\S+(?: \\S+)*)[ \\t]{2,}(\\S+(?: \\S+)*)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ys_elec_ex_r",
+    "ys_elec_vat_r",
+    "ys_elec_inc_r"
+   ],
+   "label": "Electricity ledger line(s): exclusive / tax / inclusive",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity[ \\t]{2,}(-?\\d[\\d,]*\\.\\d{2})[ \\t]+(-?\\d[\\d,]*\\.\\d{2})[ \\t]+(-?\\d[\\d,]*\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "ys_cmc_ex_r",
+    "ys_cmc_vat_r",
+    "ys_cmc_inc_r"
+   ],
+   "label": "Current Month Charges (exclusive / tax / inclusive)",
+   "scope": "section:electricity",
+   "pattern": "Current Month Charges[ \\t]+(-?\\d[\\d,]*\\.\\d{2})[ \\t]+(-?\\d[\\d,]*\\.\\d{2})[ \\t]+(-?\\d[\\d,]*\\.\\d{2})\\b",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "ys_site",
+   "op": "concat",
+   "of": [
+    "ys_property",
+    "ys_unit"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "ys_site",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "ys_elec_ex_r",
+  "total_ex_vat_r": "ys_elec_ex_r",
+  "deposit_r": "ys_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "ys_guarantee_r",
+  "security_held_r": "_none"
+ }
+}

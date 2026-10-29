@@ -1,0 +1,73 @@
+{
+  "title": "flow.read.title",
+  "enabled": true,
+  "trigger": {
+    "type": "row_changed",
+    "data": "uploads"
+  },
+  "run_as": "starter",
+  "start": "if1",
+  "steps": {
+    "s1": {
+      "type": "update_row",
+      "data": "uploads",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "status": "Reading",
+        "note": ""
+      },
+      "next": "s2"
+    },
+    "s2": {
+      "type": "action",
+      "action": "ifrs16.scan",
+      "data": "uploads",
+      "row": "{{trigger.row.id}}",
+      "in": {
+        "la": "la",
+        "movements": "movements",
+        "sequentra": "sequentra",
+        "steps": "steps"
+      },
+      "out": {
+        "months": "months",
+        "latest": "latest",
+        "summary": "summary",
+        "movement": "movement"
+      },
+      "fail": {
+        "status": "Could not read",
+        "note": "{{error}}"
+      },
+      "next": "s3"
+    },
+    "s3": {
+      "type": "update_row",
+      "data": "uploads",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "status": "Ready"
+      }
+    },
+    "if1": {
+      "type": "if",
+      "match": "all",
+      "when": [
+        {
+          "left": "{{trigger.row.la}}",
+          "op": "not_empty"
+        },
+        {
+          "left": "{{trigger.row.movements}}",
+          "op": "not_empty"
+        },
+        {
+          "left": "{{trigger.row.status}}",
+          "op": "equals",
+          "value": "New"
+        }
+      ],
+      "yes": "s1"
+    }
+  }
+}

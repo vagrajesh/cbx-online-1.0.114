@@ -1,0 +1,593 @@
+{
+ "profile_id": "magareng",
+ "profile_name": "Magareng Local Municipality (Warrenton, Northern Cape)",
+ "short_name": "Magareng",
+ "_doc": "MAGARENG LOCAL MUNICIPALITY (Warrenton, NC). One-page 'TAX INVOICE' summary statement, account [number removed], VAT 4840122032. 10 bills = 10 consecutive months Oct-2025 .. Jul-2026 (filenames are junk: 'oct/nov/des/jan/mrt/apr/june' plus 'MAG_[number removed]_[number removed].pdf'=Feb-2026, 'MAG_[number removed]_telkom (1).pdf'=May-2026 and 'MAG_[number removed]_telkom.pdf'=Jul-2026 -- ALWAYS read the month from the 'Date :' line).\n\nLETTER-SPACED MASTHEAD: the invoice heading is drawn glyph-by-glyph, so read_pdf() returns 'T A X     I N V O I C E', NOT 'TAX INVOICE'. Any pattern or fingerprint on 'TAX INVOICE' matches ZERO files. The scanned copy (Feb-2026) OCRs the same heading as 'TAX   INVOICE'. Nothing is fingerprinted on the heading at all; the fingerprint is the municipal VAT number 4840122032 plus 'MAGARENG'. Whole-tree substring counts over all 487 PDFs: 4840122032 = 10 files / 1 folder, MAGARENG = 10/1, MAGARENG MUNICIPALITY = 10/1, 'T A X     I N V O I C E' = 9/1 (the 9 text bills), and a contiguous 'TAX INVOICE' = 360 files / 42 folders -- which is exactly why no pattern in this profile contains the string TAX or INVOICE.\n\nONE SCANNED BILL: MAG_[number removed]_[number removed].pdf (208KB, Feb-2026) has no text layer AT ALL (pymupdf get_text() returns 0 chars; the page is a single image), so read_pdf(ocr='auto') OCRs it (scanned=True, ocr=True, the row is force-flagged OCR by the app). Tesseract destroys the 'Amount Excl' COLUMN ONLY on that file ('GOMRZ SS 2', 'MS 5.93 Om)', '| OE', '2 OPES)', 'TY [number removed]') while the 'Vat Amt' and 'Amount Incl' columns survive intact. Every ex-VAT figure is therefore a prefer(printed Amount Excl, Amount Incl - Vat Amt) chain, and the strict 3-column ex-VAT patterns simply MISS on the scan rather than returning garbage.\n\nThe derived ex-VAT values on the scan (energy 69125.32, kVA 15593.07) were confirmed four independent ways: (a) they sum to the intact printed '23962.9 Kwh -   84718.39' line to the cent; (b) with the other five charge lines they sum to the intact printed grand-total Amount Excl 87596.28 to the cent; (c) a 400-dpi re-render re-OCRed with --psm 6 reads the ex column as '69 125. 34' / '155.93 0m)', i.e. the same figures with one digit misread (69125.34 is excluded by (b), which only closes on ...32); (d) 69125.32 / 23922 kWh = R2.8896/kWh, identical to Jan-2026 (80518.85/27865 = R2.8896) and Mar-2026 (59973.09/20754 = R2.8897).\n\nLAYOUT. Header: masthead + 'VAT Reg No', 'Tel No', 'Fax No'; addressee block (TELKOM SA LTD / PRIVATE BAG X137 / CENTURIAN -- never fingerprinted, 136 files in the tree carry it); 'Date : <Month> <YYYY>', 'Account No :', 'Market Value :', 'Stand Size :'; then the property address ('0 STRUWIG' / 'WARRENTON'). Then the meter table:\n    Meter-No:   Previous:   Current:   Consumption:\n     [number removed]    157735      181140      23404      <- kWh meter\n    E[number removed]   0           0           0          <- 2nd meter, always zero\n          KVA    0           38          38         <- max demand kVA\nThen a ledger head (BALANCE BROUGHT FORWARD / LESS PAYMENTS RECEIVED / PLUS PAYMENTS REVERSED / ADJUSTMENTS / SUB TOTAL) and the charge table under 'DEBITS RAISED FOR THE MONTH  Amount Excl  Vat Amt  Amount Incl':\n    ASSESSMENT RATES - BUSINESS          (no VAT column: 2 figures only)\n    ELECTRICITY BUSINESS                 energy\n    KVA METER                            <- printed TWICE: a bare label line\n    KVA METER            <ex> <vat> <incl>  and the real charge line\n    WATER BUSINESS                       <- bare label, no figures, no water meter\n    BASIC REFUSE BUSINESS ONCE PER WEEK\n    BASIC ELECTRICITY BUSINESSES\n    BASIC WATER BUSINESSES\n    INTEREST ON ARREARS                  (Dec-2025 only)\nand a bare 3-figure grand-total line, 'Amount Due :', an Advance/90+/60/30/Current aging strip, 'Deposit Amount:' and a payment slip.\n\nTHE 'Kwh -' LINE. One line reads '<units> Kwh -   <amount>', e.g. '23443.3 Kwh -   82473.19'. The amount is the PRINTED ex-VAT total of the two metered electricity lines (ELECTRICITY BUSINESS + KVA METER) and it is intact on all 10 files including the scan; it is the anchor for total_ex_vat_r. The units figure is kWh + kVA + a small fraction (23404 + 38 = 23442 vs 23443.3) so it is NOT total_kwh -- it is kept as the native mag_units_billed only. Its position drifts (Jun-2026 prints it after BASIC ELECTRICITY BUSINESSES).\n\nJUN-2026 SHAPE: the kWh meter row is absent from the meter table (replaced by a bare '0 0 0' line) and there is no ELECTRICITY BUSINESS line -- only KVA METER. So start/end reading, total_kwh, standard_kwh and standard_r are correctly BLANK on that bill and the 'Kwh -' line reads '43.5 Kwh - 16637.27' = the kVA charge alone. That is data, not a miss (those rules are required:false).\n\nMONEY is space-thousands with a DOT decimal ('67 629.64', '156 124.12'), and the grand-total/aging lines print no thousands separator at all ('180346.13'). There are NO comma decimals anywhere on this layout (verified: 0 comma characters in all 10 raw texts), so the stock money cleaner is correct and there is no 100x _to_decimal trap. The default money token is (?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]) -- ONE space in the thousands run, which is what the text layer prints.\n\nOCR-TOLERANT LAST-RESORT PATTERNS. Tesseract normalises every whitespace run on the scanned copy to exactly THREE spaces, so on that file a thousands separator and a column gap look identical ('10   368.80   79   494.12'). Three rules therefore carry a FINAL fallback pattern whose money token is (?<![\\d.])-?\\d+(?:[ ]{1,4}\\d{3})*\\.\\d{2}(?![\\d]) -- mag_energy_vat_r/incl, mag_kva_vat_r/incl and mag_rates_incl_ocr. They are reached ONLY on the scan (the strict patterns provably match nothing there), and they were checked to return byte-identical values to the strict patterns on all 9 text bills. The wide token is deliberately NOT used on the BASIC ELECTRICITY / BASIC WATER lines, where the strict single-space token already succeeds on the scan and the wide one would glue an OCR junk digit onto the VAT figure ('| OE   2   106.16' -> 2106.16 instead of 106.16). The leading group is \\d+ (not \\d{1,3}) so that a separator-less number such as 180346.13 still reads whole, and every continuation group is exactly \\d{3} so that '2   10   368' cannot glue.\n\nNOT PRINTED ANYWHERE (mapped '_none', not regex misses): reading period start/end dates (the only dates are the payment cut-off 'UP TO yyyy/mm/dd' and a meaningless 'Due Date:  0'), Actual/Estimate flag, peak / off-peak registers (single-band business tariff), NMD, Cash, Guarantee, Security Held. 'Deposit Amount:' IS printed (0.00 on every bill) -> deposit_r.\n\nRULE ZERO. total_ex_vat_r = the PRINTED 'Kwh -' ex-VAT figure + the basic electricity charge, while standard_r / demand_r come from the Amount Excl column (or Incl-Vat). So the reconcile check genuinely tests energy_ex + kva_ex == the independently printed 82473.19-style figure. The only shared term is the basic charge (R707.72, 0.4-0.9% of the bill); that much is circular and is stated in the report. The full independent identity is the grand-total line: elec + kva + basic elec + rates + refuse + basic water (+ interest) == printed Amount Excl total -- max deviation R0.00 on all 10 bills including the scan. Two more: printed grand-total Vat Amt == sum of the per-line Vat column (R0.00 x 10), and full ledger closure BALANCE BROUGHT FORWARD + LESS PAYMENTS + PLUS REVERSED + ADJUSTMENTS + grand-total Amount Incl == 'Amount Due :' (R0.00 x 10).\n\nTWO BILL-SIDE QUIRKS, both the municipality's own arithmetic, not extraction errors. (1) The printed 'SUB TOTAL' line is unreliable: it prints 0.00 on Oct/Nov/Dec/Jan/Feb even where BALANCE BROUGHT FORWARD + LESS PAYMENTS is non-zero (Dec-2025 leaves R87105.72 unpaid and still prints SUB TOTAL 0.00). Do not use it as a ledger term; mag_subtotal_r is captured but nothing derives from it. (2) The aging strip closes to 'Amount Due' on 9 of 10 bills but is R87015.96 short on Dec-2025 for the same reason. (3) The meter reading columns are integers while the billed consumption carries hidden decimals, so end_reading - start_reading differs from the printed Consumption by exactly 1 on Oct-25, Dec-25, Apr-26 and May-26 (0 on the other five). The 'Kwh -' units figure exposes the decimals: 21979.9 kWh + 47.9 kVA = the printed 22027.8 on Oct-25.",
+ "fingerprint": {
+  "all": [
+   "4840122032"
+  ],
+  "any": [
+   "MAGARENG MUNICIPALITY",
+   "MAGARENG"
+  ],
+  "reject_if_text": [
+   "requires Adobe Reader",
+   "Please wait... If this message is not eventually replaced"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*DEBITS[ \\t]+RAISED[ \\t]+FOR[ \\t]+THE[ \\t]+MONTH"
+  },
+  "rates": {
+   "start": "^[ \\t]*ASSESSMENT[ \\t]+RATES\\b",
+   "overlay": true,
+   "end": "\\n"
+  },
+  "refuse": {
+   "start": "^[ \\t]*BASIC[ \\t]+REFUSE\\b",
+   "overlay": true,
+   "end": "\\n"
+  },
+  "water": {
+   "start": "^[ \\t]*BASIC[ \\t]+WATER[ \\t]+BUSINESS",
+   "overlay": true,
+   "end": "\\n"
+  },
+  "sundry": {
+   "start": "^[ \\t]*INTEREST[ \\t]+ON[ \\t]+ARREARS\\b",
+   "overlay": true,
+   "end": "\\n"
+  }
+ },
+ "fields": [
+  {
+   "fields": [
+    "mag_bill_month",
+    "mag_bill_year"
+   ],
+   "label": "Statement month",
+   "scope": "header",
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": true,
+   "pattern": "\\bDate[ \\t]*:[ \\t]*([A-Za-z]+)[ \\t]+(\\d{4})[ \\t]*$"
+  },
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "header",
+   "pattern": "\\bAccount[ \\t]+No[ \\t]*:[ \\t]*(\\d{5,12})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "mag_site_no",
+    "mag_site_street",
+    "mag_site_town"
+   ],
+   "label": "Property address",
+   "scope": "header",
+   "types": [
+    "text",
+    "text",
+    "text"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*(\\d+)[ \\t]+([A-Z][A-Z0-9]*(?:[ \\t]+[A-Z0-9]+)*?)[ \\t]*\\n[ \\t]*(WARRENTON)[ \\t]*$"
+  },
+  {
+   "field": "mag_market_value",
+   "label": "Market value",
+   "scope": "header",
+   "pattern": "\\bMarket[ \\t]+Value[ \\t]*:[ \\t]*((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))",
+   "type": "money"
+  },
+  {
+   "field": "mag_stand_size",
+   "label": "Stand size",
+   "scope": "header",
+   "pattern": "\\bStand[ \\t]+Size[ \\t]*:[ \\t]*(\\d+)\\b",
+   "type": "number"
+  },
+  {
+   "field": "mag_deposit_r",
+   "label": "Deposit amount",
+   "scope": "document",
+   "pattern": "\\bDeposit[ \\t]+Amount[ \\t]*:[ \\t]*((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "mag_meter",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "mag_meter_kwh"
+   ],
+   "label": "kWh meter row",
+   "scope": "header",
+   "pattern": "^[ \\t]*(\\d{6,10})[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]*$",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number"
+   ],
+   "required": false
+  },
+  {
+   "field": "mag_meter_alt",
+   "label": "Secondary meter",
+   "scope": "header",
+   "pattern": "^[ \\t]*(E\\d{6,12})[ \\t]+\\d",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "mag_kva_reading",
+    "demand_kva"
+   ],
+   "label": "kVA meter row",
+   "scope": "header",
+   "types": [
+    "number",
+    "number"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*KVA[ \\t]+\\S+[ \\t]+(\\d+)\\)?[ \\t]+(\\d+)[ \\t]*$"
+  },
+  {
+   "field": "mag_balance_bf",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "^[ \\t]*BALANCE[ \\t]+BROUGHT[ \\t]+FORWARD[ \\t]+((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mag_payments_r",
+   "label": "Less payments received",
+   "scope": "document",
+   "pattern": "^[ \\t]*LESS[ \\t]+PAYMENTS[ \\t]+RECEIVED[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mag_payments_cutoff",
+   "label": "Payments received up to",
+   "scope": "document",
+   "pattern": "LESS[ \\t]+PAYMENTS[ \\t]+RECEIVED[ \\t]+UP[ \\t]+TO[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date"
+  },
+  {
+   "field": "mag_reversals_r",
+   "label": "Plus payments reversed",
+   "scope": "document",
+   "pattern": "^[ \\t]*PLUS[ \\t]+PAYMENTS[ \\t]+REVERSED[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mag_adjustments_r",
+   "label": "Adjustments",
+   "scope": "document",
+   "pattern": "^[ \\t]*ADJUSTMENTS[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mag_subtotal_r",
+   "label": "Sub total",
+   "scope": "document",
+   "pattern": "^[ \\t]*SUB[ \\t]+TOTAL[ \\t]+((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mag_tariff",
+   "label": "Tariff category",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*ELECTRICITY[ \\t]+(BUSINESS)\\b",
+    "^[ \\t]*BASIC[ \\t]+ELECTRICITY[ \\t]+(BUSINESS)ES\\b"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mag_energy_ex_r",
+   "label": "Electricity energy Amount Excl",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*ELECTRICITY[ \\t]+BUSINESS[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "mag_energy_vat_r",
+    "mag_energy_incl_r"
+   ],
+   "label": "Electricity energy Vat / Incl",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*ELECTRICITY[ \\t]+BUSINESS[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+    "^[ \\t]*ELECTRICITY[ \\t]+BUSINESS[^\\n]*?((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+    "^[ \\t]*ELECTRICITY[ \\t]+BUSINESS[^\\n]*?((?<![\\d.])-?\\d+(?:[ ]{1,4}\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]{1,4}\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "field": "mag_kva_ex_r",
+   "label": "KVA meter Amount Excl",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*KVA[ \\t]+METER[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "mag_kva_vat_r",
+    "mag_kva_incl_r"
+   ],
+   "label": "KVA meter Vat / Incl",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*KVA[ \\t]+METER[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+    "^[ \\t]*KVA[ \\t]+METER[^\\n]*?((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+    "^[ \\t]*KVA[ \\t]+METER[^\\n]*?((?<![\\d.])-?\\d+(?:[ ]{1,4}\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]{1,4}\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "field": "mag_basic_elec_ex_r",
+   "label": "Basic electricity Amount Excl",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*BASIC[ \\t]+ELECTRICITY[ \\t]+BUSINESS\\w*[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "mag_basic_elec_vat_r",
+    "mag_basic_elec_incl_r"
+   ],
+   "label": "Basic electricity Vat / Incl",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*BASIC[ \\t]+ELECTRICITY[ \\t]+BUSINESS\\w*[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+    "^[ \\t]*BASIC[ \\t]+ELECTRICITY[ \\t]+BUSINESS\\w*[^\\n]*?((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "mag_units_billed",
+    "mag_metered_ex_r"
+   ],
+   "label": "Billed units / printed metered ex-VAT total",
+   "scope": "section:electricity",
+   "types": [
+    "number",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*(\\d+(?:\\.\\d+)?)[ \\t]+Kwh[ \\t]+-[ \\t]+((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$"
+  },
+  {
+   "fields": [
+    "mag_total_ex_all_r",
+    "mag_total_vat_all_r",
+    "mag_total_incl_all_r"
+   ],
+   "label": "Grand total (all services) Excl / Vat / Incl",
+   "scope": "section:electricity",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$"
+  },
+  {
+   "field": "mag_amount_due_r",
+   "label": "Amount due",
+   "scope": "document",
+   "pattern": "\\bAmount[ \\t]+Due[ \\t]*:[ \\t]*((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mag_age_advance",
+    "mag_age_90",
+    "mag_age_60",
+    "mag_age_30",
+    "mag_age_current"
+   ],
+   "label": "Aging strip",
+   "scope": "document",
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$"
+  },
+  {
+   "fields": [
+    "mag_rates_ex_r",
+    "mag_rates_incl_r"
+   ],
+   "label": "Assessment rates Excl / Incl (no VAT column on this line)",
+   "scope": "section:rates",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false,
+   "pattern": "^[ \\t]*ASSESSMENT[ \\t]+RATES[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$"
+  },
+  {
+   "field": "mag_rates_incl_ocr",
+   "label": "Assessment rates Incl (last money token; OCR-tolerant fallback)",
+   "scope": "section:rates",
+   "type": "money",
+   "required": false,
+   "pattern": "^[ \\t]*ASSESSMENT[ \\t]+RATES[^\\n]*?((?<![\\d.])-?\\d+(?:[ ]{1,4}\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$"
+  },
+  {
+   "field": "mag_refuse_ex_r",
+   "label": "Basic refuse Amount Excl",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*BASIC[ \\t]+REFUSE[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "mag_refuse_vat_r",
+    "mag_refuse_incl_r"
+   ],
+   "label": "Basic refuse Vat / Incl",
+   "scope": "section:refuse",
+   "patterns": [
+    "^[ \\t]*BASIC[ \\t]+REFUSE[^\\n]*?[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+    "^[ \\t]*BASIC[ \\t]+REFUSE[^\\n]*?((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "mag_water_ex_r",
+   "label": "Basic water Amount Excl",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*BASIC[ \\t]+WATER[ \\t]+BUSINESS\\w*[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "mag_water_vat_r",
+    "mag_water_incl_r"
+   ],
+   "label": "Basic water Vat / Incl",
+   "scope": "section:water",
+   "patterns": [
+    "^[ \\t]*BASIC[ \\t]+WATER[ \\t]+BUSINESS\\w*[ \\t]{2,}(?:(?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$",
+    "^[ \\t]*BASIC[ \\t]+WATER[ \\t]+BUSINESS\\w*[^\\n]*?((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "mag_interest_ex_r",
+    "mag_interest_incl_r"
+   ],
+   "label": "Interest on arrears Excl / Incl",
+   "scope": "section:sundry",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false,
+   "pattern": "^[ \\t]*INTEREST[ \\t]+ON[ \\t]+ARREARS[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ]\\d{3})*\\.\\d{2}(?![\\d]))[ \\t]*$"
+  }
+ ],
+ "computes": [
+  {
+   "field": "mag_billing_date",
+   "op": "concat",
+   "of": [
+    "mag_bill_month",
+    "mag_bill_year"
+   ]
+  },
+  {
+   "field": "mag_site",
+   "op": "concat",
+   "of": [
+    "mag_site_no",
+    "mag_site_street",
+    "mag_site_town"
+   ]
+  },
+  {
+   "field": "mag_energy_ex_calc",
+   "op": "sub",
+   "of": [
+    "mag_energy_incl_r",
+    "mag_energy_vat_r"
+   ]
+  },
+  {
+   "field": "mag_energy_ex_out",
+   "op": "prefer",
+   "of": [
+    "mag_energy_ex_r",
+    "mag_energy_ex_calc"
+   ]
+  },
+  {
+   "field": "mag_kva_ex_calc",
+   "op": "sub",
+   "of": [
+    "mag_kva_incl_r",
+    "mag_kva_vat_r"
+   ]
+  },
+  {
+   "field": "mag_kva_ex_out",
+   "op": "prefer",
+   "of": [
+    "mag_kva_ex_r",
+    "mag_kva_ex_calc"
+   ]
+  },
+  {
+   "field": "mag_basic_elec_ex_calc",
+   "op": "sub",
+   "of": [
+    "mag_basic_elec_incl_r",
+    "mag_basic_elec_vat_r"
+   ]
+  },
+  {
+   "field": "mag_basic_elec_ex_out",
+   "op": "prefer",
+   "of": [
+    "mag_basic_elec_ex_r",
+    "mag_basic_elec_ex_calc"
+   ]
+  },
+  {
+   "field": "mag_refuse_ex_calc",
+   "op": "sub",
+   "of": [
+    "mag_refuse_incl_r",
+    "mag_refuse_vat_r"
+   ]
+  },
+  {
+   "field": "mag_refuse_ex_out",
+   "op": "prefer",
+   "of": [
+    "mag_refuse_ex_r",
+    "mag_refuse_ex_calc"
+   ]
+  },
+  {
+   "field": "mag_water_ex_calc",
+   "op": "sub",
+   "of": [
+    "mag_water_incl_r",
+    "mag_water_vat_r"
+   ]
+  },
+  {
+   "field": "mag_water_ex_out",
+   "op": "prefer",
+   "of": [
+    "mag_water_ex_r",
+    "mag_water_ex_calc"
+   ]
+  },
+  {
+   "field": "mag_rates_ex_out",
+   "op": "prefer",
+   "of": [
+    "mag_rates_ex_r",
+    "mag_rates_incl_r",
+    "mag_rates_incl_ocr"
+   ]
+  },
+  {
+   "field": "mag_elec_total_ex_r",
+   "op": "sum",
+   "of": [
+    "mag_metered_ex_r",
+    "mag_basic_elec_ex_out"
+   ]
+  },
+  {
+   "field": "mag_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "mag_energy_vat_r",
+    "mag_kva_vat_r",
+    "mag_basic_elec_vat_r"
+   ]
+  },
+  {
+   "field": "mag_elec_total_incl_r",
+   "op": "sum",
+   "of": [
+    "mag_energy_incl_r",
+    "mag_kva_incl_r",
+    "mag_basic_elec_incl_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "mag_site",
+  "billing_date": "mag_billing_date",
+  "tariff_name": "mag_tariff",
+  "meter": [
+   "mag_meter",
+   "mag_meter_alt"
+  ],
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "total_kwh": "mag_meter_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "mag_meter_kwh",
+  "offpeak_kwh": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "mag_energy_ex_out",
+  "offpeak_r": "_none",
+  "demand_r": "mag_kva_ex_out",
+  "nmd_r": "_none",
+  "other_r": "mag_basic_elec_ex_out",
+  "total_ex_vat_r": "mag_elec_total_ex_r",
+  "deposit_r": "mag_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "^[ \\t]*BALANCE[ \\t]+BROUGHT[ \\t]+FORWARD[ \\t]+(-?\\d+(?:[ ]\\d{3})*\\.\\d{2})[ \\t]*$",
+  "incoming_payment": "^[ \\t]*LESS[ \\t]+PAYMENTS[ \\t]+RECEIVED[^\\n]*?[ \\t]{2,}(-?\\d+(?:[ ]\\d{3})*\\.\\d{2})[ \\t]*$",
+  "subtotal": "^[ \\t]*SUB[ \\t]+TOTAL[ \\t]+(-?\\d+(?:[ ]\\d{3})*\\.\\d{2})[ \\t]*$",
+  "current_ex": "^[ \\t]*(-?\\d+(?:[ ]\\d{3})*\\.\\d{2})[ \\t]{2,}-?\\d+(?:[ ]\\d{3})*\\.\\d{2}[ \\t]{2,}-?\\d+(?:[ ]\\d{3})*\\.\\d{2}[ \\t]*$",
+  "vat": "^[ \\t]*-?\\d+(?:[ ]\\d{3})*\\.\\d{2}[ \\t]{2,}(-?\\d+(?:[ ]\\d{3})*\\.\\d{2})[ \\t]{2,}-?\\d+(?:[ ]\\d{3})*\\.\\d{2}[ \\t]*$",
+  "total_due": "Amount[ \\t]+Due[ \\t]*:[ \\t]*(-?\\d+(?:[ ]\\d{3})*\\.\\d{2})"
+ }
+}

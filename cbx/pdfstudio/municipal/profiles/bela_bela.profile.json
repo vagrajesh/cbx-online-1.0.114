@@ -1,0 +1,345 @@
+{
+ "profile_id": "bela_bela",
+ "profile_name": "Bela-Bela Local Municipality (Limpopo)",
+ "short_name": "Bela-Bela",
+ "_doc": "TAX INVOICE/STATEMENT OF ACCOUNT, emunsoft ledger family (same engine as KwaDukuza / Abaqulusi / Alfred Duma). Masthead 'BELA-BELA MUNICIPALITY / PRIVATE BAG X 1609 BELA BELA 0480', VAT No.:4850128515. Fingerprint = masthead AND that VAT number, so it can never match a sibling emunsoft municipality. LAYOUT: header block of 'Label: value' pairs (Account Number / Account Date / Consumer Name / Tax Invoice No. / ERF Description / Suburb / Street / Market Value / Land Area / Deposit / Internet PIN). Then 'METER READINGS' with columns METER NO. / METER TYPE / OLD READING / NEW READING / READING DATE / READING TYPE / CONSUMPTION -- note this variant prints a SINGLE reading date (the new-reading date), a one-letter READING TYPE ('E' -> Estimated via TRANSLATE) and NO 'LEVIED AMOUNT' column. Alfred Duma's variant of the same engine instead prints CONSUMPTION then LEVIED AMOUNT then a date RANGE and no reading type; the two meter-row patterns are therefore not interchangeable. There is exactly ONE electricity meter ([number removed]) on all 10 bills, so the meter row is captured by a single no-collect multi-field rule; the meter rolls over at 1,000,000 (985,731 -> 6,738 on the Jan-2026 bill), so total_kwh is taken from the printed CONSUMPTION column and never from end-minus-start. Then 'ACCOUNT DETAILS' ledger DATE / CODE / DESCRIPTION / UNITS / TARIFF / VALUE where VATable lines carry a '*' marker before the amount. Codes across the 10-bill set: 002004 ENERGY CHARGE (electricity, kWh @ 3.1368 rising to 3.5069 in Jul-2026), 004041 SEWERAGE BASIC CHARGE (sewerage, 1.000 @ 272.00 -> 281.00), 000020 WARNING LETTER ADMIN FEE, 000023 CN/DN FEES (a debit note of 431.00 and its credit-note reversal 431.00-), 008888 DIRECT DEPOSIT PAYMENT, 009008 VAT, 009001 INTEREST. No water and no rates lines on this account. SUMMING CHOICES: electricity has exactly ONE charge line, so standard_kwh / standard_r = the ENERGY CHARGE line (collect:sum so a future mid-period tariff change producing two lines still aggregates) and other_r is '_none' -- the admin fee, CN/DN fees and interest are NOT electricity, they go to the sundry row, and the sewerage basic charge goes to the sewerage row. Flat single-band LV supply: no TOU, no demand, no NMD -> those canonical columns are '_none'. RULE ZERO: the bill prints no independent ex-VAT electricity total, so total_ex_vat_r maps to the SAME printed ENERGY CHARGE amount as standard_r -- the reconcile leg is therefore degenerate (one printed line on both sides) and proves nothing; see the report. The genuine checks are (a) METER READINGS CONSUMPTION == the ENERGY CHARGE units column (two independently printed tables), (b) units x tariff == the printed line value, (c) printed VAT == 15% of the sum of the '*'-marked ledger lines.",
+ "fingerprint": {
+  "all": [
+   "BELA-BELA MUNICIPALITY",
+   "VAT No.:4850128515"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "requires Adobe Reader 8 or higher",
+   "ALFRED DUMA LOCAL MUNICIPALITY",
+   "ABAQULUSI MUNICIPALITY"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "overlay": true,
+   "end": "^120\\+ DAYS[ \\t]",
+   "require": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]|ENERGY CHARGE"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]*SEWERAGE",
+   "overlay": true,
+   "end": "$"
+  },
+  "sundry": {
+   "start": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+(?:000020|000023)[ \\t]|\\d{6}[ \\t]+INTEREST[ \\t])",
+   "overlay": true,
+   "end": "^[ \\t]*\\d{6}[ \\t]+INTEREST[^\\n]*$"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "^Account Number:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Consumer Name",
+   "scope": "document",
+   "pattern": "^Consumer Name:[ \\t]*(.+?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2} [A-Z]{3} \\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "invoice_number",
+   "label": "Tax Invoice No.",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "munic_vat_no",
+   "label": "Municipal VAT No.",
+   "scope": "document",
+   "pattern": "VAT No\\.:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "erf_description",
+   "label": "ERF Description",
+   "scope": "document",
+   "pattern": "ERF Description:[ \\t]*(\\S.*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "suburb",
+   "label": "Suburb",
+   "scope": "document",
+   "pattern": "^[ \\t]*Suburb:[ \\t]*(\\S.*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "street",
+   "label": "Street",
+   "scope": "document",
+   "pattern": "Street:[ \\t]*(\\S.*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "market_value",
+   "label": "Market Value",
+   "scope": "document",
+   "pattern": "Market Value:[ \\t]*((?<![\\d.,])[\\d,]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "land_area",
+   "label": "Land Area",
+   "scope": "document",
+   "pattern": "Land Area:[ \\t]*([\\d,]*\\.\\d{4})",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "deposit",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]*((?<![\\d.,])[\\d,]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "internet_pin",
+   "label": "Internet PIN",
+   "scope": "document",
+   "pattern": "Internet PIN:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "total_due",
+   "label": "Total Due",
+   "scope": "document",
+   "pattern": "TOTAL DUE:[ \\t]*((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Total Due On Or Before",
+   "scope": "document",
+   "pattern": "TOTAL DUE ON OR BEFORE:[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "opening_balance_r",
+   "label": "Opening Balance",
+   "scope": "document",
+   "pattern": "^[ \\t]*OPENING BALANCE[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "payments_r",
+   "label": "Payments received",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]+DIRECT DEPOSIT PAYMENT[^\\n]*?((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "vat_r",
+   "label": "VAT",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{6}[ \\t]+VAT[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "age_120",
+    "age_90",
+    "age_60",
+    "age_30",
+    "current_r",
+    "closing_balance_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Ageing row / CLOSING BALANCE",
+   "scope": "document",
+   "pattern": "^120\\+ DAYS[^\\n]*\\n[ \\t]*((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "meter",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "read_end",
+    "reading_type",
+    "bel_meter_kwh"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "date",
+    "text",
+    "number"
+   ],
+   "label": "Electricity meter row",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+ELECTRICITY[ \\t]+((?<![\\d.])[\\d,]+\\.\\d{3})[ \\t]+([\\d,]+\\.\\d{3})[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+([A-Z])[ \\t]+(-?[\\d,]+\\.\\d{3}-?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "bel_energy_kwh",
+    "bel_energy_rate",
+    "bel_energy_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "ENERGY CHARGE (002004)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]+ENERGY CHARGE[ \\t]+(-?[\\d,]+\\.\\d{3}-?)[ \\t]+@?[ \\t]*([\\d,]*\\.\\d+)[ \\t]+\\*?[ \\t]*((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "bel_sewer_units",
+    "bel_sewer_rate",
+    "bel_sewer_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "SEWERAGE BASIC CHARGE (004041)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]*SEWERAGE BASIC CHARGE[ \\t]+([\\d,]+\\.\\d{3})[ \\t]+@?[ \\t]*([\\d,]*\\.\\d+)[ \\t]+\\*?[ \\t]*((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "bel_admin_fee_r",
+   "label": "WARNING LETTER ADMIN FEE (000020)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]+WARNING LETTER ADMIN FEE[^\\n]*?((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "bel_note_fee_r",
+   "label": "CN/DN FEES (000023)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]+[CD]N FEES[^\\n]*?((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "bel_interest_r",
+   "label": "INTEREST (009001)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{6}[ \\t]+INTEREST[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "bel_vatable_r",
+   "label": "All '*' VATable ledger lines (identity check)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[^\\n]*?\\*[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "bel_sundry_total_r",
+   "op": "sum",
+   "of": [
+    "bel_admin_fee_r",
+    "bel_note_fee_r",
+    "bel_interest_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "_none",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": [
+   "bel_meter_kwh",
+   "bel_energy_kwh"
+  ],
+  "peak_kwh": "_none",
+  "standard_kwh": "bel_energy_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "bel_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "_none",
+  "total_ex_vat_r": "bel_energy_r",
+  "deposit_r": "deposit",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?i)^[ \\t]*OPENING BALANCE[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "(?i)DIRECT DEPOSIT PAYMENT[^\\n]*?(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "vat": "(?i)^[ \\t]*\\d{6}[ \\t]+VAT[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "total_due": "(?i)TOTAL DUE:[ \\t]*(-?[\\d,]+\\.\\d{2}-?)",
+  "due_date": "(?i)TOTAL DUE ON OR BEFORE:[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+  "deposito": "(?i)Deposit:[ \\t]*([\\d,]+\\.\\d{2})"
+ }
+}

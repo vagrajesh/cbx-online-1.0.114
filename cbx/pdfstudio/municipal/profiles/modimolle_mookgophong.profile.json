@@ -1,0 +1,583 @@
+{
+ "profile_id": "modimolle_mookgophong",
+ "profile_name": "Modimolle-Mookgophong Local Municipality (LIM 368, Limpopo)",
+ "short_name": "Modimolle-Mook",
+ "_doc": "MODIMOLLE-MOOKGOPHONG (LIM 368, Limpopo) - TAX INVOICE/STATEMENT OF ACCOUNT, same billing vendor (eMunsoft) as KwaDukuza / Abaqulusi / Alfred Duma / Bela-Bela / Emalahleni. Masthead 'Modimolle Mookgophong Local Municipality / PRIVATE BAG X1008 MODIMOLLE 0510'. Fingerprint pinned on that masthead AND VAT number 4140278328; both verified present in exactly the 10 bills of this account and nowhere else in the 219-PDF Telkom tree. Account [number removed], one site (LANDDROSSTRAAT 50, TOWN NYLSTROOM / MODIMOLLE), statements 31 JAN 2025 -> 31 JUL 2026.\n\nTHIS IS THE RICHEST BILL IN THE FAMILY - A REAL TOU / LARGE POWER USER STATEMENT.\nOnly ONE meter-table variant occurs here: METER NO. / METER TYPE / OLD READING / NEW READING / READING DATE / READING TYPE / CONSUMPTION (single reading date, no date range) - the Bela-Bela / Emalahleni-variant-A shape. All 65 meter rows on all 10 bills have exactly these 7 columns. There is NO period start anywhere -> Start Date is '_none'.\n\nMETER TABLE\n- METER TYPE values: 'TIME OF USE' (the three kWh registers), 'KVA' (two demand registers), 'WATER'.\n- The three TIME OF USE registers are the Peak / Standard / Off-peak kWh registers, but on the OLD meter ([number removed]) they are printed WITHOUT any register suffix, so the meter table alone cannot tell you which register is which band. On the NEW meter the suffix letters are explicit: [number removed]P / ...S / ...O are TIME OF USE and ...A / ...K are KVA (the Mbombela suffix convention). CONSEQUENCE: the per-band kWh and Rands are taken from the LEDGER codes (TOU01P/S/O), never from the meter table - the meter table only supplies Start/End Reading and Total kWh (summed over the TIME OF USE rows). Verified on all 10 bills: sum(TIME OF USE CONSUMPTION) == TOU01P + TOU01S + TOU01O units, and END-START == that same figure.\n- KVA rows print OLD .000 -> NEW = the month's demand level and CONSUMPTION = NEW READING (a level, not a difference). Both KVA registers are billed, one as TOU03K 'DEMAND CHARGE' and one as TOU03A 'ACCESS CHARGE', and on the old meter they are indistinguishable in the table (bill 1 has FOUR KVA rows), so Demand kVA / NMD kVA are taken from the LEDGER units, not the meter table.\n- MULTI-METER: bill 'LIM_...[number removed].pdf' (31 MAR 2026) is a meter-swap month - the outgoing [number removed] carries the real readings while the incoming [number removed]* registers are all present with zero movement. Meter number is join_unique; readings/consumption are collect:'sum'. The zero-movement registers add the same value to OLD and NEW so END-START still equals Total kWh exactly.\n- READING TYPE letters seen: A (6 bills), S (1), N (1, WITH a real reading movement), E (zero-movement registers), I (water only). TRANSLATE covers A and E only, so reading_type is a join_unique of the RAW letters: 'A' translates to 'Actual', 'E' to 'Estimated', everything else passes through exactly as printed ('S', 'E/N'). NOTE FOR EDWIN: the Abaqulusi report guessed N = 'No Reading'. These bills CONTRADICT that - bill 1's TIME OF USE registers are type N and moved 730,253 -> 741,597 (11,344 kWh billed). So N is NOT 'no reading' in this vendor's scheme, and nothing here is invented: no letter beyond A/E is mapped.\n\nACCOUNT DETAILS LEDGER: DATE / CODE / DESCRIPTION / UNITS / TARIFF / VALUE, with '@' between UNITS and TARIFF on real levies and a '*' VAT flag before VALUE. Credits print a TRAILING minus.\n\nCOMPLETE CODE + DESCRIPTION CENSUS (every distinct line type over the 10 bills)\n  TOU01P  'TOU: LPU: ELECTRICITY PEAK' (9) / 'FINAL USAGE ELECTRICIY' (1)     -> peak kWh + Rands\n  TOU01S  'TOU: LPU: ELECTRICITY STANDARD' (9) / 'FINAL USAGE ELECTRICIY' (1) -> standard kWh + Rands\n  TOU01O  'TOU: LPU: ELECTRICITY OFF-PEAK' (9) / 'FINAL USAGE ELECTRICIY' (1) -> off-peak kWh + Rands\n  TOU03K  'TOU: LPU: DEMAND CHARGE' (9) / 'FINAL USAGE ELECTRICIY' (1)        -> Demand kVA + Demand Rands\n  TOU03A  'TOU: LPU: ACCESS CHARGE' (9) / 'FINAL USAGE ELECTRICIY' (1)        -> NMD kVA + NMD Rands\n  TOU01O  'ELECTRICITY BASIC CHARGE' (10, units 1.000)                        -> Other Charges Rands\n  TOU01O/020108 'Reversal of Adj (Under|Over)billed ...' (4)                  -> PRIOR PERIOD (excluded)\n  (wrapped) 'Adj of Consumption (Under|Over)billed Elec_Non-...Block_Tariff' (10) -> PRIOR PERIOD (excluded)\n  010111  'WATER 0 - 30 KL' (7) / 'WATER BASIC CHARGE' (10)                   -> water\n  010111  'Adj of Consumption Underbilled Water_Block_Tariff' (7)             -> water PRIOR PERIOD\n  040111 (9) / 040102 (1) 'REFUSE REMOVAL' units 3.000                        -> refuse\n  008888  'DIRECT DEPOSIT PAYMENT - THANK YOU' (trailing minus)               -> payments\n  009008  'VAT'   /   000007 'INTEREST' (4 bills, no '*' flag)                -> tax / sundry\nTOU01O IS OVERLOADED: it carries the off-peak energy line, the ELECTRICITY BASIC CHARGE line AND reversal lines, so every electricity rule keys on CODE **plus** the exact description - code alone would put the R964.03 basic charge into Off Peak kWh.\n'FINAL USAGE ELECTRICIY' (the vendor's own misspelling, same string as on Alfred Duma bills) is NOT a reversal here: on bill 1 it is the only energy wording present, it carries the month's real units at the month's real tariffs, and it reconciles - it is the final invoice for the outgoing meter. It is therefore summed into the SAME buckets as the 'TOU: LPU:' lines.\n\nPRIOR-PERIOD LINES - DELIBERATE CHOICE (EXCLUDED from the current-month electricity buckets):\nbill 'MMM_...(12).pdf' (30 JUN 2026) carries 20 adjustment lines dated 04/06 - 24/06: ten wrapped 'Adj of Consumption (Under|Over)billed Elec_Non-<date> <TOUcode> ... Block_Tariff' lines, seven 010111 water adjustments, and four 'Reversal of Adj ...' lines (one under code 020108). They re-bill EARLIER months and they self-cancel in a chain: the wrapped elec adjustments (80,474.83) plus the water adjustments (1,447.74) equal 81,922.57, which is exactly the 'Reversal of Adj Underbilled' of -81,922.57; the +96,155.18 and the +/-36,545.19 pair then leave a net prior-period effect of +96,155.18 (elec 94,707.44, water 1,447.74). Folding that into June would make June's electricity cost meaningless (the month's own TOU levies are 109,528.61), so they are captured in their own fields mmm_prior_elec_adj_r / mmm_water_adj_r and kept out of Peak/Standard/Off-peak/Demand/NMD/Other/Total ex VAT. They ARE part of the VAT base, which is why the VAT identity reads the separate mmm_vatable_r rule and the roll-forward identity adds them back - both close.\nTHE DISCRIMINATOR IS STRUCTURAL, NOT DATE ARITHMETIC: every real levy prints '@ <tariff>' between UNITS and TARIFF; every adjustment/reversal prints '.000' units, a 0.[number removed] tariff and NO '@'. True for all 27 distinct code+description combinations in the folder.\n\nWRAPPED-LINE TRAP: the wrapped adjustment lines are mangled by the PDF text order - the description 'Adj of Consumption Underbilled Elec_Non-Block_Tariff' is split and the ledger's own date and code are injected into the break, so the line reads 'Adj of Consumption Underbilled Elec_Non-04/06/2026      TOU03A   .000  0.[number removed]  *  8,670.87   Block_Tariff' and does NOT begin with a date. Its rule is anchored on the description instead, and the document-wide VAT-base rule is anchored on '* <amount>' followed by either end-of-line OR 'Block_Tariff' so those lines are not silently dropped from the VAT base.\n\nTARIFF NAME: the bill does print one, inside the descriptions - 'TOU: LPU:' (Time Of Use, Large Power User). It is captured literally as mmm_tariff and mapped to canonical Tariff Name. It fills 9 of 10 bills; bill 1 is blank because every energy line on that statement is titled 'FINAL USAGE ELECTRICIY' instead. Nothing is derived or invented to fill that gap.\n\nNOT PRINTED ANYWHERE (mapped '_none'): billing-period start date, cash, guarantee, security held, and any per-service or ex-VAT subtotal. There are no rates and no sewerage lines on this account at all - those services are simply absent, not missed.\n\nRULE ZERO / RECONCILE IS CIRCULAR: no per-service subtotal and no ex-VAT electricity total is printed, so total_ex_vat_r is the sum of the same six parts the Rand columns hold and the app's reconcile check proves nothing. The three GENUINE checks are:\n  1. kWh identity: sum(TIME OF USE CONSUMPTION) == TOU01P+TOU01S+TOU01O units == END-START readings. Exact on all 10 bills.\n  2. kVA identity: the two KVA registers' CONSUMPTION values are the TOU03K and TOU03A billed units (as a set) on all 10 bills.\n  3. Roll-forward: Opening Balance + payments + sum(all '*' lines) + printed VAT + INTEREST == printed TOTAL DUE == the ageing row's TOTAL DUE THIS MONTH. Both ends are printed figures the extraction did not construct.\n\nAgeing row is 6 money columns and the LAST one is 'TOTAL DUE THIS MONTH' (not 'CLOSING BALANCE' as on Emalahleni/Abaqulusi). CURRENT is the net current balance, not the current levy, so recon 'current_ex' is left unmapped.",
+ "fingerprint": {
+  "all": [
+   "MODIMOLLE MOOKGOPHONG LOCAL MUNICIPALITY",
+   "4140278328"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "requires Adobe Reader 8 or higher",
+   "Prepayment Account Update",
+   "EMALAHLENI LOCAL MUNICIPALITY",
+   "ABAQULUSI MUNICIPALITY",
+   "ALFRED DUMA LOCAL MUNICIPALITY",
+   "BELA-BELA MUNICIPALITY"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "require": "^[ \\t]*[0-9A-Z]{6,}[ \\t]+TIME OF USE[ \\t]|^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+TOU\\d{2}[A-Z][ \\t]"
+  },
+  "water": {
+   "overlay": true,
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "end": "^[ \\t]*009008[ \\t]+VAT[ \\t]",
+   "require": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+010111[ \\t]|^[ \\t]*[0-9A-Z]{6,}[ \\t]+WATER[ \\t]"
+  },
+  "refuse": {
+   "overlay": true,
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+0401\\d{2}[ \\t]",
+   "end": "^[ \\t]*009008[ \\t]+VAT[ \\t]"
+  },
+  "sundry": {
+   "overlay": true,
+   "start": "^[ \\t]*000007[ \\t]+INTEREST[ \\t]",
+   "end": "^[ \\t]*000007[ \\t]+INTEREST[^\\n]*$"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account Number:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mmm_consumer_name",
+   "label": "Consumer Name",
+   "scope": "document",
+   "pattern": "Consumer Name:[ \\t]*(.+?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mmm_street",
+   "label": "Street",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(\\S.*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mmm_suburb",
+   "label": "Suburb",
+   "scope": "document",
+   "pattern": "Suburb:[ \\t]+(\\S.*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mmm_erf",
+   "label": "ERF Description",
+   "scope": "document",
+   "pattern": "ERF Description:[ \\t]+(.+?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mmm_ref",
+   "label": "Telkom site reference (VERW)",
+   "scope": "document",
+   "pattern": "VERW[ \\t]*:[ \\t]*\"([^\"\\n]+)\"",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2} [A-Z]{3} \\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mmm_invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.?:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mmm_market_value",
+   "label": "Market Value",
+   "scope": "document",
+   "pattern": "Market Value:[ \\t]+([\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mmm_land_area",
+   "label": "Land Area",
+   "scope": "document",
+   "pattern": "Land Area:[ \\t]+([\\d,]*\\.\\d+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]+([\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "due_date",
+   "label": "Due Date",
+   "scope": "document",
+   "pattern": "TOTAL DUE ON OR BEFORE:?[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "total_due",
+   "label": "Total Due",
+   "scope": "document",
+   "pattern": "^[ \\t]*TOTAL DUE:?[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "vat_r",
+   "label": "VAT (009008)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*009008[ \\t]+VAT[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mmm_opening_balance",
+   "label": "Opening Balance",
+   "scope": "document",
+   "pattern": "^[ \\t]*OPENING BALANCE[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mmm_payments_r",
+   "label": "Payments (008888)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+008888[ \\t]+[^\\n]*?[ \\t]((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mmm_age_120",
+    "mmm_age_90",
+    "mmm_age_60",
+    "mmm_age_30",
+    "mmm_age_current",
+    "mmm_total_due_this_month"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Ageing row (last column = TOTAL DUE THIS MONTH)",
+   "scope": "document",
+   "pattern": "^[ \\t]*120\\+ DAYS[^\\n]*\\n[ \\t]*(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mmm_vatable_r",
+   "label": "VAT base (every '*'-flagged line, wrapped Block_Tariff lines included)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)(?:[ \\t]*$|[ \\t]+Block_Tariff[ \\t]*$)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mmm_interest_r",
+   "label": "INTEREST (000007)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*000007[ \\t]+INTEREST[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "meter",
+   "label": "TIME OF USE register meter number(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*([0-9A-Z]{6,})[ \\t]+TIME OF USE[ \\t]",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "start_reading_kwh",
+   "label": "OLD READING (summed over TIME OF USE registers)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*[0-9A-Z]{6,}[ \\t]+TIME OF USE[ \\t]+((?<![\\d.])[\\d,]*\\.\\d{3})[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+\\d{2}/\\d{2}/\\d{4}",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "end_reading_kwh",
+   "label": "NEW READING (summed over TIME OF USE registers)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*[0-9A-Z]{6,}[ \\t]+TIME OF USE[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+((?<![\\d.])[\\d,]*\\.\\d{3})[ \\t]+\\d{2}/\\d{2}/\\d{4}",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "mmm_meter_kwh",
+   "label": "Meter-table CONSUMPTION, kWh (summed registers)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*[0-9A-Z]{6,}[ \\t]+TIME OF USE[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+((?<![\\d.])-?[\\d,]*\\.\\d{3}-?)[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "mmm_read_types",
+   "label": "READING TYPE letter(s), as printed",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*[0-9A-Z]{6,}[ \\t]+TIME OF USE[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+([A-Z])[ \\t]+[\\d,]*\\.\\d{3}[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "read_end",
+   "label": "Reading date",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[0-9A-Z]{6,}[ \\t]+TIME OF USE[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+[A-Z][ \\t]",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "mmm_kva_meter",
+   "label": "kVA register meter number(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*([0-9A-Z]{6,})[ \\t]+KVA[ \\t]",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mmm_kva_levels",
+   "label": "kVA register CONSUMPTION values, as printed",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*[0-9A-Z]{6,}[ \\t]+KVA[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+([\\d,]*\\.\\d{3})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mmm_tariff",
+   "label": "Tariff name printed in the ledger descriptions",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+TOU\\d{2}[A-Z][ \\t]+(TOU: LPU):",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "mmm_peak_kwh",
+    "mmm_peak_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TOU01P peak energy",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+TOU01P[ \\t]+(?:TOU: LPU: ELECTRICITY PEAK|FINAL USAGE ELECTRICIT?Y)[ \\t]+((?<![\\d.,])-?[\\d,]*\\.\\d{3}-?)[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mmm_std_kwh",
+    "mmm_std_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TOU01S standard energy",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+TOU01S[ \\t]+(?:TOU: LPU: ELECTRICITY STANDARD|FINAL USAGE ELECTRICIT?Y)[ \\t]+((?<![\\d.,])-?[\\d,]*\\.\\d{3}-?)[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mmm_offpeak_kwh",
+    "mmm_offpeak_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TOU01O off-peak energy",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+TOU01O[ \\t]+(?:TOU: LPU: ELECTRICITY OFF-PEAK|FINAL USAGE ELECTRICIT?Y)[ \\t]+((?<![\\d.,])-?[\\d,]*\\.\\d{3}-?)[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mmm_demand_kva",
+    "mmm_demand_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TOU03K DEMAND CHARGE (kVA)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+TOU03K[ \\t]+(?:TOU: LPU: DEMAND CHARGE|FINAL USAGE ELECTRICIT?Y)[ \\t]+((?<![\\d.,])-?[\\d,]*\\.\\d{3}-?)[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mmm_access_kva",
+    "mmm_access_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TOU03A ACCESS CHARGE (kVA capacity)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+TOU03A[ \\t]+(?:TOU: LPU: ACCESS CHARGE|FINAL USAGE ELECTRICIT?Y)[ \\t]+((?<![\\d.,])-?[\\d,]*\\.\\d{3}-?)[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mmm_basic_units",
+    "mmm_basic_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TOU01O ELECTRICITY BASIC CHARGE",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+TOU01O[ \\t]+ELECTRICITY BASIC CHARGE[ \\t]+((?<![\\d.,])-?[\\d,]*\\.\\d{3}-?)[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mmm_elec_tariff_steps",
+   "label": "TOU tariff rates in force (R per kWh / per kVA, sorted, deduped)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+TOU\\d{2}[A-Z][ \\t]+(?:TOU: LPU:|FINAL USAGE)[^\\n]*?[ \\t][\\d,]*\\.\\d{3}[ \\t]+@[ \\t]*([\\d,]*\\.?\\d*)[ \\t]+\\*",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mmm_adj_elec_r",
+   "label": "Wrapped 'Adj of Consumption ... Elec_Non-...Block_Tariff' (prior period)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Adj of Consumption (?:Under|Over)billed Elec_Non-\\d{2}/\\d{2}/\\d{4}[ \\t]+TOU\\d{2}[A-Z][ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.?\\d*[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]+Block_Tariff[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mmm_reversal_elec_r",
+   "label": "'Reversal of Adj ...' electricity lines (prior period, no '@')",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?:TOU\\d{2}[A-Z]|020108)[ \\t]+Reversal of Adj[^\\n@]*?\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mmm_water_meter",
+   "label": "Water meter number",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*([0-9A-Z]{6,})[ \\t]+WATER[ \\t]",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mmm_water_kl",
+   "label": "Water meter CONSUMPTION (kL, summed)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*[0-9A-Z]{6,}[ \\t]+WATER[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+((?<![\\d.])-?[\\d,]*\\.\\d{3}-?)[ \\t]*$",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "mmm_water_units",
+    "mmm_water_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "010111 WATER 0 - 30 KL",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+010111[ \\t]+WATER 0 - 30 KL[ \\t]+((?<![\\d.,])-?[\\d,]*\\.\\d{3}-?)[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mmm_water_basic_r",
+   "label": "010111 WATER BASIC CHARGE",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+010111[ \\t]+WATER BASIC CHARGE[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mmm_water_adj_r",
+   "label": "010111 Adj of Consumption Water (prior period)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+010111[ \\t]+Adj of Consumption[^\\n@]*?\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "mmm_refuse_units",
+    "mmm_refuse_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "040111 / 040102 REFUSE REMOVAL",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+0401\\d{2}[ \\t]+REFUSE REMOVAL[ \\t]+((?<![\\d.,])-?[\\d,]*\\.\\d{3}-?)[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,14}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "mmm_site",
+   "op": "concat",
+   "of": [
+    "mmm_street",
+    "mmm_suburb"
+   ]
+  },
+  {
+   "field": "mmm_band_kwh",
+   "op": "sum",
+   "of": [
+    "mmm_peak_kwh",
+    "mmm_std_kwh",
+    "mmm_offpeak_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "mmm_reading_diff_kwh",
+   "op": "diff",
+   "of": [
+    "end_reading_kwh",
+    "start_reading_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "mmm_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "mmm_peak_r",
+    "mmm_std_r",
+    "mmm_offpeak_r",
+    "mmm_demand_r",
+    "mmm_access_r",
+    "mmm_basic_r"
+   ]
+  },
+  {
+   "field": "mmm_prior_elec_adj_r",
+   "op": "sum",
+   "of": [
+    "mmm_adj_elec_r",
+    "mmm_reversal_elec_r"
+   ]
+  },
+  {
+   "field": "mmm_water_total_r",
+   "op": "sum",
+   "of": [
+    "mmm_water_r",
+    "mmm_water_basic_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "mmm_site",
+  "billing_date": "billing_date",
+  "tariff_name": "mmm_tariff",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "mmm_read_types",
+  "read_start": "_none",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": [
+   "mmm_meter_kwh",
+   "mmm_band_kwh"
+  ],
+  "peak_kwh": "mmm_peak_kwh",
+  "standard_kwh": "mmm_std_kwh",
+  "offpeak_kwh": "mmm_offpeak_kwh",
+  "demand_kva": "mmm_demand_kva",
+  "nmd_kva": "mmm_access_kva",
+  "peak_r": "mmm_peak_r",
+  "standard_r": "mmm_std_r",
+  "offpeak_r": "mmm_offpeak_r",
+  "demand_r": "mmm_demand_r",
+  "nmd_r": "mmm_access_r",
+  "other_r": "mmm_basic_r",
+  "total_ex_vat_r": "mmm_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?i)^[ \\t]*OPENING BALANCE[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "(?i)^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+008888[ \\t]+DIRECT DEPOSIT PAYMENT[^\\n]*?[ \\t](-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "vat": "(?i)^[ \\t]*009008[ \\t]+VAT[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "total_due": "(?i)^[ \\t]*TOTAL DUE:?[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)",
+  "due_date": "(?i)TOTAL DUE ON OR BEFORE:?[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+  "deposit": "(?i)Deposit:[ \\t]+([\\d, ]+\\.\\d{2})"
+ }
+}

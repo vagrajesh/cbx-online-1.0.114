@@ -1,0 +1,250 @@
+/* 1.0.114: the CBX-Connect 2 look in CBX 1 — loaded before styles.css and app.css.
+   Ten themes from CBX 2 (cbx-connect/cbx/web/static/app.css + themes.py) as colour blocks on <html> (theme-boot.js puts
+   th-<key>, sharp|round, dark, sidedark, menu-side|menu-top, size-large there and on <body>), and a bridge that maps this
+   app's variables (--surface, --line, --accent, …) onto CBX 2's (--surf, --rule, --acc, …). Selectors are `:root.<class>`
+   so they outrank styles.css's `:root` block. CBX 2's component classes (.btn, .field, .tbl, .stat, .row …) mean other
+   things here and are NOT copied; its side panel and top bar are namespaced (.x-side, .x-top), Home uses .xh-*. */
+
+@font-face{font-family:"Geist";font-weight:400;font-display:swap;src:url(fonts/geist-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Geist";font-weight:500;font-display:swap;src:url(fonts/geist-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Geist";font-weight:600;font-display:swap;src:url(fonts/geist-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Geist";font-weight:700;font-display:swap;src:url(fonts/geist-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Geist Mono";font-weight:400;font-display:swap;src:url(fonts/geist-mono-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Geist Mono";font-weight:500;font-display:swap;src:url(fonts/geist-mono-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Instrument Serif";font-weight:400;font-display:swap;src:url(fonts/instrument-serif-latin-400-normal.woff2) format("woff2")}
+
+/* ---- the bridge (every theme) ------------------------------------------------------------------------------- */
+:root.round,:root.sharp,.xs-thc{
+  --sans:"Geist",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --disp:"Geist",system-ui,sans-serif;--dispW:600;--dispLs:-.02em;
+  --surface:var(--surf);--surface-2:var(--surf2);--ink-2:var(--ink2);--muted:var(--mute);
+  --line:var(--rule);--line-2:var(--strong);
+  --accent:var(--acc);--accent-ink:var(--accInk);--accent-soft:var(--hi);--accent-soft-ink:var(--hiInk);
+  --crit:var(--bad);--danger:var(--bad);
+  --good-soft:color-mix(in srgb,var(--good) 14%,var(--surf));
+  --warn-soft:color-mix(in srgb,var(--warn) 15%,var(--surf));
+  --crit-soft:color-mix(in srgb,var(--bad) 13%,var(--surf));
+  --info-soft:color-mix(in srgb,var(--info) 14%,var(--surf));
+  --gold-soft:color-mix(in srgb,var(--gold) 22%,var(--surf));
+  --ai-soft:color-mix(in srgb,var(--ai) 14%,var(--surf));
+  --info:#2F5D8A;--gold:#C8A04B;--gold-ink:#6E5620;--ai:#5B4B9E;--ai-ink:#FFFFFF;--brand:#0E3527;
+  /* the side panel: the page's own colours unless the theme gives it a dark panel */
+  --side:var(--surf);--sideInk:var(--ink);--sideInk2:var(--ink2);--sideMute:var(--mute);--sideRule:var(--rule);--sideOn:var(--hi);--sideOnInk:var(--hiInk);
+  color-scheme:light;
+}
+:root.round{--r:10px;--r-sm:6px;--shadow:0 1px 2px rgba(33,38,44,.06),0 6px 20px rgba(33,38,44,.05)}
+:root.round.dark{--shadow:0 1px 2px rgba(0,0,0,.35)}
+:root.sharp,.xs-thc.sharp{--r:0;--r-sm:0;--shadow:none;--sideOn:var(--surf2);--sideOnInk:var(--ink)}
+:root.dark,.xs-thc.dark{color-scheme:dark;--info:#86AEDB;--gold:#D8B464;--gold-ink:#E9CF8E;--ai:#A99BE6;--ai-ink:#16121F}
+:root.sidedark,.xs-thc.sidedark{--sideInk2:var(--sideInk)}
+
+/* ---- the ten themes (CBX 2's values) ------------------------------------------------------------------------- */
+/* Classic is the default and is today's CBX 1: same greens, greys, soft colours and the purple of the AI */
+:root.th-classic,.xs-thc.th-classic{--bg:#F7F8FA;--surf:#FFFFFF;--surf2:#EEF1F4;--ink:#21262C;--ink2:#4A5560;--mute:#6B7683;--rule:#E5E8EC;--strong:#D3D9DF;--acc:var(--brand-accent,#0B8A63);--accInk:#FFFFFF;--hi:#E7EFEA;--hiInk:#00543D;--good:#2A7449;--warn:#965D0F;--bad:#B3403A;
+  --good-soft:#E4F2EA;--warn-soft:#F7EFDD;--crit-soft:#F9E7E6;--info-soft:#E2EAF2;--gold-soft:#F7EFDD;--ai-soft:#E8E3F6;--brand:#00543D}
+:root.th-classic-dark,.xs-thc.th-classic-dark{--bg:#14181C;--surf:#1B2025;--surf2:#242A31;--ink:#E6EAEE;--ink2:#B5BEC7;--mute:#8D98A3;--rule:#2C333B;--strong:#3A434C;--acc:#2FB487;--accInk:#08130F;--hi:#173A2E;--hiInk:#CFEFE2;--good:#5DBE8A;--warn:#D9A257;--bad:#E58A80;
+  --side:#171B20;--sideInk:#DCE2E8;--sideMute:#8D98A3;--sideRule:#2C333B;--sideOn:#1F3A30;--sideOnInk:#CFEFE2}
+:root.th-ocean,.xs-thc.th-ocean{--bg:#F6F8FB;--surf:#FFFFFF;--surf2:#EAF0F7;--ink:#16212E;--ink2:#46566A;--mute:#6B7A8C;--rule:#E2E8EF;--strong:#CBD5E1;--acc:#1F5FAF;--accInk:#FFFFFF;--hi:#E3EEFB;--hiInk:#123E73;--good:#23784A;--warn:#9A5F0E;--bad:#B23A3A;--info:#1F5FAF;--brand:#123E73}
+:root.th-sand,.xs-thc.th-sand{--bg:#FAF7F2;--surf:#FFFDF9;--surf2:#F1EBE1;--ink:#2A221B;--ink2:#5A4D40;--mute:#85776A;--rule:#E8E0D3;--strong:#D6CBBB;--acc:#B5532F;--accInk:#FFFFFF;--hi:#F6E5D9;--hiInk:#6B2C14;--good:#3D7A44;--warn:#9A6210;--bad:#A73A2E;--brand:#6B2C14;
+  --side:#F4EEE4;--sideOn:#EBDCCB;--sideOnInk:#6B2C14;--disp:"Instrument Serif",Georgia,serif;--dispW:400;--dispLs:0}
+:root.th-forest,.xs-thc.th-forest{--bg:#F5F7F5;--surf:#FFFFFF;--surf2:#E8EEEA;--ink:#17241E;--ink2:#4A5A52;--mute:#6F7F77;--rule:#E0E7E2;--strong:#C9D4CD;--acc:#146B4B;--accInk:#FFFFFF;--hi:#DDEFE5;--hiInk:#0B3D2A;--good:#1F7A4C;--warn:#976012;--bad:#AD3E33;
+  --side:#0E3527;--sideInk:#E6F0EA;--sideMute:#94B3A4;--sideRule:rgba(255,255,255,.12);--sideOn:rgba(255,255,255,.11);--sideOnInk:#FFFFFF}
+:root.th-fresh,.xs-thc.th-fresh{--bg:#F3F1EA;--surf:#FBFAF6;--surf2:#ECE9DF;--ink:#12201A;--ink2:#4F5C55;--mute:#7C8680;--rule:#DAD6C9;--strong:#12201A;--acc:#0A3424;--accInk:#F3F1EA;--hi:#A9E35B;--hiInk:#0B2118;--good:#17985A;--warn:#B8731A;--bad:#A8432F;--disp:"Instrument Serif",Georgia,serif;--dispW:400;--dispLs:-.01em}
+:root.th-paper,.xs-thc.th-paper{--bg:#FFFFFF;--surf:#FFFFFF;--surf2:#F2F4F1;--ink:#101410;--ink2:#465049;--mute:#727C75;--rule:#E1E5E0;--strong:#101410;--acc:#00543D;--accInk:#FFFFFF;--hi:#D2F0A8;--hiInk:#0F2A12;--good:#12834E;--warn:#A86400;--bad:#B03A2A;--dispLs:-.035em}
+:root.th-slate,.xs-thc.th-slate{--bg:#EEF1F4;--surf:#FFFFFF;--surf2:#E3E8ED;--ink:#121D27;--ink2:#46525E;--mute:#717D89;--rule:#D2D9E0;--strong:#121D27;--acc:#121D27;--accInk:#FFFFFF;--hi:#B9E0D4;--hiInk:#0E2A22;--good:#1A8768;--warn:#A86B12;--bad:#B03838;--dispLs:-.035em;--brand:#121D27}
+:root.th-night,.xs-thc.th-night{--bg:#111412;--surf:#171B18;--surf2:#1F2521;--ink:#E7EBE7;--ink2:#B2BBB5;--mute:#8B958F;--rule:#2B332E;--strong:#E7EBE7;--acc:#E7EBE7;--accInk:#111412;--hi:#3F5A2C;--hiInk:#E7F5D6;--good:#6FBF8E;--warn:#D6A35E;--bad:#E0806E;--dispLs:-.035em;
+  --side:#141815;--sideInk:#E7EBE7;--sideMute:#8B958F;--sideRule:#2B332E;--sideOn:#1F2521;--sideOnInk:#FFFFFF}
+:root.th-contrast,.xs-thc.th-contrast{--bg:#FFFFFF;--surf:#FFFFFF;--surf2:#EFEFEF;--ink:#000000;--ink2:#1A1A1A;--mute:#3D3D3D;--rule:#000000;--strong:#000000;--acc:#000000;--accInk:#FFFFFF;--hi:#FFE14D;--hiInk:#000000;--good:#00672C;--warn:#7D4400;--bad:#990000;--dispW:700;--dispLs:-.03em;--info:#003A80;--ai:#3A2A85;--brand:#000000}
+
+html{background:var(--bg)}
+/* 1.0.114: Fresh and Sand's headings are a serif, as in CBX 2 (a little larger: a serif reads small) */
+.th-fresh .main h1,.th-sand .main h1{font-family:var(--disp);font-weight:var(--dispW);letter-spacing:var(--dispLs);font-size:26px}
+.th-fresh .main h1.xh-h1,.th-sand .main h1.xh-h1{font-size:40px}
+
+/* ---- square themes: no corners, no floating shadows ------------------------------------------------------------ */
+.sharp *{border-radius:0!important}
+/* elevation goes; what a shadow MEANS stays (a selected card, a drop marker, a pulse, a focused editor) — and the
+   training tour's spotlight, which is a shadow, keeps working */
+.sharp *:not(.tour-spot):not(.on):not(.busy):not(.live):not(.drop-before):not(.drop-after):not(:focus-within):not(.ag-face):not(.xh-needs):not(.xh-tile):not(.ag-job){box-shadow:none!important}
+.sharp .tour-card,.sharp .modal,.sharp .drawer,.sharp .toast{border:1px solid var(--strong)}
+.sharp .pill{border:1px solid currentColor;background:transparent}
+.sharp .pill.neutral{border-color:var(--rule)}
+
+/* ---- larger text ------------------------------------------------------------------------------------------------ */
+/* the views size their words in px, so the page itself is drawn larger; the menus get bigger words */
+.size-large .main,.size-large .modal,.size-large .drawer,.size-large .tour-card{zoom:1.12}
+.size-large .nav button{font-size:14.5px}
+.size-large .x-top .x-navt,.size-large .x-top .x-mi{font-size:15px}
+
+/* ---- the side menu (CBX 1's sidebar in CBX 2's colours) ---------------------------------------------------------- */
+/* the sidebar's own rules (styles.css .side/.nav/.brand) read these, so a dark panel needs nothing else */
+.x-side{--surface:var(--side);--ink:var(--sideInk);--ink-2:var(--sideInk2);--muted:var(--sideMute);--line:var(--sideRule);--line-2:var(--sideRule);--surface-2:var(--sideOn);--accent-soft:var(--sideOn);--accent-soft-ink:var(--sideOnInk);
+  background:var(--side);color:var(--sideInk);border-right-color:var(--sideRule)}
+.x-side .nav button[aria-current="page"]{background:var(--sideOn);color:var(--sideOnInk)}
+.x-side .nav button[data-toolc] .ico{color:var(--toolc)}
+.sidedark .x-side .nav button[data-toolc] .ico{color:inherit}
+.x-side .avatar{background:var(--sideOn);color:var(--sideOnInk)}
+.x-side .nav-sec .sec-hd .chev{color:var(--sideMute)}
+.x-side .user-chip .logout{color:var(--sideMute)}
+.x-side .user-chip .logout:hover{color:var(--sideInk);background:var(--sideOn)}
+.x-side .btn.ghost{color:inherit}
+
+/* the CBX wordmark when no Branding logo is uploaded: light letters on the dark tile, as CBX 2 */
+.mark.x-word{width:auto!important;min-width:0;height:auto!important;background:var(--brand)!important;padding:5px 9px!important;border-radius:8px;display:flex!important;align-items:center}
+.mark.x-word img{height:20px;width:auto;display:block}
+.mark.x-word.lg img{height:30px}
+.sidedark .x-side .mark.x-word{background:transparent!important;padding:0!important}
+.sidedark .x-side .mark.x-word img{height:24px}
+.brand .name.x-sub{font-weight:600;font-size:15px;letter-spacing:-.01em}
+
+/* ---- the top menu (prefs.menu = top) ----------------------------------------------------------------------------- */
+.x-top{display:none}
+@media (min-width:901px){
+  /* a column, not a grid: update.js puts its bar first in .app, and a grid row would stretch the menu bar instead of the page */
+  .menu-top .app{display:flex;flex-direction:column;min-height:100vh}
+  .menu-top .main{flex:1 0 auto}
+  .menu-top .app>.update-bar{position:static} /* the menu bar is the one that stays at the top */
+  .menu-top .app>.side,.menu-top .app>.side-scrim{display:none}
+  .menu-top .x-top{display:block;position:sticky;top:0;z-index:22;background:var(--surf);border-bottom:1px solid var(--strong)}
+  .round.menu-top .x-top{border-bottom-color:var(--rule)}
+  .menu-top .main{padding-top:24px}
+}
+.x-top-in{display:flex;align-items:center;gap:2px;padding:0 24px;min-height:56px}
+.x-logo{display:flex;align-items:center;gap:8px;margin-right:14px;border:0;background:none;padding:0;color:var(--ink)}
+.x-logo .mark{flex:none}
+.x-logo .mark:not(.x-word){width:30px;height:30px;border-radius:7px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:700;font-size:11px}
+.x-logo .mark.logo{width:auto;height:34px;padding:4px 7px;border-radius:8px;background:var(--brand)}
+.x-logo .mark.logo img{height:100%;width:auto;display:block}
+.x-logo .x-sub{font-weight:600;font-size:15px;white-space:nowrap}
+.x-navt{display:inline-flex;align-items:center;gap:6px;min-height:56px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;font-size:14px;color:var(--ink2);white-space:nowrap}
+.x-navt:hover{color:var(--ink)}
+.x-navt[aria-current="page"],.x-dd.on>.x-navt{color:var(--ink);font-weight:600;border-bottom-color:var(--acc)}
+.sharp .x-navt[aria-current="page"],.sharp .x-dd.on>.x-navt{border-bottom-color:var(--ink)}
+.x-navt .caret{font-size:10px;color:var(--mute)}
+.x-navt .count{font-size:11px;color:var(--mute);font-variant-numeric:tabular-nums}
+.x-navt .count:empty{display:none}
+.x-dd{position:relative}
+.x-menu{display:none;position:absolute;top:calc(100% - 4px);left:0;min-width:240px;max-height:calc(100vh - 80px);overflow-y:auto;background:var(--surf);border:1px solid var(--strong);z-index:40;flex-direction:column;padding:6px}
+.round .x-menu{border-color:var(--rule);border-radius:var(--r);box-shadow:var(--shadow),0 10px 30px rgba(20,26,32,.10)}
+.x-menu.right{left:auto;right:0}
+.x-dd.open>.x-menu{display:flex}
+/* right to left (dir=rtl on <html>): the dropdowns open from the other edge */
+[dir=rtl] .x-menu{left:auto;right:0}
+[dir=rtl] .x-menu.right{right:auto;left:0}
+[dir=rtl] .x-mi{text-align:right}
+[dir=rtl] .x-logo{margin-right:0;margin-left:14px}
+[dir=rtl] .x-mi .count{margin-left:0;margin-right:auto}
+.x-mi{display:flex;align-items:center;gap:10px;width:100%;min-height:36px;padding:0 10px;border:0;background:transparent;text-align:left;font-size:14px;color:var(--ink);border-radius:var(--r-sm)}
+.x-mi:hover,.x-mi:focus-visible{background:var(--surf2)}
+.x-mi[aria-current="page"]{background:var(--hi);color:var(--hiInk);font-weight:600}
+.x-mi .ico{width:18px;height:18px;flex:none;display:grid;place-items:center;color:var(--mute)}
+.x-mi[data-toolc] .ico{color:var(--toolc)}
+.dark .x-mi[data-toolc] .ico{color:color-mix(in srgb,var(--toolc) 55%,#fff)}
+.x-mi .ico svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.x-mi .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x-mi .count{margin-left:auto;font-size:11px;color:var(--mute);font-variant-numeric:tabular-nums}
+.x-mi .badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--ai-soft);color:var(--ai)}
+.x-top .grow{flex:1}
+.x-top .ask-btn{margin:0 8px 0 0}
+.x-me{display:flex;align-items:center;gap:8px;border:0;background:none;min-height:56px;padding:0 4px;font-size:14px;color:var(--ink)}
+.x-me .avatar{width:30px;height:30px}
+.x-menu .x-who{padding:8px 10px 10px;border-bottom:1px solid var(--rule);margin-bottom:4px;line-height:1.3}
+.x-menu .x-who b{display:block;font-size:13.5px}
+.x-menu .x-who span{font-size:12px;color:var(--mute)}
+@media (max-width:1180px){.x-me>span:not(.avatar){display:none}.x-logo .x-sub{display:none}}
+
+/* ---- tool colours (CBX 2's bootstrap.py): a strip at the top of the tool's page -------------------------------------- */
+.page.has-toolc::before{content:"";display:block;height:3px;width:56px;margin:0 0 14px;background:var(--toolc);border-radius:2px}
+.sharp .page.has-toolc::before{width:100%}
+
+/* ---- Settings → Appearance: theme cards (CBX 2's .themes .thc) ------------------------------------------------------- */
+.xs-themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:16px}
+.xs-thc{display:flex;flex-direction:column;padding:0;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;overflow:hidden;font-size:13px;min-width:0;cursor:pointer}
+.xs-thc.round{border-radius:10px}
+.xs-thc:hover{border-color:var(--line-2)}
+.xs-thc[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
+.xs-thp{display:flex;height:72px;border-bottom:1px solid var(--line)}
+.xs-thp-s{width:34%;display:flex;flex-direction:column;gap:5px;padding:8px 6px}
+.xs-thp-s i{display:block;height:7px}
+.xs-thp-s i:first-child{height:9px}
+.xs-thp-m{flex:1;display:flex;flex-direction:column;gap:6px;padding:9px}
+.xs-thp-m i{display:block;height:5px}
+.xs-thp-m .c{flex:1}
+.xs-thc.round .xs-thp i{border-radius:3px}
+.xs-thn{display:flex;flex-direction:column;gap:2px;padding:9px 11px 11px}
+.xs-thn b{font-size:13.5px}
+.xs-thn span{font-size:11.5px;color:var(--muted);line-height:1.35}
+.xs-thn em{font-style:normal;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+@media (max-width:720px){.xs-themes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---- Home (views/home.js): CBX 2's Home, top to bottom ----------------------------------------------------------------- */
+.xh{display:flex;flex-direction:column;gap:22px;max-width:1400px}
+.xh-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.round .xh-head{background:linear-gradient(var(--accent),var(--accent)) left bottom/56px 3px no-repeat}
+.sharp .xh-head{border-bottom:3px solid var(--strong)}
+.xh-k{font:500 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.round .xh-k{font-family:var(--sans);font-weight:600;font-size:10.5px}
+.main h1.xh-h1{margin:4px 0 0;font-family:var(--disp);font-weight:var(--dispW);letter-spacing:var(--dispLs);font-size:28px;line-height:1.1}
+.sharp .main h1.xh-h1{font-size:clamp(30px,3.6vw,44px)}
+.xh-lead{color:var(--ink-2);margin:6px 0 0;max-width:70ch}
+.xh-link{border:0;background:none;padding:0;color:var(--ink-2);font-size:12.5px;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:4px;cursor:pointer}
+.xh-link:hover{color:var(--ink);text-decoration-color:currentColor}
+.xh-sec{display:flex;flex-direction:column;gap:10px;min-width:0}
+.round .xh-sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 20px 18px;box-shadow:var(--shadow)}
+.xh-sec-h{display:flex;align-items:baseline;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--strong)}
+.round .xh-sec-h{border-bottom-color:var(--line);margin:0 -20px;padding:0 20px 12px}
+.xh-sec-h h2{margin:0;font-size:15px;font-weight:600}
+.xh-sec-h .grow{flex:1}
+.xh-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:12px 0;border-bottom:1px solid var(--line);min-width:0;color:inherit;text-decoration:none}
+.xh-row:last-child{border-bottom:0}
+a.xh-row:hover,button.xh-row:hover{background:var(--surface-2);text-decoration:none}
+button.xh-row{width:100%;border-left:0;border-right:0;border-top:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.xh-row .t{flex:1 1 260px;min-width:0}
+.xh-row .t b{display:block;font-weight:600;overflow-wrap:anywhere}
+.xh-row .t>span{display:block;font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.xh-row .go{color:var(--muted)}
+.xh-needs{padding-left:16px;box-shadow:inset 3px 0 0 var(--warn)!important}
+.xh-needs.crit{box-shadow:inset 3px 0 0 var(--crit)!important}
+.xh-needs.info{box-shadow:inset 3px 0 0 var(--info)!important}
+.xh-tool{padding-left:16px;box-shadow:inset 3px 0 0 var(--toolc,var(--accent))!important}
+.xh-empty{padding:10px 0;font-size:13px;color:var(--muted)}
+.xh-ask{display:flex;border:1px solid var(--line-2);border-radius:var(--r-sm);overflow:hidden;background:var(--surface)}
+.xh-ask input{flex:1;min-width:0;min-height:44px;border:0!important;border-radius:0!important;background:transparent;padding:0 12px;outline:none;font-size:14px}
+.xh-ask .btn{border-radius:0;border:0;min-height:44px}
+.xh-ask:focus-within{outline:2px solid var(--accent);outline-offset:-1px}
+.xh-qs{display:flex;flex-wrap:wrap;gap:6px 18px}
+.xh-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.xh-stat{display:flex;flex-direction:column;gap:2px;min-width:0;padding:14px 18px;border:1px solid var(--line);background:var(--surface);color:inherit;text-align:left;font:inherit;cursor:pointer;border-radius:var(--r)}
+.xh-stat:hover{border-color:var(--accent);text-decoration:none}
+.xh-stat .v{font-family:var(--disp);font-weight:var(--dispW);letter-spacing:var(--dispLs);font-size:34px;line-height:1.1;font-variant-numeric:tabular-nums}
+.round .xh-stat .v{font-family:var(--sans);font-weight:600;font-size:30px;letter-spacing:-.02em}
+.xh-stat.warn .v{color:var(--warn)}.xh-stat.crit .v{color:var(--crit)}
+.xh-stat .d{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.xh-two{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:22px;align-items:start}
+.xh-bar{display:block;height:4px;background:var(--surface-2);position:relative;overflow:hidden;border-radius:3px;flex:1 1 120px;max-width:200px}
+.xh-bar>i{position:absolute;inset:0 auto 0 0;background:var(--good);display:block;border-radius:3px}
+.xh-bar.blocked>i{background:var(--warn)}
+.xh-row.xh-goal .t>.meta{display:flex;align-items:center;gap:6px 10px;font-size:12.5px;color:var(--muted);flex-wrap:wrap;margin-top:6px}
+.xh-goal .meta .who{color:var(--ink-2)}
+.xh-row.xh-goal .t>.blk{font-size:12.5px;color:var(--warn);margin-top:4px}
+.xh-when{font:500 11.5px var(--mono);color:var(--muted);white-space:nowrap;min-width:46px}
+.xh-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.xh-tile{display:flex;align-items:center;gap:12px;padding:14px 16px;min-height:64px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;font:inherit;cursor:pointer;border-radius:var(--r);box-shadow:inset 3px 0 0 var(--toolc,var(--accent))}
+.xh-tile:hover{border-color:var(--toolc,var(--accent))}
+.xh-tile .ico{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:8px;background:color-mix(in srgb,var(--toolc,var(--accent)) 14%,var(--surface));color:var(--toolc,var(--accent))}
+.dark .xh-tile .ico{color:color-mix(in srgb,var(--toolc,var(--accent)) 55%,#fff)}
+.xh-tile .ico svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.xh-tile b{font-weight:600;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xh-prog{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.xh-prog>i{display:block;height:100%;background:var(--good)}
+@media (max-width:1000px){.xh-two{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:720px){
+  .xh-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .round .xh-sec{padding:14px 14px 16px}
+  .round .xh-sec-h{margin:0 -14px;padding:0 14px 10px}
+  .main h1.xh-h1{font-size:24px}
+  .sharp .main h1.xh-h1{font-size:30px}
+  .xh-stat .v{font-size:26px!important}
+  .xh-tiles{grid-template-columns:minmax(0,1fr)}
+}
+.brand-preview .mark.x-word img{width:auto;height:26px}

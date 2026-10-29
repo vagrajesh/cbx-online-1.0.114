@@ -1,0 +1,31 @@
+{
+  "title": "flow.book_day.title",
+  "enabled": true,
+  "trigger": {
+    "type": "button",
+    "data": "goals"
+  },
+  "run_as": "starter",
+  "start": "s1",
+  "steps": {
+    "s1": {
+      "type": "add_row",
+      "data": "reward_days",
+      "values": {
+        "goal": "{{trigger.row.id}}",
+        "person": "{{person.id}}",
+        "day": "{{trigger.values.answer}}"
+      },
+      "next": "s2"
+    },
+    "s2": {
+      "type": "notify",
+      "who": {
+        "kind": "manager_of",
+        "person": "{{person.id}}"
+      },
+      "title": "Reward day booked",
+      "text": "{{person.name}} booked {{trigger.values.answer}} for the goal {{trigger.row.title}}."
+    }
+  }
+}

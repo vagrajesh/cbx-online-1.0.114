@@ -1,0 +1,245 @@
+{
+ "profile_id": "pec_metering",
+ "profile_name": "PEC Metering CC (PEC Utility Management, Bellville)",
+ "short_name": "PEC Metering",
+ "_doc": "PEC Utility Management (PEC Metering CC, Bellville) sub-metering tax invoice to Telkom: masthead with PEC's own VAT number, a header block (Reference = account, Account Date, Reading Cycle start-end, Nr Of Days, Deposit On Hand, Property, Unit), one meter line (Meter Nr, Previous, Current, Factor, Consumption kWh), a dated ledger (Balance Brought Forward, Receipt, Interest on Arrears, Monthly/Daily Service Charge(tariff), Electricity : Energy charge(tariff) with VAT and ex-VAT Amount columns, Total Vat), an aging strip (120/90/60/30 days, Current) and a remittance block. Flat single-rate energy -> standard band; the service charge -> other_r; site = Property + Unit; tariff = the name in brackets on the energy line; no reading type printed. total_ex_vat_r = service charge + energy charge (ex VAT). IDENTITY pec_identity_r = aging 'Current' column - Total Vat - interest on arrears: exact (0.00) on 11/11 bills. Fingerprint: PEC's VAT number + 'PEC Utility Management' (customer VAT and e-mail not used). Checked on all 11 bills; 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "4320152236"
+  ],
+  "any": [
+   "PEC Utility Management",
+   "PEC ref nr"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Meter Nr[ \\t]+Previous[ \\t]+Current",
+   "require": "Electricity[ \\t]*:[ \\t]*Energy charge"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "PEC Reference",
+   "scope": "header",
+   "pattern": "^Reference[ \\t]+(\\d+)[ \\t]{2,}Tax Invoice Nr",
+   "required": true
+  },
+  {
+   "field": "pec_tax_invoice",
+   "label": "Tax invoice nr",
+   "scope": "header",
+   "pattern": "Tax Invoice Nr[ \\t]+(\\S+)[ \\t]*$"
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "header",
+   "pattern": "^Account Date[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "label": "Reading Cycle",
+   "scope": "header",
+   "pattern": "Reading Cycle[ \\t]+(\\d{4}/\\d{2}/\\d{2})[ \\t]*-[ \\t]*(\\d{4}/\\d{2}/\\d{2})",
+   "types": [
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "pec_days",
+   "label": "Nr Of Days",
+   "scope": "header",
+   "pattern": "Nr Of Days[ \\t]+(\\d+)[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "field": "pec_deposit_r",
+   "label": "Deposit On Hand",
+   "scope": "header",
+   "pattern": "Deposit On Hand[ \\t]+(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "pec_property",
+   "label": "Property",
+   "scope": "header",
+   "pattern": "^Property[ \\t]+(\\S.*?)[ \\t]{2,}Vat Nr",
+   "type": "text"
+  },
+  {
+   "field": "pec_unit",
+   "label": "Unit",
+   "scope": "header",
+   "pattern": "^Unit[ \\t]+(\\S.*?)(?:[ \\t]{2,}Account Type.*)?[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "meter",
+    "pec_prev",
+    "pec_curr",
+    "pec_factor",
+    "total_kwh"
+   ],
+   "label": "Meter line (kWh)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{3,})[ \\t]{2,}(\\d+(?:\\.\\d+)?)[ \\t]{2,}(\\d+(?:\\.\\d+)?)[ \\t]{2,}(\\d+(?:\\.\\d+)?)[ \\t]{2,}(\\d+(?:\\.\\d+)?)[ \\t]+kWh[ \\t]*$",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "tariff_name",
+    "pec_energy_vat_r",
+    "pec_energy_r"
+   ],
+   "label": "Energy charge line (VAT, amount ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+Electricity[ \\t]*:[ \\t]*Energy charge[ \\t]*\\(([^)]*)\\)[ \\t]{2,}(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]{2,}(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "text",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "pec_service_vat_r",
+    "pec_service_r"
+   ],
+   "label": "Monthly/Daily Service Charge (VAT, amount ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(?:Monthly|Daily)?[ \\t]*Service Charge[ \\t]*\\([^)]*\\)[ \\t]{2,}(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]{2,}(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "field": "pec_total_vat_r",
+   "label": "Total Vat",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+Total Vat(?:[ \\t]+[\\d.]+%)?[ \\t]{2,}(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "pec_interest_r",
+   "label": "Interest on Arrears (summed)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+Interest on Arrears[ \\t]{2,}(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "label": "Aging strip Current column (charges incl VAT + interest)",
+   "scope": "document",
+   "pattern": "120Days[ \\t]+90Days[ \\t]+60Days[ \\t]+30Days[ \\t]+Current[ \\t]*\\n(?:[^\\n]*\\n)*?[ \\t]*(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]+(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]+(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]+(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]+(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]*$",
+   "fields": [
+    "pec_age120",
+    "pec_age90",
+    "pec_age60",
+    "pec_age30",
+    "pec_current_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ]
+  },
+  {
+   "field": "pec_services_due_r",
+   "label": "Services Due",
+   "scope": "document",
+   "pattern": "Services Due[ \\t]+(-?[\\d ]*\\d?\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "pec_site",
+   "op": "concat",
+   "of": [
+    "pec_property",
+    "pec_unit"
+   ]
+  },
+  {
+   "field": "pec_total_ex_r",
+   "label": "service charge + energy charge (ex VAT)",
+   "op": "sum",
+   "of": [
+    "pec_service_r",
+    "pec_energy_r"
+   ]
+  },
+  {
+   "field": "pec_identity_r",
+   "label": "aging Current - Total Vat - interest",
+   "op": "sub",
+   "of": [
+    "pec_current_r",
+    "pec_total_vat_r",
+    "pec_interest_r"
+   ]
+  },
+  {
+   "field": "pec_kwh_check",
+   "op": "diff",
+   "of": [
+    "pec_curr",
+    "pec_prev"
+   ],
+   "as": "number"
+  }
+ ],
+ "canonical": {
+  "site_name": "pec_site",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "pec_prev",
+  "end_reading_kwh": "pec_curr",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "pec_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "pec_service_r",
+  "total_ex_vat_r": "pec_total_ex_r",
+  "deposit_r": "pec_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

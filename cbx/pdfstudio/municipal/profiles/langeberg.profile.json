@@ -1,0 +1,264 @@
+{
+ "profile_id": "langeberg",
+ "profile_name": "Langeberg Local Municipality (Ashton / Robertson, Western Cape)",
+ "short_name": "Langeberg",
+ "_doc": "Langeberg LM (Robertson) 'TAX INVOICE / STATEMENT' ledger (Date / Description / VAT / Debit / Credit / Balance, comma decimals, space thousands). Statements often span two billing months, so the electricity row sums every 'Electricity Basic Charge' (-> other) and 'Electricity Consumption <n>Kwh/KVA - [from to]' line (kWh -> standard; ex = Debit - VAT); readings = first 'from' / last 'to' (the 'to' may wrap), meter dates from the meter detail rows. Account = the 12-digit Reference (the 'Account Number' in the payment block is the bank account). Deposit from the stand row. Fingerprint: own VAT number + name. IDENTITY x_elec_ex_id = TOTAL AMOUNT DUE - Balance Brought Forward + payments - interest - TOTAL VAT AMOUNT: 0.00 on 11/11. 12 bills checked: one statement carries only a brought-forward balance (no electricity row); two pairs of files are identical copies.",
+ "fingerprint": {
+  "all": [
+   "4540192947"
+  ],
+  "any": [
+   "Langeberg Municipality",
+   "langeberg.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Date[ \\t]+Description[ \\t]+VAT[ \\t]+Debit",
+   "require": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity (?:Basic Charge|Consumption)"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Reference (account)",
+   "scope": "document",
+   "pattern": "Reference[ \\t]*:[ \\t]+(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "pattern": "Statement Date:[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "lg_month",
+   "label": "Month",
+   "scope": "document",
+   "pattern": "Month:[ \\t]+([A-Za-z]+)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "invoice_no",
+   "label": "Invoice Number",
+   "scope": "document",
+   "pattern": "Invoice Number\\.:[ \\t]+(INV[ \\t]+\\d+(?:[ \\t]+\\d+)?)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "patterns": [
+    "Stand Number[ \\t]+Deposit[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*\\d+[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}",
+    "Stand Number[ \\t]+Deposit[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]{12,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]*$"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "lg_basic_vat",
+    "lg_basic_debit"
+   ],
+   "label": "Electricity Basic Charge (VAT, Debit)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Basic Charge[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(?:-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "lg_kwh",
+    "lg_energy_vat",
+    "lg_energy_debit"
+   ],
+   "label": "Electricity Consumption (kWh, VAT, Debit)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumption[ \\t]+(\\d[\\d.]*)Kwh/KVA[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(?:-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "start_r",
+   "label": "First reading",
+   "scope": "section:electricity",
+   "pattern": "Electricity Consumption[ \\t]+\\d[\\d.]*Kwh/KVA[ \\t]*-[ \\t]*\\[?(\\d[\\d.]*) to\\b",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "end_r",
+   "label": "Last reading",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[\\s\\S]*Electricity Consumption[ \\t]+\\d[\\d.]*Kwh/KVA[ \\t]*-[ \\t]*\\[?\\d[\\d.]* to[ \\t]+(\\d[\\d.]*)\\]",
+    "^[\\s\\S]*Electricity Consumption[ \\t]+\\d[\\d.]*Kwh/KVA[ \\t]*-[ \\t]*\\[?\\d[\\d.]* to[ \\t]{2,}[^\\n]*\\n[ \\t]*(\\d[\\d.]*)\\]?[ \\t]*$"
+   ],
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "meter",
+   "label": "Meter number(s)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{4,})[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]",
+   "type": "text",
+   "collect": "join_unique",
+   "required": false
+  },
+  {
+   "field": "read_start",
+   "label": "Date From (first)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{4,}[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "read_end",
+   "label": "Date To (last)",
+   "scope": "section:electricity",
+   "pattern": "^[\\s\\S]*^[ \\t]*\\d{4,}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+\\d+[ \\t]",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "x_exclusive",
+   "label": "Meter detail Exclusive (energy)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{4,}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{2}/\\d{2}/\\d{4}[^\\n]*Kwh/KVA[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "x_bbf",
+   "label": "Balance Brought Forward",
+   "scope": "document",
+   "pattern": "Balance Brought Forward[^\\n]*?[ \\t](-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_payments",
+   "label": "Payments (credit)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d[\\d-]*[ \\t]{2,}(?:-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(?:-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "x_interest",
+   "label": "Interest",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Interest\\b[^\\n]*?[ \\t]{2,}(?:-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]{2,}(?:-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "x_total_vat",
+   "label": "TOTAL VAT AMOUNT",
+   "scope": "document",
+   "pattern": "TOTAL VAT AMOUNT[ \\t]+(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_total_due",
+   "label": "TOTAL AMOUNT DUE",
+   "scope": "document",
+   "pattern": "TOTAL AMOUNT DUE[ \\t]+(-?(?:\\d{1,3}(?: \\d{3})+|\\d*),\\d{2})",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "lg_basic_r",
+   "op": "sub",
+   "of": [
+    "lg_basic_debit",
+    "lg_basic_vat"
+   ]
+  },
+  {
+   "field": "lg_energy_r",
+   "op": "sub",
+   "of": [
+    "lg_energy_debit",
+    "lg_energy_vat"
+   ]
+  },
+  {
+   "field": "lg_total_ex",
+   "op": "sum",
+   "of": [
+    "lg_basic_r",
+    "lg_energy_r"
+   ]
+  },
+  {
+   "field": "x_bal_part",
+   "op": "sub",
+   "of": [
+    "x_total_due",
+    "x_bbf",
+    "x_interest",
+    "x_total_vat"
+   ]
+  },
+  {
+   "field": "x_elec_ex_id",
+   "op": "sum",
+   "of": [
+    "x_bal_part",
+    "x_payments"
+   ]
+  }
+ ],
+ "canonical": {
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "meter": "meter",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_r",
+  "end_reading_kwh": "end_r",
+  "total_kwh": "lg_kwh",
+  "standard_kwh": "lg_kwh",
+  "standard_r": "lg_energy_r",
+  "other_r": "lg_basic_r",
+  "total_ex_vat_r": "lg_total_ex",
+  "deposit_r": "deposit_r",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "tariff_name": "_none",
+  "reading_type": "_none",
+  "site_name": "_none"
+ }
+}

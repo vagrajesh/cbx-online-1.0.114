@@ -1,0 +1,249 @@
+{
+ "profile_id": "amahlathi",
+ "profile_name": "Amahlathi Local Municipality (Stutterheim, Eastern Cape)",
+ "short_name": "Amahlathi",
+ "_doc": "Two prints of the same account. (A) 6 bills: Munsoft-family 'TAX INVOICE / STATEMENT OF ACCOUNT' ledger (Date / Description / Reference / VAT / Debit (Inc) / Credit / Balance) with service sub-headings; electricity = basic '3ph @ > n amps' line (reference ...-BAS_ELEC_n), an energy line 'Electricity Consumption nKW - [start' (end reading truncated by the print, so only the start reading is captured) and a demand line 'Electricity Consumption nKW - [0 to n]' (max-demand register, mapped to demand_kva). (B) 5 bills: the cabedocs e-statement print whose text layer is shredded (rotated words, numbers split across columns) - they route here (VAT number present) but no electricity section is recognised, so they yield NO rows (blank over wrong); only the account is read for them, from the print-vendor tag '<!account|...'. FINGERPRINT: municipal VAT number + name/domain. total_ex_vat_r = (Debit - VAT) over the electricity lines; identity ama_check_vattotal_r = sum of electricity Debit (incl) - printed VAT TOTAL (holds because rates/interest carry no VAT; it verifies the VAT side independently, the debits only circularly). Checked on 11 bills (6 extract).",
+ "fingerprint": {
+  "all": [
+   "4390194381"
+  ],
+  "any": [
+   "amahlathi.gov.za",
+   "AMAHLATHI"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity (?:Basic|Consumption)[ \\t]*$",
+   "require": "ELE_CONS_|BAS_ELEC_"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account No.",
+   "scope": "document",
+   "patterns": [
+    "Account No\\.[ \\t]+(\\d{6,})",
+    "^[ \\t]{20,}Reference :[ \\t]+(\\d{6,})",
+    "<!(\\d{6,})\\|"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "pattern": "Statement Date[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "ama_period_end",
+   "label": "Period Ending",
+   "scope": "document",
+   "pattern": "Period Ending[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date"
+  },
+  {
+   "field": "ama_due_date",
+   "label": "Payment Due Date",
+   "scope": "document",
+   "pattern": "Payment Due Date[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date"
+  },
+  {
+   "field": "ama_street",
+   "label": "Physical Address",
+   "scope": "document",
+   "pattern": "Physical Address[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "ama_erf",
+    "deposit_r",
+    "ama_category",
+    "ama_suburb"
+   ],
+   "types": [
+    "text",
+    "money",
+    "text",
+    "text"
+   ],
+   "label": "ERF / Market Value / Deposit / Category / Suburb row",
+   "scope": "document",
+   "pattern": "ERF No[^\\n]*Suburb[ \\t]*\\n(?:[ \\t]*\\n)?[ \\t]*(\\d+[ \\t]+Portion[ \\t]+\\d+)[ \\t]{2,}\\d+[ \\t]{2,}R((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}(\\S+)[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$"
+  },
+  {
+   "field": "ama_vat_total_r",
+   "label": "VAT TOTAL (whole bill)",
+   "scope": "document",
+   "pattern": "VAT TOTAL[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "ama_amount_due_r",
+   "label": "AMOUNT DUE",
+   "scope": "document",
+   "pattern": "AMOUNT DUE[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "tariff_name",
+    "ama_basic_vat_r",
+    "ama_basic_inc_r"
+   ],
+   "types": [
+    "text",
+    "money",
+    "money"
+   ],
+   "label": "Electricity Basic line (BAS_ELEC)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(\\S[^\\n]*?)[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}-BAS_ELEC\\S*[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}\\(?-?[\\d ]*\\.\\d{2}\\)?[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "ama_basic_vat_sum_r",
+    "ama_basic_inc_sum_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "BAS_ELEC lines (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+\\S[^\\n]*?[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}-BAS_ELEC\\S*[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}\\(?-?[\\d ]*\\.\\d{2}\\)?[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ama_kwh",
+    "start_reading_kwh",
+    "ama_kwh_vat_r",
+    "ama_kwh_inc_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Energy line: Electricity Consumption nKW - [start (end truncated)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+Electricity Consumption[ \\t]+(\\d+(?:\\.\\d+)?)KW[ \\t]*-[ \\t]*\\[(?!0 to)(\\d+)[^\\n]*?[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}-\\S+[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}\\(?-?[\\d ]*\\.\\d{2}\\)?[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "demand_kva",
+    "ama_kva_vat_r",
+    "ama_kva_inc_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Demand line: Electricity Consumption nKW - [0 to n]",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+Electricity Consumption[ \\t]+(\\d+(?:\\.\\d+)?)KW[ \\t]*-[ \\t]*\\[0 to[^\\n]*?[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}-\\S+[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}\\(?-?[\\d ]*\\.\\d{2}\\)?[ \\t]*$"
+  },
+  {
+   "field": "ama_elec_inc_r",
+   "label": "All electricity charge lines incl VAT (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+\\S[^\\n]*?[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}-(?:ELE_CONS|BAS_ELEC)\\S*[ \\t]{2,}-?[\\d ]*\\.\\d{2}[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}\\(?-?[\\d ]*\\.\\d{2}\\)?[ \\t]*$",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "ama_street",
+    "ama_suburb"
+   ]
+  },
+  {
+   "field": "ama_kwh_ex_r",
+   "op": "sub",
+   "of": [
+    "ama_kwh_inc_r",
+    "ama_kwh_vat_r"
+   ]
+  },
+  {
+   "field": "ama_kva_ex_r",
+   "op": "sub",
+   "of": [
+    "ama_kva_inc_r",
+    "ama_kva_vat_r"
+   ]
+  },
+  {
+   "field": "ama_basic_ex_r",
+   "op": "sub",
+   "of": [
+    "ama_basic_inc_sum_r",
+    "ama_basic_vat_sum_r"
+   ]
+  },
+  {
+   "field": "ama_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "ama_kwh_ex_r",
+    "ama_kva_ex_r",
+    "ama_basic_ex_r"
+   ]
+  },
+  {
+   "field": "ama_check_vattotal_r",
+   "op": "sub",
+   "of": [
+    "ama_elec_inc_r",
+    "ama_vat_total_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "_none",
+  "total_kwh": "ama_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "ama_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "ama_kwh_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "ama_kva_ex_r",
+  "nmd_r": "_none",
+  "other_r": "ama_basic_ex_r",
+  "total_ex_vat_r": "ama_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

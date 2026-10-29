@@ -1,0 +1,599 @@
+{
+  "profile_id": "mbombela",
+  "profile_name": "City of Mbombela (Hazyview)",
+  "short_name": "Mbombela",
+  "fingerprint": {
+    "all": [
+      "4880275286"
+    ]
+  },
+  "sections": {
+    "electricity": {
+      "start": "READINGS DATE DETAILS|DATE DETAILS\\s*\\n\\s*METER NO|ELECTRICITY LT|EL[- ]?(?:PEAK|STANDARD|OFF[ -]?PEAK|DEMAND)",
+      "require": "EL[- ]?(?:PEAK|STANDARD|OFF[ -]?PEAK|REACTIVE|DEMAND)|ELECTRICITY|ENERGY CHARGE|SERVICE CHARGE|ELEC INTERIM|ELEC:"
+    },
+    "water": {
+      "start": "WATER:"
+    },
+    "sewerage": {
+      "start": "SEWER:"
+    },
+    "rates": {
+      "start": "RATES\\s*:",
+      "end": "\\n",
+      "overlay": true
+    }
+  },
+  "fields": [
+    {
+      "field": "lt_month_ex_r",
+      "label": "Levies current month (excl)",
+      "scope": "document",
+      "pattern": "LEVIES CURRENT MONTH\\s+(-?[\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "rt_type",
+        "rt_levy_r",
+        "rt_vat_r",
+        "rt_amount_r"
+      ],
+      "types": [
+        "text",
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "Rates row",
+      "scope": "section:rates",
+      "pattern": "RATES\\s*:\\s*([A-Z][A-Z ]{2,25}?)\\s+(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})\\s+(-?[\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "account_number",
+      "label": "Account Number",
+      "scope": "document",
+      "patterns": [
+        "REF\\.NO:\\s*(\\d+)",
+        "ACCOUNT NUMBER[^\\n]*\\n\\s*(\\d{5,})"
+      ],
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "site_name",
+      "label": "Site",
+      "scope": "document",
+      "patterns": [
+        "STREET[^\\n]*\\n\\s*(?:\\d{4}/\\d{2}/\\d{2}\\s+)?(?:null\\s+)?(\\S[^\\n]{2,50}?)\\s{2,}(?:SIZE|MARKET|VALUATION|\\n)",
+        "STREET\\s*\\n\\s*(?:null\\s+)?(\\S[^\\n]{2,50}?)\\s*$",
+        "STAND DESCRIPTION\\s*\\n\\s*([^\\n]{4,60}?)\\s*(?:\\n|$)"
+      ],
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "stand",
+      "label": "Stand Description",
+      "scope": "document",
+      "pattern": "(\\d{8}-\\d{5} [A-Z][A-Z0-9 ]+?)\\s{2,}",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "billing_date",
+      "label": "Account Date",
+      "scope": "document",
+      "patterns": [
+        "ACCOUNT DATE[^\\n]*\\n\\s*(\\d{4}/\\d{2}/\\d{2})",
+        "SIZE\\s+\\d+\\s+(\\d{4}/\\d{2}/\\d{2})",
+        "(?m)^\\s*(\\d{4}/\\d{2}/\\d{2})\\s*$"
+      ],
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "total_due",
+      "label": "Amount Due",
+      "scope": "document",
+      "pattern": "AMOUNT DUE\\s+(-?[\\d,]+\\.\\d{2}-?)",
+      "type": "money",
+      "required": true
+    },
+    {
+      "fields": [
+        "deposit",
+        "due_date"
+      ],
+      "label": "Deposit + Payment Date",
+      "scope": "document",
+      "pattern": "([\\d,]+\\.\\d{2})\\s+(\\d{4}/\\d{2}/\\d{2})\\s*$",
+      "type": "text",
+      "required": false
+    },
+    {
+      "fields": [
+        "current_levy_r",
+        "current_vat_r",
+        "current_inc_r"
+      ],
+      "types": [
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "CURRENT MONTH totals",
+      "scope": "document",
+      "pattern": "CURRENT MONTH\\s+(-?\\d+\\.\\d{2})(?:\\s+(-?\\d+\\.\\d{2}))?(?:\\s+(-?[\\d,.]+))?",
+      "type": "money",
+      "required": true
+    },
+    {
+      "fields": [
+        "peak_meter",
+        "peak_read_end",
+        "peak_read_start",
+        "peak_kwh",
+        "peak_r",
+        "peak_vat_r",
+        "peak_inc_r"
+      ],
+      "types": [
+        "text",
+        "number",
+        "number",
+        "number",
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "EL-PEAK",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "EL[- ]?PEAK[^\\n]*?(\\w+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(-?\\d+\\.\\d{2})(?:\\s+(-?\\d+\\.\\d{2}))?(?:\\s+(-?[\\d,.]+))?",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "off_meter",
+        "off_read_end",
+        "off_read_start",
+        "offpeak_kwh",
+        "offpeak_r",
+        "off_vat_r",
+        "off_inc_r"
+      ],
+      "types": [
+        "text",
+        "number",
+        "number",
+        "number",
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "EL-OFF PEAK",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "EL[- ]?OFF[ -]?PEAK[^\\n]*?(\\w+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(-?\\d+\\.\\d{2})(?:\\s+(-?\\d+\\.\\d{2}))?(?:\\s+(-?[\\d,.]+))?",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "std_meter",
+        "std_read_end",
+        "std_read_start",
+        "standard_kwh",
+        "standard_r",
+        "std_vat_r",
+        "std_inc_r"
+      ],
+      "types": [
+        "text",
+        "number",
+        "number",
+        "number",
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "EL-STANDARD (kWh register)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "EL[- ]?STANDARD[^\\n]*?(\\w+S)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(-?\\d+\\.\\d{2})(?:\\s+(-?\\d+\\.\\d{2}))?(?:\\s+(-?[\\d,.]+))?",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "kv_meter",
+        "demand_kva",
+        "kv_units",
+        "kv_levy_r",
+        "kv_vat_r",
+        "kv_inc_r"
+      ],
+      "types": [
+        "text",
+        "number",
+        "number",
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "EL-STANDARD (kVA charge)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "EL[- ]?STANDARD[^\\n]*?(\\w+KV)\\s+(\\d+)\\s+(\\d+)\\s+(-?\\d+\\.\\d{2})(?:\\s+(-?\\d+\\.\\d{2}))?(?:\\s+(-?[\\d,.]+))?",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "mbg_tariff",
+        "mbg_meter",
+        "mbg_end",
+        "mbg_start",
+        "mbg_units",
+        "mbg_levy"
+      ],
+      "types": [
+        "text",
+        "text",
+        "number",
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "ELEC single-meter row",
+      "scope": "section:electricity",
+      "pattern": "ELEC(?:TRICITY)?[: ]([A-Z0-9][A-Z0-9 /]{2,40}?)\\s+([A-Z]{0,3}\\d{4,})\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(-?\\d+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "mb_meter",
+      "label": "Meter (as printed)",
+      "scope": "section:electricity",
+      "patterns": [
+        "EL[- ]?STANDARD[^\\n]*?(\\w+S)\\s+\\d+\\s+\\d+\\s+\\d+\\s+-?\\d+\\.\\d{2}",
+        "ELECTRICITY LT\\s+(\\w+)"
+      ],
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "mb_tariff",
+      "label": "Tariff",
+      "scope": "document",
+      "patterns": [
+        "ELEC:([A-Z0-9][A-Z0-9 /]{2,40}?)\\s{2,}",
+        "ELECTRICITY ((?:BUSINESS|DOMESTIC|COMMERCIAL|INDUSTRIAL)[A-Z0-9 /]{0,40}?)\\s{2,}",
+        "EL-PEAK (LOW DEMAND)"
+      ],
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "mb_read_date",
+      "label": "Reading date (as printed)",
+      "scope": "section:electricity",
+      "patterns": [
+        "^\\s*(\\d{2}/\\d{2})\\s+EL[- ]?(?:PEAK|STANDARD|OFF|REACTIVE)",
+        "^\\s*(\\d{2}/\\d{2})\\s+ELECTRICITY LT"
+      ],
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "reactive_r",
+      "label": "EL-REACTIVE levy",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "EL[- ]?REACTIVE[^\\n]*?(-?\\d+\\.\\d{2})\\s+-?\\d+\\.\\d{2}\\s+-?\\d+\\.\\d{2}\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "lt_meter",
+        "lt_kva",
+        "lt_units",
+        "lt_levy_r",
+        "lt_vat_r",
+        "lt_inc_r"
+      ],
+      "types": [
+        "text",
+        "number",
+        "number",
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "ELECTRICITY LT",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "ELECTRICITY LT\\s+(\\w+)\\s+(\\d+)\\s+(\\d+)\\s+(-?[\\d,]+\\.\\d{2})[}\\]|,]*\\s+(-?[\\d,]+\\.\\d{2})[}\\]|,]*\\s+(-?[\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "service_r",
+        "service_vat_r",
+        "service_inc_r"
+      ],
+      "types": [
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "SERVICE CHARGE",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "SERVICE CHARGE\\s+\\w*\\s*(-?[\\d,.]+)[}\\]|,]*\\s+(-?[\\d,.]+)[}\\]|,]*\\s+(-?[\\d,.]+)",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "nmd_kva",
+        "nmd_r",
+        "nmd_vat_r",
+        "nmd_inc_r"
+      ],
+      "types": [
+        "number",
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "NOTIFIED DEMAND",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "NOTIFIED DEMAND\\s+\\w+\\s+(\\d+)\\s+(-?[\\d,.]+)(?:[}\\]|,]*\\s+(-?[\\d,.]+))?(?:[}\\]|,]*\\s+(-?[\\d,.]+))?",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "sundry_r",
+      "label": "Warning/admin notices",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "WARNING NOTICE[^\\n]*?(-?\\d+\\.\\d{2})\\s+-?\\d+\\.\\d{2}\\s+-?\\d+\\.\\d{2}\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "interest_r",
+      "label": "Interest",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "INTEREST\\s+(-?[\\d,]+\\.\\d{2})[}\\]|,]*\\s+-?[\\d,]+\\.\\d{2}[}\\]|,]*\\s+-?[\\d,]+\\.\\d{2}",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "w_meter",
+        "w_read_end",
+        "w_read_start",
+        "water_levy_r",
+        "w_vat_r",
+        "w_inc_r"
+      ],
+      "types": [
+        "text",
+        "number",
+        "number",
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "WATER consumption",
+      "scope": "section:water",
+      "collect": "sum",
+      "pattern": "WATER:[^\\n]*?(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(-?\\d+\\.\\d{2})\\s+(-?\\d+\\.\\d{2})\\s+(-?\\d+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "w_basic_r",
+      "label": "BASIC:WATER",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "BASIC:WATER[^\\n]*?(-?\\d+\\.\\d{2})\\s+-?\\d+\\.\\d{2}\\s+-?\\d+\\.\\d{2}",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "sewer_basic_r",
+      "label": "BASIC SEWER",
+      "scope": "section:sewerage",
+      "collect": "sum",
+      "pattern": "BASIC SEWER[^\\n]*?(-?\\d+\\.\\d{2})\\s+-?\\d+\\.\\d{2}\\s+-?\\d+\\.\\d{2}",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "reversal_r",
+      "label": "INTERIM REVERSAL (all services)",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "INTERIM REVERSAL[^\\n]*?(-?[\\d.]+)\\s+-?[\\d.]+\\s+-?[\\d.]+\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "units_metered",
+      "label": "UNITS-table kWh (metered)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "\\d{2}/\\d{2}\\s+(?:ELECTRICITY|ELEC:[^\\n]*?|ENERGY[^\\n]*?)\\s+\\d{5,}\\s+\\d+\\s+\\d+\\s+(\\d+)\\s+-?\\d+\\.\\d{2}"
+    },
+    {
+      "field": "units_interim",
+      "label": "UNITS-table kWh (interim/estimate)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "\\d{2}/\\d{2}\\s+ELEC INTERIM\\s+\\d{4,}\\s+(\\d+)\\s+-?\\d+\\.\\d{2}"
+    },
+    {
+      "fields": [
+        "mb_misc_ex",
+        "mb_misc_vat"
+      ],
+      "label": "Elec penalty/admin (ex + VAT)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "\\d{2}/\\d{2}\\s+ELECTRICITY(?! LT)\\s+[A-Z][A-Z .]*?\\s+\\w+\\s+([\\d,]+\\.\\d{2})\\s+([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    }
+  ],
+  "computes": [
+    {
+      "field": "std_r_out",
+      "op": "prefer",
+      "of": [
+        "standard_r",
+        "lt_levy_r"
+      ]
+    },
+    {
+      "field": "total_kwh",
+      "op": "sum",
+      "as": "number",
+      "of": [
+        "peak_kwh",
+        "standard_kwh",
+        "offpeak_kwh",
+        "units_metered",
+        "units_interim"
+      ]
+    },
+    {
+      "field": "meter_out",
+      "op": "prefer",
+      "of": [
+        "mb_meter",
+        "std_meter",
+        "lt_meter"
+      ]
+    },
+    {
+      "field": "demand_kva_out",
+      "op": "prefer",
+      "of": [
+        "demand_kva",
+        "lt_kva"
+      ]
+    },
+    {
+      "field": "mb_other_r",
+      "op": "sum",
+      "of": [
+        "service_r",
+        "reactive_r",
+        "mb_misc_ex"
+      ]
+    },
+    {
+      "field": "mb_elec_ex",
+      "op": "sum",
+      "of": [
+        "peak_r",
+        "standard_r",
+        "offpeak_r",
+        "kv_levy_r",
+        "lt_levy_r",
+        "service_r",
+        "nmd_r",
+        "reactive_r",
+        "mb_misc_ex"
+      ]
+    },
+    {
+      "field": "mb_start_out",
+      "op": "prefer",
+      "of": [
+        "peak_read_start",
+        "std_read_start",
+        "off_read_start",
+        "mbg_start"
+      ]
+    },
+    {
+      "field": "mb_end_out",
+      "op": "prefer",
+      "of": [
+        "peak_read_end",
+        "std_read_end",
+        "off_read_end",
+        "mbg_end"
+      ]
+    },
+    {
+      "field": "mb_band_kwh",
+      "op": "sum",
+      "as": "number",
+      "of": [
+        "peak_kwh",
+        "standard_kwh",
+        "offpeak_kwh"
+      ]
+    },
+    {
+      "field": "mb_kwh_out",
+      "op": "prefer",
+      "of": [
+        "total_kwh",
+        "mb_band_kwh",
+        "mbg_units"
+      ]
+    },
+    {
+      "field": "mb_meter_out2",
+      "op": "prefer",
+      "of": [
+        "meter_out",
+        "mbg_meter"
+      ]
+    }
+  ],
+  "canonical": {
+    "site_name": "site_name",
+    "tariff_name": "mb_tariff",
+    "reading_type": "_none",
+    "meter": "mb_meter_out2",
+    "read_end": "mb_read_date",
+    "peak_kwh": "peak_kwh",
+    "standard_kwh": "standard_kwh",
+    "offpeak_kwh": "offpeak_kwh",
+    "total_kwh": "mb_kwh_out",
+    "peak_r": "peak_r",
+    "standard_r": "std_r_out",
+    "offpeak_r": "offpeak_r",
+    "demand_kva": "demand_kva_out",
+    "demand_r": "kv_levy_r",
+    "nmd_kva": "nmd_kva",
+    "nmd_r": "nmd_r",
+    "start_reading_kwh": "mb_start_out",
+    "end_reading_kwh": "mb_end_out",
+    "other_r": "mb_other_r",
+    "total_ex_vat_r": "mb_elec_ex"
+  },
+  "recon": {
+    "prev_balance": "BALANCE B/FWD\\s+(-?[\\d,]+\\.\\d{2})",
+    "incoming_payment": "RECEIPT\\s+\\d+\\s+(-?[\\d, ]+\\.\\d{2}-?)",
+    "current_ex": "CURRENT MONTH\\s+([\\d,]+\\.\\d{2})\\s+[\\d,]+\\.\\d{2}\\s+[\\d,]+\\.\\d{2}",
+    "vat": "CURRENT MONTH\\s+[\\d,]+\\.\\d{2}\\s+([\\d,]+\\.\\d{2})\\s+[\\d,]+\\.\\d{2}",
+    "total_due": "AMOUNT DUE\\s+([\\d,]+\\.\\d{2})"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "kind": "table",
+  "title": "data.reward_days.title",
+  "scope": "team",
+  "write": "nobody",
+  "unique": [
+    [
+      "goal",
+      "person"
+    ]
+  ],
+  "columns": [
+    {
+      "key": "goal",
+      "label": "col.goal",
+      "type": "link",
+      "table": "goals",
+      "show": "title",
+      "required": true
+    },
+    {
+      "key": "person",
+      "label": "col.person",
+      "type": "person",
+      "who": "team",
+      "required": true
+    },
+    {
+      "key": "day",
+      "label": "col.day",
+      "type": "date",
+      "required": true
+    }
+  ]
+}

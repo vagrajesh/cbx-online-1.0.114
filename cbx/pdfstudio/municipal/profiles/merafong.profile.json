@@ -1,0 +1,249 @@
+{
+ "profile_id": "merafong",
+ "profile_name": "Merafong City Local Municipality (Carletonville, Gauteng)",
+ "short_name": "Merafong",
+ "_doc": "Merafong City Local Municipality (Carletonville) bilingual 'TAX INVOICE / BELASTINGFAKTUUR' (Munsoft family, same print as Mandeni's newer bill): header with Month, 'Statement Date ... wa Madi' date, ERF / Extent / Mkt Value / Category / 'Street No' (site_name); a Date / Description / VAT / Debit (VAT-inclusive) / Credit / Balance ledger grouped under service headings that repeat and can continue on later pages, so the electricity section runs from the first ledger header to the end and every rule is anchored on the line's own description. Electricity = 'Elec Business Basic Charge - Units n' (other_r, tariff_name) + 'Elec Cons - KWH nKWH - [0 to n]' (total_kwh; band, not meter readings, so start/end readings stay blank) + 'Elec Cons - KVA nKVA - [0 to n]' (demand). Each Cons line has a detail row (Factor, Date From/To = read_start/read_end, Rate, Units, Reading Type, Exclusive) with the meter number on the next line; energy/demand Rands are the Exclusive column. One bill of the 11 is a rates/refuse-only account statement (no electricity lines) and gives no electricity row by design. Deposit is printed blank. Fingerprint: the municipality's own VAT number + its name/web domain. Identity (--identity mf_elec_check_r): the total rebuilt from the ledger (Debit - VAT) instead of Exclusive: 7 x 0.00 and 3 x <=0.05 (VAT rounding between the two printed columns); checks 0. Checked on all 11 bills.",
+ "fingerprint": {
+  "all": [
+   "4920193655"
+  ],
+  "any": [
+   "Merafong City Local Municipality",
+   "merafong.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Date[ \\t]+Description[ \\t]+VAT[ \\t]+Debit",
+   "require": "Elec Cons - KWH \\d|Elec Business Basic Charge"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account (Reference)",
+   "scope": "document",
+   "patterns": [
+    "Reference:[ \\t]+(\\d{6,})[ \\t]*$",
+    "^[ \\t]*\\d+ [A-Z]+ STREET[ \\t]{2,}(\\d{9,})[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "pattern": "wa Madi[ \\t]+(\\d{1,2} [A-Za-z]+ \\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Street No",
+   "scope": "document",
+   "pattern": "Street No/ Straat Nr/ Leina[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "mf_category",
+   "label": "Category",
+   "scope": "document",
+   "pattern": "Category/ Kategorie/ Karolo[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit/ Deposito/ Peeletso[ \\t]+R[ \\t]*(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "mf_vat_total_r",
+   "label": "VAT Total (whole bill)",
+   "scope": "document",
+   "pattern": "VAT Total[ \\t]+R(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "mf_tariff",
+   "label": "Basic line description (tariff)",
+   "scope": "section:electricity",
+   "type": "text",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+(Elec\\w* [^\\n]*?Basic Charge)[^\\n]*?[ \\t]{2,}-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]{2,}-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]{2,}-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]*$"
+  },
+  {
+   "fields": [
+    "mf_basic_vat_r",
+    "mf_basic_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Elec Business Basic Charge line(s)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+Elec\\w* [^\\n]*?Basic Charge[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]{2,}(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]{2,}-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "mf_kwh",
+    "mf_kwh_vat_r",
+    "mf_kwh_inc_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Elec Cons - KWH line",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+Elec Cons - KWH[ \\t]+(\\d+(?:\\.\\d+)?)KWH[ \\t]*-[ \\t]*\\[[^\\]\\n]*\\]?[ \\t]{2,}(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]{2,}(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]{2,}-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "demand_kva",
+    "mf_kva_vat_r",
+    "mf_kva_inc_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Elec Cons - KVA line",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+Elec Cons - KVA[ \\t]+(\\d+(?:\\.\\d+)?)KVA[ \\t]*-[ \\t]*\\[[^\\]\\n]*\\]?[ \\t]{2,}(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]{2,}(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]{2,}-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?[ \\t]*$"
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end",
+    "reading_type",
+    "mf_kwh_excl_r",
+    "meter"
+   ],
+   "types": [
+    "date",
+    "date",
+    "text",
+    "money",
+    "text"
+   ],
+   "label": "KWH detail row (dates, reading type, Exclusive; meter on next line)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+(?:[\\d.]+[ \\t]+)?(\\d\\d-\\d\\d-\\d{4})[ \\t]+(\\d\\d-\\d\\d-\\d{4})[ \\t][^\\n]*?[\\d.]+KWH - \\[[^\\n]*?[ \\t]((?:Actual|Estimated?|Average|Interim))[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*\\n[ \\t]*(\\d{5,})[ \\t]"
+  },
+  {
+   "field": "mf_kva_excl_r",
+   "label": "KVA detail row Exclusive",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]+(?:[\\d.]+[ \\t]+)?\\d\\d-\\d\\d-\\d{4}[ \\t]+\\d\\d-\\d\\d-\\d{4}[ \\t][^\\n]*?[\\d.]+KVA - \\[[^\\n]*?[ \\t](?:Actual|Estimated?|Average|Interim)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "mf_factor",
+   "label": "Meter factor (KWH row)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+([\\d.]+)[ \\t]+\\d\\d-\\d\\d-\\d{4}[ \\t]+\\d\\d-\\d\\d-\\d{4}[ \\t][^\\n]*?[\\d.]+KWH - \\[",
+   "type": "number"
+  }
+ ],
+ "computes": [
+  {
+   "field": "mf_basic_ex_r",
+   "op": "sub",
+   "of": [
+    "mf_basic_inc_r",
+    "mf_basic_vat_r"
+   ]
+  },
+  {
+   "field": "mf_kva_ex_r",
+   "op": "sub",
+   "of": [
+    "mf_kva_inc_r",
+    "mf_kva_vat_r"
+   ]
+  },
+  {
+   "field": "mf_kwh_ex_r",
+   "op": "sub",
+   "of": [
+    "mf_kwh_inc_r",
+    "mf_kwh_vat_r"
+   ]
+  },
+  {
+   "field": "mf_kwh_r",
+   "op": "prefer",
+   "of": [
+    "mf_kwh_excl_r",
+    "mf_kwh_ex_r"
+   ]
+  },
+  {
+   "field": "mf_kva_r",
+   "op": "prefer",
+   "of": [
+    "mf_kva_excl_r",
+    "mf_kva_ex_r"
+   ]
+  },
+  {
+   "field": "mf_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "mf_basic_ex_r",
+    "mf_kva_r",
+    "mf_kwh_r"
+   ]
+  },
+  {
+   "field": "mf_elec_check_r",
+   "op": "sum",
+   "of": [
+    "mf_basic_ex_r",
+    "mf_kva_ex_r",
+    "mf_kwh_ex_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "nmd_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "mf_kwh",
+  "standard_kwh": "mf_kwh",
+  "demand_kva": "demand_kva",
+  "standard_r": "mf_kwh_r",
+  "demand_r": "mf_kva_r",
+  "tariff_name": "mf_tariff",
+  "other_r": "mf_basic_ex_r",
+  "total_ex_vat_r": "mf_elec_ex_r",
+  "deposit_r": "deposit_r"
+ }
+}

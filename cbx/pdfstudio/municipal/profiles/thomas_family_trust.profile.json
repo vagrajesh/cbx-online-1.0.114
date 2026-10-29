@@ -1,0 +1,92 @@
+{
+ "profile_id": "thomas_family_trust",
+ "profile_name": "Thomas Family Trust (landlord; statement issued as Propwest Investments (Pty) Ltd) - rental invoices",
+ "short_name": "Thomas Family Trust",
+ "_doc": "Thomas Family Trust folder: 9 one-page Sage-style Tax Invoices (Account No, Invoice Date, Invoice Number INVPR..., one line 'RENTAL FOR <month>' with VAT and line total, Subtotal (Exclusive), Vat, Total) that print NO biller name or VAT number in the text layer, and 1 Statement issued as Propwest Investments (Pty) Ltd with its VAT number. These are RENTAL invoices, not utility bills: no electricity or water is billed, so no electricity row is produced; the rental line lands in a 'sundry' row (desc, VAT, line total ex VAT, Subtotal (Exclusive)) and the statement yields no row. Fingerprint: the INVPR invoice-number prefix (the only biller-specific marker the invoices carry) plus any of the Propwest name / its VAT number / the invoice layout word 'VatAmnt'. No identity applicable (no electricity). Checked on 10/10.",
+ "fingerprint": {
+  "all": [
+   "INVPR"
+  ],
+  "any": [
+   "PROPWEST INVESTMENTS",
+   "441 027 4262",
+   "VatAmnt"
+  ]
+ },
+ "sections": {
+  "sundry": {
+   "start": "^Item Code[ \\t]+Description[ \\t]+Quantity",
+   "require": "Subtotal \\(Exclusive\\)"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account No (invoice header row / statement)",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]*(TEL\\d+)[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}",
+    "Account No[ \\t]{2,}(TEL\\d+)[ \\t]*$"
+   ],
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice Date / Statement Date",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]*TEL\\d+[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+    "Statement Date[ \\t]+([A-Za-z]+ \\d{1,2}, \\d{4})"
+   ],
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "tho_invoice_no",
+   "label": "Invoice Number",
+   "scope": "document",
+   "pattern": "\\b(INVPR\\d+)[ \\t]{2,}\\d+ of \\d+"
+  },
+  {
+   "fields": [
+    "tho_item",
+    "tho_desc",
+    "tho_line_vat_r",
+    "tho_line_ex_r"
+   ],
+   "label": "Charge line (code, description, VAT, line total ex VAT)",
+   "scope": "section:sundry",
+   "pattern": "^([A-Z][A-Z0-9-]+)[ \\t]{2,}(\\S.*?)[ \\t]{2,}[\\d.]+[ \\t]{2,}-?\\d[\\d ]*\\.\\d{2}[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]*$",
+   "types": [
+    "text",
+    "text",
+    "money",
+    "money"
+   ]
+  },
+  {
+   "field": "tho_subtotal_ex_r",
+   "label": "Subtotal (Exclusive)",
+   "scope": "section:sundry",
+   "pattern": "Subtotal \\(Exclusive\\)[ \\t]+(-?\\d[\\d ]*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "tho_vat_r",
+   "label": "Vat",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]+Vat[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "tho_total_r",
+   "label": "Total",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]+\\d*[ \\t]+Total[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]*$",
+   "type": "money"
+  }
+ ],
+ "computes": [],
+ "canonical": {}
+}

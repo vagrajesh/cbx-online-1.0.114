@@ -1,0 +1,258 @@
+{
+ "profile_id": "blue_crane_route",
+ "profile_name": "Blue Crane Route Local Municipality (Somerset East, Eastern Cape)",
+ "short_name": "Blue Crane Route",
+ "fingerprint": {
+  "all": [
+   "4900193782"
+  ],
+  "any": [
+   "Elec/Elek",
+   "Blue Crane",
+   "Tax invoice:"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*(?:Balance brought forward:|Interest/penalties:|Receipts:|Transfers:|Service type|Elec/Elek)(?![\\s\\S]*Total unallocated)",
+   "require": "^[ \\t]*Elec/Elek\\b"
+  },
+  "sundry": {
+   "start": "^[ \\t]*\\*\\*[ \\t]*Total monthly:"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number (town code + number)",
+   "scope": "document",
+   "pattern": "^[ \\t]*[A-Z]{2,8}[ \\t]{2,}(\\d{6,})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Date of account",
+   "scope": "document",
+   "pattern": "Date of account:[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "bcr_period",
+   "label": "Billing period (yyyy/mm)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\S[^\\n]*?[A-Z]{2,8}[ \\t]+\\d{6,}[ \\t]+(\\d{4}/\\d{2})[ \\t]+\\d{2}/\\d{2}/\\d{4}",
+   "type": "text"
+  },
+  {
+   "field": "bcr_tax_invoice",
+   "label": "Tax invoice",
+   "scope": "document",
+   "pattern": "Tax invoice:[ \\t]*(\\d{5,})",
+   "type": "text"
+  },
+  {
+   "field": "bcr_total_vat_r",
+   "label": "Total VAT",
+   "scope": "document",
+   "pattern": "Total VAT:[ \\t]+(-?[\\d,]*\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "site_name",
+   "label": "Site",
+   "scope": "document",
+   "pattern": "\\bSite:[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit (printed as a credit)",
+   "scope": "document",
+   "pattern": "\\bDeposit:[ \\t]+([\\d,]*\\.\\d{2})-?",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "meter",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "bcr_read_flag",
+    "bcr_meter_kwh",
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "text",
+    "number",
+    "date",
+    "date"
+   ],
+   "label": "Electricity meter row (E)",
+   "scope": "document",
+   "pattern": "^[ \\t]*E[ \\t]+(\\S+)[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+(?:([AE])[ \\t]+)?(?:([\\d.]+)[ \\t]+)?(\\d{2}/\\d{2})-(\\d{2}/\\d{2})\\b"
+  },
+  {
+   "fields": [
+    "bcr_basic_rate",
+    "bcr_basic_incl_r",
+    "bcr_basic_vat_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Elec Basic line (rate, amount incl, VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec/Elek[ \\t]+Basic/Basies[ \\t]+\\d+[ \\t]+([\\d.]+)[ \\t]+([\\d,]*\\.\\d{2})[ \\t]+([\\d,]*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "bcr_kwh",
+    "bcr_rate",
+    "bcr_cons_incl_r",
+    "bcr_cons_vat_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Elec Cons. line (kWh, R/kWh, amount incl, VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec/Elek[ \\t]+Cons\\./Verbr\\.[ \\t]+(\\d+)[ \\t]+([\\d.]+)[ \\t]+([\\d,]*\\.\\d{2})[ \\t]+([\\d,]*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "bcr_elec_incl_r",
+    "bcr_elec_vat_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "All Elec/Elek charge lines (amount incl, VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Elec/Elek[ \\t]+\\S[^\\n]*?[ \\t]([\\d,]*\\.\\d{2})[ \\t]+([\\d,]*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "bcr_nonelec_r",
+   "label": "Monthly-block ledger lines (b/f, interest, receipts, transfers)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?!Elec/Elek)[A-Z][A-Za-z/ ]*:[^\\n]*?[ \\t](-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "bcr_total_monthly_r",
+   "label": "** Total monthly",
+   "scope": "document",
+   "pattern": "\\*\\*[ \\t]*Total monthly:[ \\t]+(-?[\\d,]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "bcr_basic_ex_r",
+   "op": "sub",
+   "of": [
+    "bcr_basic_incl_r",
+    "bcr_basic_vat_r"
+   ]
+  },
+  {
+   "field": "bcr_cons_ex_r",
+   "op": "sub",
+   "of": [
+    "bcr_cons_incl_r",
+    "bcr_cons_vat_r"
+   ]
+  },
+  {
+   "field": "bcr_elec_ex_r",
+   "label": "Electricity ex VAT = sum(amount) - sum(VAT)",
+   "op": "sub",
+   "of": [
+    "bcr_elec_incl_r",
+    "bcr_elec_vat_r"
+   ]
+  },
+  {
+   "field": "bcr_bal_ex_r",
+   "label": "IDENTITY: Total monthly - b/f/interest/receipts/transfers - printed Total VAT",
+   "op": "sub",
+   "of": [
+    "bcr_total_monthly_r",
+    "bcr_nonelec_r",
+    "bcr_total_vat_r"
+   ]
+  },
+  {
+   "field": "bcr_kwh_x_rate_r",
+   "label": "kWh x printed R/kWh (should equal the Cons ex-VAT amount)",
+   "op": "mul",
+   "of": [
+    "bcr_kwh",
+    "bcr_rate"
+   ]
+  },
+  {
+   "field": "total_kwh_out",
+   "op": "prefer",
+   "of": [
+    "bcr_kwh",
+    "bcr_meter_kwh"
+   ]
+  },
+  {
+   "field": "reading_type",
+   "op": "label_present",
+   "of": [
+    "bcr_read_flag"
+   ],
+   "labels": [
+    "E"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh_out",
+  "peak_kwh": "_none",
+  "standard_kwh": "bcr_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "bcr_cons_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "bcr_basic_ex_r",
+  "total_ex_vat_r": "bcr_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "_doc": "Blue Crane Route one-page 'Tax invoice' (same family as the Bitou/Breede Valley 'Balance brought forward ... ** Total monthly' ledgers): masthead block with town code + account number, period yyyy/mm, Tax invoice no + 'Total VAT', the municipality's VAT number glued to 'Regis', Date of account, Site, Deposit (printed as a credit, captured as a positive amount); a meter table 'E <meter> <prev> <new> [E] <consumption> dd/mm-dd/mm <daily avg>' (E flag => Estimated); then the ledger. When an unallocated-receipts block is printed first ('** Total unallocated balances'), the electricity section starts only AFTER it. Charge lines 'Elec/Elek Basic/Basies 1 <rate> <amount incl> <VAT>' and 'Elec/Elek Cons./Verbr. <kWh> <R/kWh> <amount incl> <VAT>'; amounts are VAT-inclusive, ex = amount - VAT. standard_r = Cons, other_r = Basic, single band; months with no consumption charge print the Cons line without amounts (total_kwh then falls back to the meter row). IDENTITY bcr_bal_ex_r = '** Total monthly' - (b/f, interest, receipts, transfers of the monthly block) - printed Total VAT: exact on all 8 bills with a readable charge table. Bill notes: one bill is the closing account (deposit transfer only, no electricity charges -> no electricity row); one PDF is a scan read by OCR (routes on the VAT number, but its charge lines are unreadable so its row stays mostly blank); on one bill the printed R/kWh is stale - the Cons amount was charged at the following month's rate (bill's own inconsistency; Rands taken as printed). Fingerprint: the municipality VAT number (name is not printed in the text layer) + a layout marker."
+}

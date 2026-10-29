@@ -1,0 +1,134 @@
+{
+ "profile_id": "dirk_phyl_investments",
+ "profile_name": "Dirk Phyl Investments (Pty) Ltd (Dominionville) - electricity recharge (scanned, OCR)",
+ "short_name": "Dirk Phyl Investments",
+ "_doc": "Dirk Phyl Investments (Pty) Ltd (Dominionville) landlord electricity recharge invoices - ALL 10 are SCANS read by OCR. Two layouts: older 'Tax Invoice' (Date, BTW Registrasienr., Document No INA..., Account row, Code | Description | Quantity | Unit | Unit Price | Tax | Nett Price, Sub Total, Amount Excl Tax, Total) and newer 'Tax Invoice' (Number DP..., VAT No, Date, Due Date, 'NNN : TFMC' account, Description | Quantity | Unit | Excl. Price | Disc% | VAT% | Exclusive Total | Inclusive Total, Total Exclusive, Total VAT, Sub Total incl). Two lines: BASIES Basiese heffing (-> other_r) and ELEK Elektrisiteit verbruik (quantity = kWh, R/kWh, exclusive amount -> standard band). Patterns are tight and dates must be valid dd/mm/yyyy (one OCR'd '94/..' date stays blank; the Due Date is never used). total_ex_vat_r = basic + energy. IDENTITY = printed Total Exclusive / Amount Excl Tax (garbled OCR lines matched loosely after 'Exclusive:'): 0.00 on 10/10; second check kWh x R/kWh = energy amount on 10/10. Fingerprint any of the biller VAT number / name (OCR breaks either on some scans). OCR caveat: one bill's account number reads differently from the other nine (likely a misread digit) - rows from scans need human verification.",
+ "fingerprint": {
+  "any": [
+   "4930124104",
+   "Dirk Phyl Investments",
+   "Phyl Investments (Pty)"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "\\A",
+   "require": "^[ \\t|]*ELEK\\b[^\\n]*?verbruik"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Customer account (new layout 'NNN : TFMC'; old layout under 'Account')",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*(\\d{3,6})[ \\t]*:[ \\t]*TFMC\\b",
+    "^[ \\t]*Account[ \\t]+Your Reference[^\\n]*\\n[ \\t]*(\\d{3,6})\\b"
+   ],
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice date (valid dd/mm/yyyy only; never the Due Date)",
+   "scope": "section:electricity",
+   "patterns": [
+    "(?<!Due )\\bDate:?[ \\t]+((?:0[1-9]|[12]\\d|3[01])/(?:0[1-9]|1[0-2])/20\\d{2})\\b",
+    "\\bNumber:[ \\t]+((?:0[1-9]|[12]\\d|3[01])/(?:0[1-9]|1[0-2])/20\\d{2})\\b"
+   ],
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "dpi_invoice_no",
+   "label": "Invoice number (DP... / INA...)",
+   "scope": "section:electricity",
+   "patterns": [
+    "Number:[ \\t]+(D[A-Z0-9]{5,})\\b",
+    "Document No[ \\t]+(INA\\d{4,})\\b"
+   ]
+  },
+  {
+   "field": "dpi_basic_r",
+   "label": "BASIES Basiese heffing - exclusive total",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t|]*BASIES[^\\n]*?15\\.00%[ \\t]+R?(\\d[\\d,]*\\.\\d{2})(?:[ \\t]+R?\\d[\\d,]*\\.\\d{2})?[ \\t|]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "total_kwh",
+    "dpi_rate",
+    "dpi_energy_r"
+   ],
+   "label": "ELEK Elektrisiteit verbruik - quantity kWh, R/kWh, exclusive total",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t|]*ELEK\\b[^\\n]*?verbruik[ \\t]+(\\d[\\d,]*(?:\\.\\d{2})?)[ \\t]+\\S+[ \\t]+R?(\\d+\\.\\d{2})[ \\t]+(?:0\\.00%[ \\t]+)?15\\.00%[ \\t]+R?(\\d[\\d,]*\\.\\d{2})(?:[ \\t]+R?\\d[\\d,]*\\.\\d{2})?[ \\t|]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "dpi_total_excl_r",
+   "label": "Printed Total Exclusive / Amount Excl Tax",
+   "scope": "section:electricity",
+   "patterns": [
+    "Total Exclusive:[ \\t]+R?(\\d[\\d,]*\\.\\d{2})",
+    "Amount Excl Tax[ \\t]+(\\d[\\d,]*\\.\\d{2})",
+    "Total Total[^\\n]*?Exclusive:[^\\n]*?R(\\d[\\d,]*\\.\\d{2})"
+   ],
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "dpi_total_ex_r",
+   "label": "basic + energy (ex VAT)",
+   "op": "sum",
+   "of": [
+    "dpi_basic_r",
+    "dpi_energy_r"
+   ]
+  },
+  {
+   "field": "dpi_energy_check_r",
+   "label": "kWh x R/kWh (OCR cross-check of the energy line)",
+   "op": "mul",
+   "of": [
+    "total_kwh",
+    "dpi_rate"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "_none",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "dpi_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "dpi_basic_r",
+  "total_ex_vat_r": "dpi_total_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

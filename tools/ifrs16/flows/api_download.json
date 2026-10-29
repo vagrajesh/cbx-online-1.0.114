@@ -1,0 +1,51 @@
+{
+  "title": "flow.api_download.title",
+  "enabled": true,
+  "trigger": {
+    "type": "row_added",
+    "data": "api"
+  },
+  "run_as": "starter",
+  "start": "if1",
+  "steps": {
+    "if1": {
+      "type": "if",
+      "match": "all",
+      "when": [
+        {
+          "left": "{{trigger.row.kind}}",
+          "op": "equals",
+          "value": "Download"
+        }
+      ],
+      "yes": "s1"
+    },
+    "s1": {
+      "type": "action",
+      "action": "ifrs16.api_download",
+      "data": "api",
+      "row": "{{trigger.row.id}}",
+      "in": {
+        "month": "month",
+        "to_month": "to_month"
+      },
+      "out": {
+        "download": "download",
+        "result": "result"
+      },
+      "fail": {
+        "status": "Failed",
+        "note": "{{error}}"
+      },
+      "next": "s2"
+    },
+    "s2": {
+      "type": "update_row",
+      "data": "api",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "status": "Done"
+      }
+    }
+  }
+}

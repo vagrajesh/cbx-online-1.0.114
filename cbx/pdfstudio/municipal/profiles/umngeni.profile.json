@@ -1,0 +1,238 @@
+{
+ "profile_id": "umngeni",
+ "profile_name": "uMngeni Local Municipality (Howick, KwaZulu-Natal)",
+ "short_name": "uMngeni",
+ "_doc": "uMngeni Local Municipality (Howick) pre-printed form: the text layer carries only values - the municipality's VAT number 4240102774 alone on a line, then one header value line (account | statement date | posting date | invoice number | VAT total), unlabeled address lines, the ledger (unallocated receipts block, then Balance brought forward / Receipts / Transfers / '** Total monthly', then 'Elect:COMM Basic 1 <ex> <VAT> <amount>' and 'Elect:COMM Consumption|ConsOld on <kWh> <c/kWh> <VAT> <amount>', occasionally a 'Sundries ADMINISTRATION' credit), a newsletter, and a meter row 'G E <meter> <old> <new> <code> <kWh> dd/mm-dd/mm'. Amount is VAT-inclusive; ex = amount - VAT. total_ex_vat_r = all Elect: lines ex VAT; standard_r = consumption, other_r = basic. kWh from the consumption line (equals the meter row on 12/12); readings and dd/mm reading period from the meter row. site_name left blank: the address lines carry no labels and it is not clear which one is the site. Fingerprint: VAT 4240102774 + 'Total monthly'. IDENTITY umg_ident_ex = Total monthly - brought forward - receipts - transfers - non-electricity lines - header VAT total: 0.00 on 12/12 (the header VAT total also equals the electricity VAT on 12/12). Checked on 12 bills.",
+ "fingerprint": {
+  "all": [
+   "4240102774",
+   "Total monthly"
+  ],
+  "any": [],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Balance brought forward:",
+   "require": "^[ \\t]*Elect:"
+  }
+ },
+ "fields": [
+  {
+   "fields": [
+    "account_number",
+    "billing_date",
+    "umg_date2",
+    "umg_invoice_no",
+    "umg_vat_total"
+   ],
+   "types": [
+    "text",
+    "date",
+    "date",
+    "text",
+    "money"
+   ],
+   "label": "Header value line (account, date, date, invoice no, VAT total)",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{9,})[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+(\\d{4,})[ \\t]+(-?\\d*\\.\\d{2}-?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "umg_bbf",
+   "label": "Balance brought forward",
+   "scope": "section:electricity",
+   "pattern": "Balance brought forward:[ \\t]+(-?\\d*\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "umg_receipts",
+   "label": "Receipts (monthly block)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Receipts:[ \\t]+(-?\\d*\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "umg_transfers",
+   "label": "Transfers (monthly block)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Transfers:[ \\t]+(-?\\d*\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "umg_total_monthly",
+   "label": "** Total monthly",
+   "scope": "section:electricity",
+   "pattern": "\\*\\*[ \\t]*Total monthly:[ \\t]+(-?\\d*\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "umg_nonelec_amt",
+   "label": "Non-electricity ledger lines (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?!Elect:|Balance|Receipts|Transfers|\\*\\*)[A-Z][a-z]+[^\\n]*?[ \\t]{2,}(-?\\d*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "umg_elec_vat",
+    "umg_elec_amt"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "All Elect: lines (VAT, amount) summed",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Elect:[^\\n]*?[ \\t]{2,}\\d+[ \\t]+[\\d.]+[ \\t]+(-?\\d*\\.\\d{2}-?)[ \\t]+(-?\\d*\\.\\d{2}-?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "umg_basic_units",
+    "umg_basic_vat",
+    "umg_basic_amt"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Elect: Basic",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Elect:\\S+[ \\t]+Basic\\b[^\\n]*?[ \\t]{2,}(\\d+)[ \\t]+[\\d.]+[ \\t]+(-?\\d*\\.\\d{2}-?)[ \\t]+(-?\\d*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "umg_kwh",
+    "umg_cons_vat",
+    "umg_cons_amt"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Elect: Consumption",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Elect:\\S+[ \\t]+Cons\\w*\\b[^\\n]*?[ \\t]{2,}(\\d+)[ \\t]+[\\d.]+[ \\t]+(-?\\d*\\.\\d{2}-?)[ \\t]+(-?\\d*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "field": "umg_tariff",
+   "label": "Electricity tariff code",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elect:(\\S+)[ \\t]+Cons\\w*",
+   "type": "text"
+  },
+  {
+   "field": "umg_cons_rate_c",
+   "label": "Consumption tariff (c/kWh as printed)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elect:\\S+[ \\t]+Cons\\w*[^\\n]*?[ \\t]{2,}\\d+[ \\t]+([\\d.]+)",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "umg_meter",
+    "umg_old_reading",
+    "umg_new_reading",
+    "umg_read_code",
+    "umg_meter_kwh",
+    "umg_read_from",
+    "umg_read_to"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "text",
+    "number",
+    "text",
+    "text"
+   ],
+   "label": "Meter row",
+   "scope": "document",
+   "pattern": "^[ \\t]*G[ \\t]+E[ \\t]+(\\d{5,})[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+([A-Z])[ \\t]+([\\d.]+)[ \\t]+(\\d{2}/\\d{2})[ \\t]*-[ \\t]*(\\d{2}/\\d{2})"
+  }
+ ],
+ "computes": [
+  {
+   "field": "umg_basic_ex",
+   "op": "sub",
+   "of": [
+    "umg_basic_amt",
+    "umg_basic_vat"
+   ]
+  },
+  {
+   "field": "umg_cons_ex",
+   "op": "sub",
+   "of": [
+    "umg_cons_amt",
+    "umg_cons_vat"
+   ]
+  },
+  {
+   "field": "umg_elec_ex",
+   "op": "sub",
+   "of": [
+    "umg_elec_amt",
+    "umg_elec_vat"
+   ]
+  },
+  {
+   "field": "umg_other_r",
+   "op": "sub",
+   "of": [
+    "umg_elec_ex",
+    "umg_cons_ex"
+   ]
+  },
+  {
+   "field": "umg_ident_ex",
+   "op": "sub",
+   "of": [
+    "umg_total_monthly",
+    "umg_bbf",
+    "umg_receipts",
+    "umg_transfers",
+    "umg_nonelec_amt",
+    "umg_vat_total"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "_none",
+  "billing_date": "billing_date",
+  "tariff_name": "umg_tariff",
+  "account_number": "account_number",
+  "meter": "umg_meter",
+  "reading_type": "_none",
+  "read_start": "umg_read_from",
+  "read_end": "umg_read_to",
+  "start_reading_kwh": "umg_old_reading",
+  "end_reading_kwh": "umg_new_reading",
+  "total_kwh": "umg_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "umg_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "umg_cons_ex",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "umg_other_r",
+  "total_ex_vat_r": "umg_elec_ex",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

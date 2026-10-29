@@ -1,0 +1,520 @@
+{
+ "profile_id": "abaqulusi",
+ "profile_name": "Abaqulusi Local Municipality (Vryheid, KZN)",
+ "short_name": "Abaqulusi",
+ "_doc": "ABAQULUSI (Vryheid, KZN) - TAX INVOICE/STATEMENT OF ACCOUNT. Same billing vendor as KwaDukuza (identical masthead grammar, METER READINGS / ACCOUNT DETAILS tables, 903001 VAT line, 120+ DAYS ageing row, REMITTANCE ADVICE footer), so the fingerprint is pinned on 'ABAQULUSI' plus VAT No. 4000791881 to keep the two apart.\n\nLAYOUT\n- Header block is label:value pairs on shared lines: 'Account Number:', 'Account Date: 28 JAN 2026', 'Tax Invoice No.:', 'Consumer Name: TELKOM SA', 'ERF Description:', 'Suburb:', 'Street:', 'Market Value:', 'Land Area:', 'Deposit:', 'Internet PIN:'. Consumer Name is ALWAYS 'TELKOM SA' and identifies nothing, so Site Name is built by concat of Street + Suburb (e.g. 'STAND NO 507 A507 Mondlo A'); consumer name is kept separately as aba_consumer_name.\n- METER READINGS table: METER NO. / METER TYPE / OLD READING / NEW READING / READING DATE / READING TYPE / CONSUMPTION. One ELECTRICITY meter only on this account ([number removed]). Reading type is a single letter; E, I and N all occur (no A in this set). Mapped by a label_present compute: E->Estimated, A->Actual, I->Interim, N->No Reading. E/A follow the app-wide TRANSLATE convention; I and N are this vendor's codes (I appears with a fresh reading date and a real reading movement, N appears with equal old/new readings and .000 consumption).\n- Only ONE date is printed per meter (READING DATE) -> canonical End Date. There is NO period start/end anywhere on the bill, so Start Date is '_none'. The reading date also LAGS the account date badly (e.g. 13/04/2026 reading on a 22 JUN 2026 statement) and the consumption is a flat 1057.000 for eight consecutive months, i.e. the account is being estimated.\n- ACCOUNT DETAILS ledger: DATE / CODE / DESCRIPTION / UNITS / TARIFF / VALUE. Real tariff-calculated levies carry an '@' between UNITS and TARIFF and a '*' VAT flag before VALUE. Credits print a TRAILING minus (both on the tariff, '0.[number removed]-', and on the value, '558.53-').\n\nLEDGER CODES SEEN\n  110211 RATES / VALUATION REDUCTION / VALAUTION REBATE (bill's own spelling; sometimes suffixed ' 5%' / ' 10%')  -> rates, NOT VAT-flagged\n  080101 REFUSE                                                    -> refuse\n  040203 AVAILABLE WATER BASIC CHARGE                              -> water\n  071292 FLAT RATE WATER CHARGES NO METERS BASIC CHARGE            -> water\n  031101 AVAILABLE SEWER / 030203 AVAILABLE SEWER BASIC CHARGE     -> sewerage\n  061501 WASTE WATER NO CONSUMPTION BASIC CHARGE                   -> sewerage\n  061501 CORRECTION WASTE WATER BILLING (no '@')                    -> sewerage, PRIOR PERIOD\n  054303 / 050301 ELECTRICITY CONSUMPTION (multiple stepped lines) -> electricity energy\n  054303 ELECTRICITY REBATE (with '@', units match the step)       -> electricity energy rebate (negative)\n  954303 DEMAND/SERVICE BASIC CHARGE, 950301 BASIC CHARGE ELECTRICITY -> electricity basic charge\n  954303 CORRECTION ON BASIC ELEC <months> (no '@')                -> electricity, PRIOR PERIOD\n  903301 ELECTRICITY REBATE (no '@', units .000)                    -> electricity, PRIOR PERIOD\n  888801 DIRECT DEPOSIT PAYMENT - THANK YOU / DUPLICATED           -> payments\n  903001 VAT                                                       -> tax line\n\nSTEPPED TARIFF: ELECTRICITY CONSUMPTION prints one line per block (350 @ 3.51 then 707 @ 4.31). collect:'sum' adds the kWh and the Rands; the rebate lines are summed separately and netted into Standard Rands by the aba_std_r compute (they are a per-kWh discount on the same units, not a separate service).\n\nPRIOR-PERIOD LINES - DELIBERATE CHOICE: some statements carry catch-up adjustments dated a day or two BEFORE the account date (b9: eight '903301 ELECTRICITY REBATE' lines totalling -4,295.06 dated 27/01 on a 28 JAN statement, plus six '061501 CORRECTION WASTE WATER BILLING' at -113.06 each; b7: '954303 CORRECTION ON BASIC ELEC JULU 2025 - FEB 2026' -2,040.00). These are re-bills of EARLIER months, so they are EXCLUDED from the current-month electricity buckets (Standard kWh/Rands, Other, Total ex VAT) and captured in their own field aba_prior_elec_adj_r (sewerage: aba_wastewater_corr_r). Reason: this profile feeds per-site monthly electricity cost; folding an eight-month rebate reversal into January would make January's cost meaningless. They ARE part of the VAT base, which is why the VAT identity check uses aba_vatable_r (every '*'-flagged ledger line) and not the electricity buckets.\n  Discriminator is structural, not date arithmetic: current levies always print '@ <tariff>', prior-period adjustments never do.\n\nRULE ZERO / RECONCILE IS CIRCULAR: this bill prints NO per-service subtotal and NO ex-VAT electricity total. total_ex_vat_r is therefore the SUM of the same three parts the Rand columns hold (energy net of rebate + basic charge), so the app's reconcile check is structurally true and proves nothing. The two GENUINE checks are:\n  1. kWh identity: sum(ELECTRICITY CONSUMPTION units) == meter CONSUMPTION == NEW READING - OLD READING. Holds exactly on all 12 bills (aba_cons_kwh vs aba_meter_kwh vs the two reading fields).\n  2. VAT identity: printed '903001 VAT' == 15% of aba_vatable_r (sum of every '*'-flagged ledger line, prior-period adjustments included). Max deviation over the folder 0.03 (rounding).\n\nNOT PRINTED ANYWHERE (mapped '_none'): tariff name, period start date, TOU bands (peak/off-peak), kVA demand, NMD, cash, guarantee, security held. The 'DEMAND/SERVICE BASIC CHARGE' is a flat monthly service charge (units 1.000 @ a rand amount, and the same code prints as 'BASIC CHARGE ELECTRICITY' on the newest bill) - there is no kVA figure anywhere on the statement, so it lands in Other Charges, not Demand Rands.\n\nAgeing row is 6 money columns (120+/90/60/30/CURRENT/CLOSING BALANCE). CURRENT is the net current balance, NOT the current levy - do not use it as 'current charges'. Recon 'current_ex' is therefore left unmapped (the bill prints no ex-VAT current-charges figure).",
+ "fingerprint": {
+  "all": [
+   "ABAQULUSI"
+  ],
+  "any": [
+   "ABAQULUSI MUNICIPALITY VRYHEID",
+   "VAT No.:4000791881",
+   "ABAQULUSI LOCAL MUNICIPALITY",
+   "billing@abaqulusi.gov.za"
+  ],
+  "reject_if_text": [
+   "requires Adobe Reader 8 or higher",
+   "Prepayment Account Update"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$|^[ \\t]*ACCOUNT DETAILS[ \\t]*$",
+   "require": "\\d{9,}[ \\t]+ELECTRICITY[ \\t]|ELECTRICITY CONSUMPTION|BASIC CHARGE ELECTRICITY|DEMAND/SERVICE BASIC CHARGE"
+  },
+  "water": {
+   "overlay": true,
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+0(?:40203|71292)[ \\t]",
+   "end": "^[ \\t]*903001[ \\t]+VAT[ \\t]"
+  },
+  "sewerage": {
+   "overlay": true,
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+0(?:31101|30203|61501)[ \\t]",
+   "end": "^[ \\t]*903001[ \\t]+VAT[ \\t]"
+  },
+  "refuse": {
+   "overlay": true,
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+080101[ \\t]",
+   "end": "^[ \\t]*903001[ \\t]+VAT[ \\t]"
+  },
+  "rates": {
+   "overlay": true,
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+110211[ \\t]",
+   "end": "^[ \\t]*903001[ \\t]+VAT[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account Number:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "aba_consumer_name",
+   "label": "Consumer Name",
+   "scope": "document",
+   "pattern": "Consumer Name:[ \\t]*(.+?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "aba_street",
+   "label": "Street",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(.+?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "aba_suburb",
+   "label": "Suburb",
+   "scope": "document",
+   "pattern": "Suburb:[ \\t]+(.+?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "aba_erf",
+   "label": "ERF Description",
+   "scope": "document",
+   "pattern": "ERF Description:[ \\t]+(.+?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2} [A-Z]{3} \\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "aba_invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "aba_market_value",
+   "label": "Market Value",
+   "scope": "document",
+   "pattern": "Market Value:[ \\t]+([\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "aba_land_area",
+   "label": "Land Area",
+   "scope": "document",
+   "pattern": "Land Area:[ \\t]+([\\d,]+\\.\\d+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]+([\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "due_date",
+   "label": "Due Date",
+   "scope": "document",
+   "pattern": "TOTAL DUE ON OR BEFORE:[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "total_due",
+   "label": "Total Due",
+   "scope": "document",
+   "pattern": "TOTAL DUE:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "vat_r",
+   "label": "VAT (903001)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*903001[ \\t]+VAT[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "aba_opening_balance",
+   "label": "Opening Balance",
+   "scope": "document",
+   "pattern": "^[ \\t]*OPENING BALANCE[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "aba_payments_r",
+   "label": "Payments / duplicates (888801)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+888801[ \\t]+[^\\n]*?[ \\t]((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "aba_age_120",
+    "aba_age_90",
+    "aba_age_60",
+    "aba_age_30",
+    "aba_age_current",
+    "aba_closing_balance"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Ageing row",
+   "scope": "document",
+   "pattern": "^[ \\t]*120\\+ DAYS[^\\n]*\\n[ \\t]*(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "aba_vatable_r",
+   "label": "VAT base (all '*' ledger lines)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]+[^\\n]*?\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "meter",
+    "aba_start_reading",
+    "aba_end_reading",
+    "aba_read_date",
+    "aba_meter_kwh"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "text",
+    "number"
+   ],
+   "label": "Electricity meter row",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{9,})[ \\t]+ELECTRICITY[ \\t]+([\\d,]*\\.\\d{3})[ \\t]+([\\d,]*\\.\\d{3})[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+[A-Z][ \\t]+([\\d,]*\\.\\d{3})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "aba_rt_e",
+   "label": "Reading type E",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{9,}[ \\t]+ELECTRICITY[ \\t]+[\\d,.]+[ \\t]+[\\d,.]+[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+(E)[ \\t]+[\\d,.]+[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "aba_rt_a",
+   "label": "Reading type A",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{9,}[ \\t]+ELECTRICITY[ \\t]+[\\d,.]+[ \\t]+[\\d,.]+[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+(A)[ \\t]+[\\d,.]+[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "aba_rt_i",
+   "label": "Reading type I",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{9,}[ \\t]+ELECTRICITY[ \\t]+[\\d,.]+[ \\t]+[\\d,.]+[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+(I)[ \\t]+[\\d,.]+[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "aba_rt_n",
+   "label": "Reading type N",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{9,}[ \\t]+ELECTRICITY[ \\t]+[\\d,.]+[ \\t]+[\\d,.]+[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+(N)[ \\t]+[\\d,.]+[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "aba_cons_kwh",
+    "aba_cons_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "ELECTRICITY CONSUMPTION (stepped, summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+0(?:54303|50301)[ \\t]+ELECTRICITY CONSUMPTION[ \\t]+((?<![\\d.,])[\\d,]*\\.\\d{3})[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "aba_rebate_kwh",
+    "aba_rebate_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "ELECTRICITY REBATE, current period (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+0(?:54303|50301)[ \\t]+ELECTRICITY REBATE[ \\t]+((?<![\\d.,])[\\d,]*\\.\\d{3})[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "aba_basic_units",
+    "aba_basic_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Electricity basic / service charge (95x)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+9(?:54303|50301)[ \\t]+(?:DEMAND/SERVICE BASIC CHARGE|BASIC CHARGE ELECTRICITY)[ \\t]+((?<![\\d.,])[\\d,]*\\.\\d{3})[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "aba_prior_elec_adj_r",
+   "label": "Prior-period electricity adjustments (no '@')",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+9\\d{5}[ \\t]+(?:ELECTRICITY REBATE|CORRECTION ON BASIC ELEC)[^\\n@]*?\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "aba_elec_tariff_steps",
+   "label": "Energy tariff steps (R/kWh)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+0(?:54303|50301)[ \\t]+ELECTRICITY CONSUMPTION[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+@[ \\t]*([\\d,]*\\.?\\d*)[ \\t]+\\*",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "aba_water_basic_r",
+   "label": "AVAILABLE WATER BASIC CHARGE (040203)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+040203[ \\t]+AVAILABLE WATER BASIC CHARGE[^\\n]*?\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "aba_water_flat_r",
+   "label": "FLAT RATE WATER CHARGES NO METERS (071292)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+071292[ \\t]+FLAT RATE WATER CHARGES[^\\n]*?\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "aba_sewer_r",
+   "label": "AVAILABLE SEWER (031101 / 030203)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+0(?:31101|30203)[ \\t]+AVAILABLE SEWER[^\\n]*?\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "aba_wastewater_r",
+   "label": "WASTE WATER BASIC CHARGE (061501)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+061501[ \\t]+WASTE WATER[^\\n]*?@[^\\n]*?\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "aba_wastewater_corr_r",
+   "label": "CORRECTION WASTE WATER BILLING (prior period)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+061501[ \\t]+CORRECTION WASTE WATER[^\\n@]*?\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "aba_refuse_r",
+   "label": "REFUSE (080101)",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+080101[ \\t]+REFUSE[^\\n]*?\\*[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "aba_rates_r",
+   "label": "RATES (110211)",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+110211[ \\t]+RATES[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "aba_rates_reduction_r",
+   "label": "VALUATION REDUCTION (110211)",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+110211[ \\t]+VALUATION REDUCTION[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "aba_rates_rebate_r",
+   "label": "VALAUTION REBATE (110211, bill's spelling)",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+110211[ \\t]+VAL[AU]{2}TION REBATE[^\\n]*?[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+@[ \\t]*[\\d,]*\\.?\\d*-?[ \\t]+((?<![\\d.,])-?[\\d, ]{0,12}\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "aba_site",
+   "op": "concat",
+   "of": [
+    "aba_street",
+    "aba_suburb"
+   ]
+  },
+  {
+   "field": "aba_reading_type",
+   "op": "label_present",
+   "of": [
+    "aba_rt_a",
+    "aba_rt_e",
+    "aba_rt_i",
+    "aba_rt_n"
+   ],
+   "labels": [
+    "Actual",
+    "Estimated",
+    "Interim",
+    "No Reading"
+   ]
+  },
+  {
+   "field": "aba_std_r",
+   "op": "sum",
+   "of": [
+    "aba_cons_r",
+    "aba_rebate_r"
+   ]
+  },
+  {
+   "field": "aba_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "aba_cons_r",
+    "aba_rebate_r",
+    "aba_basic_r"
+   ]
+  },
+  {
+   "field": "aba_water_total_r",
+   "op": "sum",
+   "of": [
+    "aba_water_basic_r",
+    "aba_water_flat_r"
+   ]
+  },
+  {
+   "field": "aba_sewer_total_r",
+   "op": "sum",
+   "of": [
+    "aba_sewer_r",
+    "aba_wastewater_r"
+   ]
+  },
+  {
+   "field": "aba_rates_total_r",
+   "op": "sum",
+   "of": [
+    "aba_rates_r",
+    "aba_rates_reduction_r",
+    "aba_rates_rebate_r"
+   ]
+  },
+  {
+   "field": "aba_reading_diff_kwh",
+   "op": "diff",
+   "of": [
+    "aba_end_reading",
+    "aba_start_reading"
+   ],
+   "as": "number"
+  }
+ ],
+ "canonical": {
+  "site_name": "aba_site",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "aba_reading_type",
+  "read_start": "_none",
+  "read_end": "aba_read_date",
+  "start_reading_kwh": "aba_start_reading",
+  "end_reading_kwh": "aba_end_reading",
+  "total_kwh": [
+   "aba_meter_kwh",
+   "aba_cons_kwh"
+  ],
+  "peak_kwh": "_none",
+  "standard_kwh": "aba_cons_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "aba_std_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "aba_basic_r",
+  "total_ex_vat_r": "aba_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "^[ \\t]*OPENING BALANCE[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+888801[ \\t]+DIRECT DEPOSIT PAYMENT[^\\n]*?[ \\t](-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "vat": "^[ \\t]*903001[ \\t]+VAT[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "total_due": "TOTAL DUE:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)",
+  "due_date": "TOTAL DUE ON OR BEFORE:[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+  "deposit": "Deposit:[ \\t]+([\\d, ]+\\.\\d{2})"
+ }
+}

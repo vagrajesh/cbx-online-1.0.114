@@ -1,0 +1,289 @@
+{
+ "profile_id": "emthanjeni",
+ "profile_name": "Emthanjeni Local Municipality (De Aar, Northern Cape)",
+ "short_name": "Emthanjeni",
+ "_doc": "Munsoft-family 'TAX INVOICE / BELASTINGFAKTUUR' (bilingual labels 'Statement Date/Staat Datum', 'Month/Maand'); the masthead + ledger header repeat on every page, service sub-headings ('Electricity', 'Interest', 'Water' ...) sit on their own lines. Electricity = one 'Elec Cons-KWH nKWH - [start to end]' ledger line (VAT, Debit incl VAT, Balance) followed by a meter-detail row (Meter Number, Factor, Date From/To, Rate, Units, Reading Type, Exclusive) and one 'Elec Basic - <tariff> - Units n' line; 'Interest - Elec ...' lines are NOT counted. Flat energy mapped to standard_kwh/standard_r. FINGERPRINT: the municipality's own VAT number as printed in the masthead + its name / web domain. total_ex_vat_r = (Debit - VAT) over the Elec Cons and Elec Basic lines; identity emt_check_excl_r = the printed 'Exclusive' column of the meter-detail row + basic ex VAT (energy verified independently, basic circular). Checked on 10 bills.",
+ "fingerprint": {
+  "all": [
+   "4150193474"
+  ],
+  "any": [
+   "Emthanjeni Local Municipality",
+   "emthanjeni.co.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity[ \\t]*$",
+   "require": "Elec Cons-KWH[ \\t]+[\\d,.]+KWH"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]{20,}Account[ \\t]{2,}(\\d{6,})[ \\t]*$",
+    "Reference:[ \\t]+(\\d{6,})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "pattern": "Statement Date/Staat Datum:[ \\t]+(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "emt_month",
+   "label": "Month",
+   "scope": "document",
+   "pattern": "Month/Maand:[ \\t]+([A-Za-z]+[ \\t]+\\d{4})",
+   "type": "text"
+  },
+  {
+   "field": "emt_due_date",
+   "label": "Due Date",
+   "scope": "document",
+   "pattern": "Due Date/Betaaldatum:[ \\t]+(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "emt_erf",
+   "label": "ERF No",
+   "scope": "document",
+   "pattern": "^[ \\t]*ERF No[ \\t]{2,}(\\S[^\\n]*?)[ \\t]{2,}Surburb",
+   "type": "text"
+  },
+  {
+   "field": "emt_street",
+   "label": "Street No",
+   "scope": "document",
+   "pattern": "Street No/ Straat Nr[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit/ Deposito[ \\t]+R?((?:\\d{1,3}(?:,\\d{3})*)?\\.\\d{2})(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "emt_vat_total_r",
+   "label": "VAT Total (whole bill)",
+   "scope": "document",
+   "pattern": "VAT Total[ \\t]{2,}R((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "emt_amount_due_r",
+   "label": "Amount Due",
+   "scope": "document",
+   "pattern": "Amount Due/Verskuldig/[ \\t]{2,}R((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "emt_kwh",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "emt_kwh_vat_r",
+    "emt_kwh_inc_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Elec Cons-KWH ledger line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Elec Cons-KWH[ \\t]+([\\d,]+(?:\\.\\d+)?)KWH[ \\t]*-[ \\t]*\\[[ \\t]*([\\d.]+)[ \\t]+to[ \\t]+([\\d.]+)[ \\t]*\\][ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}-?[\\d,]*\\.\\d{2}[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "emt_kwh_vat_sum_r",
+    "emt_kwh_inc_sum_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "All Elec Cons-KWH lines (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Elec Cons-KWH[ \\t]+[\\d,.]+KWH[^\\n]*?[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}-?[\\d,]*\\.\\d{2}[ \\t]*$"
+  },
+  {
+   "fields": [
+    "emt_kva_vat_r",
+    "emt_kva_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Elec Cons-KVA ledger line(s)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Elec Cons-KVA[^\\n]*?[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}-?[\\d,]*\\.\\d{2}[ \\t]*$"
+  },
+  {
+   "fields": [
+    "tariff_name",
+    "emt_basic_vat_r",
+    "emt_basic_inc_r"
+   ],
+   "types": [
+    "text",
+    "money",
+    "money"
+   ],
+   "label": "Elec Basic ledger line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+-[ \\t]+(Elec Basic[ \\t]+-[ \\t]+[A-Za-z][A-Za-z ]*?)[ \\t]+-[ \\t]+Units[^\\n]*?[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}-?[\\d,]*\\.\\d{2}[ \\t]*$"
+  },
+  {
+   "fields": [
+    "emt_basic_vat_sum_r",
+    "emt_basic_inc_sum_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "All Elec Basic lines (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+-[ \\t]+Elec Basic[^\\n]*?[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}-?[\\d,]*\\.\\d{2}[ \\t]*$"
+  },
+  {
+   "fields": [
+    "emt_factor",
+    "read_start",
+    "read_end",
+    "emt_rate",
+    "emt_units",
+    "reading_type",
+    "emt_excl_r"
+   ],
+   "types": [
+    "number",
+    "date",
+    "date",
+    "text",
+    "number",
+    "text",
+    "money"
+   ],
+   "label": "Meter detail row (factor, dates, rate, units, reading type, Exclusive)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+(\\d+)[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]+[\\d.,]+[ \\t]+[\\d,]+[ \\t]+([\\d.]+)[ \\t]+([\\d,]+\\.\\d{2})[ \\t]+[\\d,.]+KWH[^\\n]*?[ \\t]{2,}(Actual|Average|Estimated?|Estimate)[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "emt_excl_sum_r",
+   "label": "Exclusive column, all kWh detail rows (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "KWH[^\\n]*?[ \\t]{2,}(?:Actual|Average|Estimated?|Estimate)[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "meter",
+   "label": "Meter Number (electricity register)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(E\\d+_\\d+\\|\\d+)\\b",
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "emt_street",
+    "emt_erf"
+   ]
+  },
+  {
+   "field": "emt_kwh_ex_r",
+   "op": "sub",
+   "of": [
+    "emt_kwh_inc_sum_r",
+    "emt_kwh_vat_sum_r"
+   ]
+  },
+  {
+   "field": "emt_kva_ex_r",
+   "op": "sub",
+   "of": [
+    "emt_kva_inc_r",
+    "emt_kva_vat_r"
+   ]
+  },
+  {
+   "field": "emt_basic_ex_r",
+   "op": "sub",
+   "of": [
+    "emt_basic_inc_sum_r",
+    "emt_basic_vat_sum_r"
+   ]
+  },
+  {
+   "field": "emt_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "emt_kwh_ex_r",
+    "emt_kva_ex_r",
+    "emt_basic_ex_r"
+   ]
+  },
+  {
+   "field": "emt_check_excl_r",
+   "op": "sum",
+   "of": [
+    "emt_excl_sum_r",
+    "emt_kva_ex_r",
+    "emt_basic_ex_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "emt_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "emt_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "emt_kwh_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "emt_kva_ex_r",
+  "nmd_r": "_none",
+  "other_r": "emt_basic_ex_r",
+  "total_ex_vat_r": "emt_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

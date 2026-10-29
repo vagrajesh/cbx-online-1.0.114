@@ -1,0 +1,264 @@
+{
+ "profile_id": "mangaung",
+ "profile_name": "Mangaung Metro (Bloemfontein)",
+ "short_name": "Mangaung",
+ "_doc": "Afrikaans/English metro bill. Charge lines read 'LEVY <SERVICE> ... AMOUNT' with a separate 'VAT <SERVICE>' line; AMOUNT is the last money on the line, credits carry a leading minus (RECEIPT -25969.53). Services: WATER, RATES, SANIT(ation), REFUSE (electricity not seen in this pack - LEVY ELEC rule is structural). Water meter table gives the reading + estimate flag. FINGERPRINT (fixed Aug-2026): matched on Mangaung's own VAT registration 4780193175 only. It previously matched on '[address removed]' under 'any', which is the CBRE/Excellerate utilities mailbox that appears on MANY municipalities' statements - Dihlabeng (VAT 4000846529) and Breede Valley bills were silently routing to Mangaung. The bare VAT number is used rather than the full 'TAX INVOICE (VAT REG. NO.:4780193175)' string so label/spacing drift cannot break the match (same convention as overstrand/centlec/mbombela/emfuleni). The reject_if_text on Overstrand's VAT 4140106396 is kept as belt-and-braces. No extraction rule changed.",
+ "fingerprint": {
+  "all": [
+   "4780193175"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "4140106396"
+  ]
+ },
+ "sections": {
+  "water": {
+   "start": "LEVY (?:ESTIMATE )?WATER"
+  },
+  "electricity": {
+   "start": "LEVY (?:ELEC|ELEKTR)"
+  },
+  "sewerage": {
+   "start": "LEVY SANIT"
+  },
+  "refuse": {
+   "start": "LEVY REFUSE"
+  },
+  "rates": {
+   "start": "LEVY RATES"
+  }
+ },
+ "fields": [
+  {
+   "fields": [
+    "account_number",
+    "site_name"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "Account + address",
+   "scope": "document",
+   "pattern": "ACCOUNT NO:\\s*(\\d+)\\s+(.+?)\\s*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "invoice_number",
+   "label": "Tax invoice no",
+   "scope": "document",
+   "pattern": "(\\d+/\\d{4}/\\d{2}/\\d{2})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice date",
+   "scope": "document",
+   "pattern": "\\d+/(\\d{4}/\\d{2}/\\d{2})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "municipality",
+   "label": "Municipality",
+   "scope": "document",
+   "pattern": "()",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "due_date",
+   "label": "Expiry date",
+   "scope": "document",
+   "pattern": "EXPIRY[\\s\\S]*?(\\d{4}/\\d{2}/\\d{2})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "deposit",
+   "label": "Deposit amount",
+   "scope": "document",
+   "pattern": "DEPOSIT DATE[\\s\\S]*?\\n\\s*((?<![\\d.])-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "meter",
+    "reading_type"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "Water meter + type",
+   "scope": "document",
+   "pattern": "WA\\s+(\\d+)\\s+(ESTIMATE|ACTUAL|\\w+)?\\s+[\\d.]+\\s+\\d+\\s+WA\\w+",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "total_kl",
+   "label": "Water units consumed",
+   "scope": "document",
+   "pattern": "WA\\s+\\d+\\s+(?:ESTIMATE|ACTUAL|\\w+)?\\s+([\\d.]+)\\s+\\d+\\s+WA\\w+",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "mg_water_levy_r",
+   "label": "Water levy",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "LEVY (?:ESTIMATE (?:REVERSAL )?)?WATER.*\\s(-?\\d+\\.\\d{2})\\s*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mg_water_vat_r",
+   "label": "Water VAT",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "VAT WATER.*\\s(-?\\d+\\.\\d{2})\\s*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mg_rates_r",
+   "label": "Rates levy",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "LEVY RATES.*\\s(-?\\d+\\.\\d{2})\\s*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mg_sanit_levy_r",
+   "label": "Sanitation levy",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "LEVY SANIT.*\\s(-?\\d+\\.\\d{2})\\s*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mg_sanit_vat_r",
+   "label": "Sanitation VAT",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "VAT SANIT.*\\s(-?\\d+\\.\\d{2})\\s*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mg_refuse_levy_r",
+   "label": "Refuse levy",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "LEVY REFUSE.*\\s(-?\\d+\\.\\d{2})\\s*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mg_refuse_vat_r",
+   "label": "Refuse VAT",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "VAT REFUSE.*\\s(-?\\d+\\.\\d{2})\\s*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mg_elec_levy_r",
+   "label": "Electricity levy",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "LEVY (?:ELEC|ELEKTR)[^\\n]*?((?<![\\d.])-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})\\s*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mg_elec_vat_r",
+   "label": "Electricity VAT",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "VAT (?:ELEC|ELEKTR)[^\\n]*?((?<![\\d.])-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2})\\s*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mg_w_present",
+   "scope": "section:water",
+   "label": "w",
+   "pattern": "(WATER)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mg_e_present",
+   "scope": "section:electricity",
+   "label": "e",
+   "pattern": "(ELEC|ELEKTR)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mg_s_present",
+   "scope": "section:sewerage",
+   "label": "s",
+   "pattern": "(SANIT)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mg_r_present",
+   "scope": "section:refuse",
+   "label": "r",
+   "pattern": "(REFUSE)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mg_a_present",
+   "scope": "section:rates",
+   "label": "a",
+   "pattern": "(RATES)",
+   "type": "text",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "mg_elec_ex",
+   "op": "prefer",
+   "of": [
+    "mg_elec_levy_r"
+   ]
+  },
+  {
+   "field": "mg_water_total",
+   "op": "sum",
+   "of": [
+    "mg_water_levy_r",
+    "mg_water_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "tariff_name": "_none",
+  "reading_type": "reading_type",
+  "meter": "meter",
+  "total_ex_vat_r": "mg_elec_ex",
+  "other_r": "mg_elec_levy_r",
+  "deposit_r": "deposit"
+ },
+ "recon": {
+  "incoming_payment": "RECEIPT\\s+\\d{4}/\\d{2}/\\d{2}\\s+\\d+\\s+(-?[\\d,]+\\.\\d{2})",
+  "current_incl": "120 \\+ DAYS[^\\n]*\\n\\s*(?:-?[\\d,]+\\.\\d{2}\\s+){4}(-?[\\d,]+\\.\\d{2})",
+  "total_due": "120 \\+ DAYS[^\\n]*\\n\\s*(?:-?[\\d,]+\\.\\d{2}\\s+){5}(-?[\\d,]+\\.\\d{2})"
+ }
+}

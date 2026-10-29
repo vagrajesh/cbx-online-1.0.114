@@ -1,0 +1,617 @@
+{
+ "profile_id": "metsimaholo",
+ "profile_name": "Metsimaholo Local Municipality (Sasolburg, Free State)",
+ "short_name": "Metsimaholo",
+ "_doc": "SAP/Solar mSCOA print stream (same stream as Matjhabeng and Midvaal), but a COMPLETELY different page layout from either. Single page, ~7.0-9.2 kB of text, account [number removed], ERF 1492 VAALPARK.\n\nIDENTITY IS PRINTED, not inferred: the masthead says 'METSIMAHOLO MUNICIPALITY' and the invoice header says 'TAX INVOICE  VAT REG NO. 4000846594'. Fingerprint = BOTH of those (each 9/487 PDFs in the Telkom tree, both only in this folder). Deliberately NOT fingerprinted on '[address removed]' - that is a CBRE/Excellerate recipient mailbox that appears on many municipalities' bills and is exactly what makes the shipped 'mangaung' profile (fingerprint '[address removed]') hijack Dihlabeng, Breede Valley, Sol Plaatje, Stellenbosch and Swellendam. 'Cust Vat No: 4650101142' is TELKOM's VAT number, not the municipality's - captured as met_cust_vat_number, never fingerprinted.\n\nTWO RENDERS, one layout, both handled by the same rules.\n  SHAPE A (3 files, ~106-112 kB, named [number removed]-<YYYYMMDD>-<seq>.pdf, AUG/SEP/OCT 2025): opens with a mailer control record '<![number removed]|[address removed]|EMAIL|31|10|2025|...!>'. Meter rows carry a leading register letter (W / E). Reading dates print as bare YYYYMMDD ('[number removed]   [number removed]'). No 'Tax Invoice No:' line. Labels 'Cust Vat No:' and the 27-digit unit number sit on one line, ERF on its own line.\n  SHAPE B (6 files, ~64 kB, named ..._eposhold.pdf / 'KHOMOTSO 9.pdf' / 'Metsimaholo-(Duplicate-)Statement - ...', JAN/FEB/MAR/MAY/JUN/JUL 2026): no mailer record; masthead reads 'P.O BOX /POSBUS/ LEBOKOSO LA POSO 60 / SASOLBURG, 1947  METSIMAHOLO'; meter rows have NO register letter; reading dates print as YYYY/MM/DD; adds 'Tax Invoice No: [number removed]/<YYYYMMDD>', 'VAT NO:', 'UNIT NUMBER' and 'STAND' labels. Every field rule is label/column anchored and covers both renders (the register letter is optional, the reading-date pair is a two-alternative 'patterns' fallback with identical groups).\n\nLAYOUT\n  A. Header (everything above the ledger column line): masthead, addressee (TELKOM SA TFMC / PRIVATE BAG X137 / CENTURION), TAX INVOICE + VAT REG NO., ACCOUNT FOR '<MON YYYY>', ACCOUNT NUMBER, RECEIPTS INVOICE TO <date>, Cust/YOUR VAT no, 27-digit UNIT NUMBER, STAND 'ERF 1492 VAALPARK', DEPOSIT 11154.00.\n  B. ONE combined table. Left half is the meter block (PREVIOUS READING / CURRENT READING / CONSUMPTION / FACTOR / TARIFF); right half is the ledger (DETAILS / DESCRIPTION + TOTAL). A meter row and a ledger row are printed on the SAME text line, so a WATER row and an ELECTRICITY row are just two lines of the same table - positional sectioning is impossible. electricity is the one positional section (from the ledger column header to the end of the page); water/sewerage/refuse/rates/sundry are OVERLAY sections that start at the same header and end at 'MARKET VALUE OF PROPERTY', so they can never cut electricity short. Every rule is anchored on its own DETAILS label.\n  C. FACTOR is a CT multiplier: printed CONSUMPTION == (CURRENT - PREVIOUS) x FACTOR. RE-MEASURED on every printed meter row (19 rows over the 9 bills): holds on 17/19. The two exceptions are the AUG 2025 and SEP 2025 ELECTRICITY rows, which print PREVIOUS=0 CURRENT=0 alongside a real consumption of 54400 / 64711 kWh - i.e. the bill charges a consumption it does not support with readings (unread / estimated meter). So the readings on those two months are NOT a reading pair and must not be differenced; total_kwh is always the printed CONSUMPTION column, already factored, and that is what met_elec_kwh reads.\n  D. Footer: MARKET VALUE OF PROPERTY / ERF SIZE / 'SERVICES & RENTAL <amount payable>', an ageing row, 'ON OR BEFORE <DD MON YYYY> <amount now payable>', the tear-off 'AMOUNT PAYABLE <amount>' and the barcode '>>>> 9 1460 0399 3760 7'.\n\nMONEY IS EX-VAT PER LINE, WITH ONE AGGREGATE 'VAT' LINE. This is the opposite of Matjhabeng (whose AMOUNT column is VAT-inclusive with per-line VAT). Metsimaholo prints each charge net and then one 'VAT' ledger line. Proof: FEB 2026 vatable lines 80.26+15160.00+202.23+401.65+360.44+32.21+19.10-4.78 = 16251.11, x15% = 2437.67 = the printed VAT to the cent. So NO ex-VAT computes are needed and the canonical Rand columns read the captured amounts directly.\n  VAT-EXEMPT lines: 'BUSINESS & COMMERCIAL PR' (property rates) and 'INTEREST ON ARREARS'. Everything else on the ledger is vatable.\n\nELECTRICITY\n  Single flat energy tariff. NO time-of-use bands are printed anywhere - no Peak/Standard/Off-peak labels, no kVA/demand line, no NMD. peak_*/offpeak_*/demand_*/nmd_* are therefore '_none'; the energy goes to the STANDARD band (the single-band convention already used for CoJ flat-rate, Ekurhuleni and Matjhabeng). 'BASIC ELEC' (a printed fixed monthly charge, 401.65 -> 437.80) is the only other electricity line and lands in other_r.\n  THE TARIFF COLUMN IS NOT THE BILLED RATE - MEASURED: printed TARIFF x printed CONSUMPTION reproduces the printed amount on only 3 of the 6 charged electricity rows (AUG 2025 54400x4.21=229024.00, JAN 2026 11300x3.79=42827.00, FEB 2026 4000x3.79=15160.00). It FAILS on SEP 2025 (64711x3.79=245254.69 vs printed 269803.13), OCT 2025 (2400x3.82=9168.00 vs 9831.13) and MAY 2026 (TARIFF prints 4.210000 but the charge used 3.79: 1100x3.79=4169.00). Water is the same story - JUL 2026 prints 44.95000 but charged 205.17 for 5 kL (=41.03/kL). The printed TARIFF is therefore kept as met_elec_rate / met_water_rate for information only and is NEVER used to derive money.\n  MULTI-ROW MONTHS: OCT 2025 prints THREE electricity meter rows - 67010/67010 (0 units, no amount), 0/0 (0 units, -[number removed].73) and 40952/40976 (2400 units, 9831.13) - plus a ledger-only 'ELECTRICITY -153204.00' adjustment with no meter columns. That is a meter exchange plus a large re-billing reversal. CONSUMPTION and the amounts are collect:'sum' so they net correctly (2400 kWh, -[number removed].60 ex VAT); the ledger-only adjustment has its own rule (met_elec_adj_r). Because there is no single meaningful reading pair that month, start/end readings are captured with collect:'join_unique' - they read a clean single value on the other 8 bills and '0/40952/67010' / '0/40976/67010' on OCT 2025, which is honest rather than a fabricated sum.\n  MAR 2026 prints NO electricity meter row at all (only BASIC ELEC), so total_kwh and standard_r are legitimately blank that month; the section is still present because 'BASIC ELEC' satisfies its require clause. JUN and JUL 2026 print a meter row with 0 consumption and no amount: total_kwh 0, standard_r blank. Both are data, not misses.\n\nOTHER SERVICES (all label-anchored, all kept out of electricity)\n  water    'WATER' meter row (kL, readings, tariff) + 'BASIC WATER' fixed charge.\n  sewerage 'BASIC SEWER' + 'ADD SEWERAGE' (two lines some months, one a credit; collect:'sum' nets them). No sewer meter.\n  refuse   'REFUSE' (flat, no units).\n  rates    'BUSINESS & COMMERCIAL PR' with the cent-in-rand rate (0.023140) - VAT exempt.\n  sundry   'WARNING/CUT OFF FEES' (collect:'sum', 0-2 per month) + 'INTEREST ON ARREARS' (VAT exempt, no date prefix on its line).\n  ledger movements 'ACCOUNT:PREVIOUS MONTH', '000018 RECEIPT <n>' (0-2 per month), 'VAT', 'AMOUNT ROUNDED UP' - captured as document-scope natives and recon fields.\n\nVAT IDENTITY IS NOW IN THE PROFILE: met_vatable_all_r sums every ledger line that is not VAT-exempt and not a balance movement (excludes ACCOUNT:PREVIOUS MONTH, RECEIPT, BUSINESS & COMMERCIAL PR, INTEREST ON ARREARS, AMOUNT ROUNDED UP and the VAT line itself). 15% of it equals the printed VAT line to the cent on 7/9 bills and to 1-2c on the other 2 (per-line rounding over 8-15 lines). met_svc_vatable_r is the same idea but per service row, so it is only that service's subtotal - do not read it as the bill's VAT base.\n\nLEAK GUARD / GENUINE IDENTITY (Rule Zero). There is NO independently printed ex-VAT electricity total, so total_ex_vat_r = standard_r + other_r by construction and reconcile CANNOT fail - stated plainly, not dressed up. The real, non-circular check is built into the profile: met_ledger_sum_r adds EVERY ledger line this profile captures (previous month + receipts + energy + energy adjustment + basic elec + water + basic water + refuse + basic sewer + add sewerage + rates + warning fees + interest on arrears + VAT + rounding) and met_ledger_leak_r is the absolute difference against the bill's own printed 'SERVICES & RENTAL' amount payable. It is 0.00 on all 9 bills. If Metsimaholo adds or renames a ledger line, it shows up there instead of vanishing.\n\nDATE FORMATS ARE MIXED ON PURPOSE. type:'date' keeps text exactly as printed, so read_start/read_end read '[number removed]' on shape A and '2026/01/07' on shape B. Not normalised - that is the documented engine behaviour. billing_date is the bill's own period label 'ACCOUNT FOR <MON YYYY>'; the statement run date is met_statement_date ('RECEIPTS INVOICE TO'), and shape B also prints met_tax_invoice_no ('[number removed]/[number removed]') which encodes the invoice date.\n\nNOT PRINTED ANYWHERE (all mapped '_none'): electricity meter NUMBER (the table has readings but no meter id), reading type (no INTERIM/ACTUAL flag on the electricity line), tariff NAME, any kVA/demand/NMD quantity, TOU bands, cash/guarantee/security deposit split (only one 'DEPOSIT 11154.00').\n\nDUPLICATE FINDING: 'MET_[number removed]_Metsimaholo-Duplicate-Statement - ...' is the ONLY copy of MAY 2026 (ACCOUNT FOR MAY 2026, Tax Invoice No [number removed]/[number removed]) - it is a re-issued/duplicate STATEMENT of a month that appears nowhere else in the folder, not a duplicate of another file. All 9 md5s are distinct and all 9 ACCOUNT FOR labels are distinct: AUG/SEP/OCT 2025 and JAN/FEB/MAR/MAY/JUN/JUL 2026. NOV-DEC 2025 and APR 2026 are missing from the set.\n\nVERIFIED NUMBERS (see /root/work/reports/metsimaholo.md): 297/297 fields exact against an independent second parser over all 9 bills; max |sum(every ledger amount) - printed SERVICES & RENTAL| = 0.00; max |printed VAT - 15% x met_vatable_all_r| = 0.02; max |SERVICES & RENTAL - tear-off AMOUNT PAYABLE| = 0.00; met_ledger_leak_r and met_elec_leak_r = 0.00 on all 9. CROSS-BILL CHAIN: (sum of my extracted ledger) - (AMOUNT ROUNDED UP) on month N equals the NEXT bill's printed ACCOUNT:PREVIOUS MONTH exactly, on all 6 consecutive month-pairs present (0.00 deviation). NOV-DEC 2025 and APR 2026 bills are absent, which is why only 6 of 8 pairs are comparable.",
+ "fingerprint": {
+  "all": [
+   "METSIMAHOLO MUNICIPALITY",
+   "VAT REG NO. 4000846594"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "MIDVAAL LOCAL MUNICIPALITY",
+   "Vat Number: 4860188612",
+   "requires Adobe Reader"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+CONSUMPTION[ \\t]+FACTOR",
+   "require": "[ \\t]ELECTRICITY\\b|BASIC[ \\t]+ELEC\\b"
+  },
+  "water": {
+   "start": "^[ \\t]*(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+CONSUMPTION[ \\t]+FACTOR",
+   "overlay": true,
+   "end": "^[ \\t]*MARKET VALUE OF PROPERTY|MARKET VALUE OF PROPERTY",
+   "require": "[ \\t]WATER\\b|BASIC[ \\t]+WATER\\b"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+CONSUMPTION[ \\t]+FACTOR",
+   "overlay": true,
+   "end": "^[ \\t]*MARKET VALUE OF PROPERTY|MARKET VALUE OF PROPERTY",
+   "require": "BASIC[ \\t]+SEWER\\b|ADD[ \\t]+SEWERAGE\\b"
+  },
+  "refuse": {
+   "start": "^[ \\t]*(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+CONSUMPTION[ \\t]+FACTOR",
+   "overlay": true,
+   "end": "^[ \\t]*MARKET VALUE OF PROPERTY|MARKET VALUE OF PROPERTY",
+   "require": "[ \\t]REFUSE\\b"
+  },
+  "rates": {
+   "start": "^[ \\t]*(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+CONSUMPTION[ \\t]+FACTOR",
+   "overlay": true,
+   "end": "^[ \\t]*MARKET VALUE OF PROPERTY|MARKET VALUE OF PROPERTY",
+   "require": "BUSINESS[ \\t]*&[ \\t]*COMMERCIAL[ \\t]+PR"
+  },
+  "sundry": {
+   "start": "^[ \\t]*(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+(?:\\d{8}|\\d{4}/\\d{2}/\\d{2})[ \\t]+CONSUMPTION[ \\t]+FACTOR",
+   "overlay": true,
+   "end": "^[ \\t]*MARKET VALUE OF PROPERTY|MARKET VALUE OF PROPERTY",
+   "require": "WARNING/CUT[ \\t]+OFF[ \\t]+FEES|INTEREST[ \\t]+ON[ \\t]+ARREARS"
+  },
+  "smart_meter": {
+   "start": "MARKET VALUE OF PROPERTY",
+   "_note": "BOUNDARY ONLY - there are deliberately NO section:smart_meter field rules, so extract() skips this service (line 1211 'if not svc_rules: continue') and no Smart Meter row is ever produced. Its only job is to be a second NON-overlay section start so the electricity section STOPS at the footer instead of running to the end of the page. That is what makes the generic leak guard met_ledger_all_r safe: it sums every end-of-line amount in the ledger only, and would otherwise also swallow SERVICES & RENTAL, the ageing row and AMOUNT NOW PAYABLE."
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number (from the bill text, never the filename)",
+   "scope": "document",
+   "pattern": "ACCOUNT NUMBER[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "met_vat_number",
+   "label": "Metsimaholo VAT registration number",
+   "scope": "document",
+   "pattern": "VAT REG NO\\.[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "met_cust_vat_number",
+   "label": "Customer (Telkom) VAT number - NOT the municipality's",
+   "scope": "document",
+   "pattern": "(?:Cust[ \\t]+)?VAT[ \\t]*NO:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "ACCOUNT FOR (billing period as printed)",
+   "scope": "document",
+   "pattern": "ACCOUNT FOR[ \\t]+([A-Z]{3}[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "met_statement_date",
+   "label": "RECEIPTS INVOICE TO (statement run date)",
+   "scope": "document",
+   "pattern": "RECEIPTS INVOICE TO[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "met_tax_invoice_no",
+   "label": "Tax Invoice No (shape B prints only)",
+   "scope": "document",
+   "pattern": "Tax Invoice No:[ \\t]*(\\S+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "site_name",
+   "label": "Stand / site (ERF ... township)",
+   "scope": "document",
+   "pattern": "(ERF[ \\t]+\\d+[ \\t]+[A-Z][A-Z0-9 ]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "met_unit_number",
+   "label": "27-digit unit / stand code",
+   "scope": "document",
+   "patterns": [
+    "UNIT NUMBER[ \\t]+(\\d{10,})",
+    "(?<![\\d])(\\d{27})(?![\\d])"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "met_deposit",
+   "label": "Deposit held",
+   "scope": "document",
+   "pattern": "DEPOSIT[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "met_market_value",
+   "label": "Market value of property",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{4,}(?:\\.\\d{2})?)[ \\t]{2,}\\d+[ \\t]{2,}SERVICES & RENTAL",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "met_erf_size",
+   "label": "Erf size (m2)",
+   "scope": "document",
+   "pattern": "(\\d+)[ \\t]{2,}SERVICES & RENTAL",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "met_amount_payable",
+   "label": "SERVICES & RENTAL = total amount payable (independent identity target)",
+   "scope": "document",
+   "pattern": "SERVICES & RENTAL[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "met_footer_amount_payable",
+   "label": "Tear-off AMOUNT PAYABLE (second printed copy of the total)",
+   "scope": "document",
+   "pattern": "AMOUNT PAYABLE[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "due_date",
+    "met_amount_now_payable"
+   ],
+   "types": [
+    "date",
+    "money"
+   ],
+   "label": "PAYMENT DUE ON OR BEFORE + AMOUNT NOW PAYABLE",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{1,2}[ \\t]+[A-Z]{3}[ \\t]+\\d{4})[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "PREVIOUS / CURRENT READING dates (kept exactly as printed)",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]*(\\d{4}/\\d{2}/\\d{2})[ \\t]+(\\d{4}/\\d{2}/\\d{2})[ \\t]+CONSUMPTION",
+    "^[ \\t]*(\\d{8})[ \\t]+(\\d{8})[ \\t]+CONSUMPTION"
+   ],
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "met_prev_month_r",
+   "label": "ACCOUNT:PREVIOUS MONTH (balance brought forward)",
+   "scope": "document",
+   "pattern": "ACCOUNT:PREVIOUS MONTH[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "met_receipts_r",
+   "label": "Receipts in period (summed; credits print a trailing minus)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{8}[ \\t]+\\d{6}[ \\t]+RECEIPT[ \\t]+\\d+[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "met_receipt_refs",
+   "label": "Receipt reference number(s)",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "RECEIPT[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "met_vat_r",
+   "label": "Aggregate VAT ledger line",
+   "scope": "document",
+   "pattern": "^[ \\t]*VAT[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "met_rounding_r",
+   "label": "AMOUNT ROUNDED UP",
+   "scope": "document",
+   "pattern": "AMOUNT ROUNDED UP[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "met_elec_kwh",
+   "label": "ELECTRICITY meter row(s): CONSUMPTION kWh, summed (absent on a month with no electricity meter row)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:E[ \\t]+)?\\d+[ \\t]+\\d+[ \\t]+(\\d+)[ \\t]+\\d+\\.\\d{3}[ \\t]+\\d+\\.\\d+[ \\t]+\\d{8}[ \\t]+ELECTRICITY(?:[ \\t]+-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)?[ \\t]*$",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "met_elec_cons_r",
+   "label": "ELECTRICITY meter row(s): ex-VAT amount, summed (blank on a zero-consumption month)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:E[ \\t]+)?\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+\\.\\d{3}[ \\t]+\\d+\\.\\d+[ \\t]+\\d{8}[ \\t]+ELECTRICITY[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "met_e_prev_reading",
+   "label": "Electricity PREVIOUS READING(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(?:E[ \\t]+)?(\\d+)[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+\\.\\d{3}[ \\t]+\\d+\\.\\d+[ \\t]+\\d{8}[ \\t]+ELECTRICITY",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "met_e_curr_reading",
+   "label": "Electricity CURRENT READING(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(?:E[ \\t]+)?\\d+[ \\t]+(\\d+)[ \\t]+\\d+[ \\t]+\\d+\\.\\d{3}[ \\t]+\\d+\\.\\d+[ \\t]+\\d{8}[ \\t]+ELECTRICITY",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "met_elec_factor",
+   "label": "Electricity CT FACTOR (consumption = reading diff x factor)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(?:E[ \\t]+)?\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+(\\d+\\.\\d{3})[ \\t]+\\d+\\.\\d+[ \\t]+\\d{8}[ \\t]+ELECTRICITY",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "met_elec_rate",
+   "label": "Electricity TARIFF column as printed (NOT reliably the billed rate)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(?:E[ \\t]+)?\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+\\.\\d{3}[ \\t]+(\\d+\\.\\d+)[ \\t]+\\d{8}[ \\t]+ELECTRICITY",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "met_elec_adj_r",
+   "label": "Ledger-only ELECTRICITY adjustment/reversal line(s) (no meter columns)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{8}[ \\t]+ELECTRICITY[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "met_basic_elec_rate",
+    "met_basic_elec_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "BASIC ELEC fixed charge: rate + ex-VAT amount",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d+\\.\\d{3})[ \\t]+\\d{8}[ \\t]+BASIC[ \\t]+ELEC[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "total_kl",
+   "label": "WATER meter row: kL consumed",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:W[ \\t]+)?\\d+[ \\t]+\\d+[ \\t]+(\\d+)[ \\t]+\\d+\\.\\d{3}[ \\t]+\\d+\\.\\d+[ \\t]+\\d{8}[ \\t]+WATER(?:[ \\t]+-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)?[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "met_water_cons_r",
+   "label": "WATER meter row: ex-VAT amount (blank on a zero-kL month)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:W[ \\t]+)?\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+\\.\\d{3}[ \\t]+\\d+\\.\\d+[ \\t]+\\d{8}[ \\t]+WATER[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "met_w_prev_reading",
+   "label": "Water PREVIOUS READING",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(?:W[ \\t]+)?(\\d+)[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+\\.\\d{3}[ \\t]+\\d+\\.\\d+[ \\t]+\\d{8}[ \\t]+WATER",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "met_w_curr_reading",
+   "label": "Water CURRENT READING",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(?:W[ \\t]+)?\\d+[ \\t]+(\\d+)[ \\t]+\\d+[ \\t]+\\d+\\.\\d{3}[ \\t]+\\d+\\.\\d+[ \\t]+\\d{8}[ \\t]+WATER",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "met_water_rate",
+   "label": "Water TARIFF column as printed",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(?:W[ \\t]+)?\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+\\.\\d{3}[ \\t]+(\\d+\\.\\d+)[ \\t]+\\d{8}[ \\t]+WATER",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "met_basic_water_rate",
+    "met_basic_water_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "BASIC WATER fixed charge: rate + ex-VAT amount",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*(\\d+\\.\\d{3})[ \\t]+\\d{8}[ \\t]+BASIC[ \\t]+WATER[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "met_basic_sewer_rate",
+    "met_basic_sewer_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "BASIC SEWER: rate + ex-VAT amount",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*(\\d+\\.\\d{3})[ \\t]+\\d{8}[ \\t]+BASIC[ \\t]+SEWER[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "met_add_sewer_r",
+   "label": "ADD SEWERAGE line(s), summed (some months print a charge and a credit)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d+\\.\\d{3}[ \\t]+\\d{8}[ \\t]+ADD[ \\t]+SEWERAGE(?:[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?))?[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "met_add_sewer_lines",
+   "label": "ADD SEWERAGE amounts per line",
+   "scope": "section:sewerage",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d+\\.\\d{3}[ \\t]+\\d{8}[ \\t]+ADD[ \\t]+SEWERAGE[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "refuse_charges_r",
+   "label": "REFUSE (flat, no units)",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{8}[ \\t]+REFUSE[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "met_rates_cent_in_rand",
+    "rates_total_r"
+   ],
+   "types": [
+    "text",
+    "money"
+   ],
+   "label": "BUSINESS & COMMERCIAL PR (property rates, VAT exempt): cent-in-rand + amount",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*(\\d+\\.\\d{6})[ \\t]+\\d{8}[ \\t]+BUSINESS[ \\t]*&[ \\t]*COMMERCIAL[ \\t]+PR[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "met_warning_fees_r",
+   "label": "WARNING/CUT OFF FEES (summed, 0-2 per month)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{8}[ \\t]+WARNING/CUT[ \\t]+OFF[ \\t]+FEES[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "met_warning_fee_lines",
+   "label": "WARNING/CUT OFF FEES amounts per line",
+   "scope": "section:sundry",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{8}[ \\t]+WARNING/CUT[ \\t]+OFF[ \\t]+FEES[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "met_ledger_all_r",
+   "label": "LEAK GUARD: every end-of-line amount in the ledger, summed (must equal SERVICES & RENTAL)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\S[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "met_vatable_all_r",
+   "label": "VAT IDENTITY: every ledger line that is NOT VAT-exempt or a balance movement, summed (printed VAT must be 15% of this)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?![ \\t]*VAT[ \\t])(?![^\\n]*(?:ACCOUNT:PREVIOUS MONTH|RECEIPT|BUSINESS[ \\t]*&[ \\t]*COMMERCIAL|INTEREST[ \\t]+ON[ \\t]+ARREARS|AMOUNT ROUNDED UP))\\S[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "met_elec_all_r",
+   "label": "LEAK GUARD: every ledger line whose DETAILS contains ELEC*, summed",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\S[^\\n]*?\\bELEC[A-Z]*\\b[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "met_interest_arrears_r",
+   "label": "INTEREST ON ARREARS (VAT exempt, no date prefix on the line)",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*INTEREST[ \\t]+ON[ \\t]+ARREARS[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "met_elec_r",
+   "op": "sum",
+   "of": [
+    "met_elec_cons_r",
+    "met_elec_adj_r"
+   ]
+  },
+  {
+   "field": "met_elec_total_r",
+   "op": "sum",
+   "of": [
+    "met_elec_cons_r",
+    "met_elec_adj_r",
+    "met_basic_elec_r"
+   ]
+  },
+  {
+   "field": "water_charges_r",
+   "op": "sum",
+   "of": [
+    "met_water_cons_r",
+    "met_basic_water_r"
+   ]
+  },
+  {
+   "field": "sewer_r",
+   "op": "sum",
+   "of": [
+    "met_basic_sewer_r",
+    "met_add_sewer_r"
+   ]
+  },
+  {
+   "field": "sundry_charges_r",
+   "op": "sum",
+   "of": [
+    "met_warning_fees_r",
+    "met_interest_arrears_r"
+   ]
+  },
+  {
+   "field": "sundry_total_r",
+   "op": "prefer",
+   "of": [
+    "sundry_charges_r"
+   ]
+  },
+  {
+   "field": "met_svc_vatable_r",
+   "_note": "PER-SERVICE-ROW vatable subtotal - each row only carries its own section's fields, so this is NOT the whole-bill VAT base. The whole-bill base is met_vatable_all_r on the electricity row.",
+   "op": "sum",
+   "of": [
+    "met_elec_cons_r",
+    "met_elec_adj_r",
+    "met_basic_elec_r",
+    "met_water_cons_r",
+    "met_basic_water_r",
+    "refuse_charges_r",
+    "met_basic_sewer_r",
+    "met_add_sewer_r",
+    "met_warning_fees_r"
+   ]
+  },
+  {
+   "field": "met_ledger_leak_r",
+   "op": "diff",
+   "of": [
+    "met_ledger_all_r",
+    "met_amount_payable"
+   ]
+  },
+  {
+   "field": "met_elec_leak_r",
+   "op": "diff",
+   "of": [
+    "met_elec_all_r",
+    "met_elec_total_r"
+   ]
+  },
+  {
+   "field": "met_total_leak_r",
+   "op": "diff",
+   "of": [
+    "met_amount_payable",
+    "met_footer_amount_payable"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "met_e_prev_reading",
+  "end_reading_kwh": "met_e_curr_reading",
+  "total_kwh": "met_elec_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "met_elec_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "met_elec_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "met_basic_elec_r",
+  "total_ex_vat_r": "met_elec_total_r",
+  "deposit_r": "met_deposit",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?i)ACCOUNT:PREVIOUS MONTH[ \\t]+(-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+  "incoming_payment": "(?i)^[ \\t]*\\d{8}[ \\t]+\\d{6}[ \\t]+RECEIPT[ \\t]+\\d+[ \\t]+(-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+  "vat": "(?i)^[ \\t]*VAT[ \\t]+(-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)[ \\t]*$",
+  "total_due": "(?i)SERVICES & RENTAL[ \\t]+(-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*-?)",
+  "due_date": "(?i)^[ \\t]*(\\d{1,2}[ \\t]+[A-Z]{3}[ \\t]+\\d{4})[ \\t]{2,}-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}",
+  "deposito": "(?i)DEPOSIT[ \\t]+(-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})"
+ }
+}

@@ -1,0 +1,22 @@
+{
+  "title": "flow.done.title",
+  "enabled": true,
+  "trigger": {
+    "type": "button",
+    "data": "tasks"
+  },
+  "run_as": "starter",
+  "start": "s1",
+  "steps": {
+    "s1": {
+      "type": "update_row",
+      "data": "tasks",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "status": "Done",
+        "finished": "{{today}}",
+        "done_by": "{{person.id}}"
+      }
+    }
+  }
+}

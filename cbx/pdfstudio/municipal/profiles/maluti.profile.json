@@ -1,0 +1,202 @@
+{
+  "profile_id": "maluti",
+  "profile_name": "Maluti-a-Phofung Municipality (Harrismith)",
+  "short_name": "Maluti",
+  "_doc": "MAP electricity reseller invoice. Charge table columns: DESCRIPTION / CONSUMPTION / TARIFF / TOTAL(ex) / VAT / AMOUNT(incl). Money uses SPACE thousands (10 760.00). The 'Current Charges' line gives the ex-VAT total directly - used as the electricity total and as an independent GT vs the sum of BASIC + ELEC CONS lines. Fingerprint must beat Eskom (account strings contain the word ESKOM).",
+  "fingerprint": {
+    "all": [
+      "MALUTI - A - PHOFUNG"
+    ]
+  },
+  "sections": {
+    "electricity": {
+      "start": "DESCRIPTION\\s+CONSUMPTION"
+    }
+  },
+  "fields": [
+    {
+      "field": "account_number",
+      "label": "Account",
+      "scope": "document",
+      "pattern": "ACCOUNT NO\\s+(\\w+)",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "billing_date",
+      "label": "Billing date",
+      "scope": "document",
+      "pattern": "BILLING DATE\\s+([\\d]{1,2}-\\w{3}-\\d{2})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "invoice_number",
+      "label": "Invoice number",
+      "scope": "document",
+      "pattern": "INVOICE NUMBER\\s+(\\w{3}-\\d{2})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "site_name",
+      "label": "Premise/site",
+      "scope": "document",
+      "pattern": "^([A-Z][A-Z0-9 ]*?TOWER[A-Z0-9 ]*)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "tariff_name",
+      "label": "Tariff",
+      "scope": "document",
+      "pattern": "TARIFF\\s+(MAP[^\\n]+?)\\s*$",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "municipality",
+      "label": "Municipality",
+      "scope": "document",
+      "pattern": "(MALUTI - A - PHOFUNG)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "fields": [
+        "mp_kwh",
+        "mp_rate",
+        "standard_r"
+      ],
+      "types": [
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "ELEC CONS KWH",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "ELEC CONS KWH\\s+([\\d ]+\\.\\d{2})\\s+R\\s+([\\d.]+)\\s+R\\s+([\\d ]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "mp_demand_r",
+      "label": "ELEC DEMAND KVA",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "ELEC DEMAND KVA\\s+[\\d ]+\\.\\d{2}\\s+R\\s+[\\d.-]+\\s+R\\s+([\\d ]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "mp_basic_r",
+      "label": "BASIC CHARGE",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "BASIC CHARGE\\s+R\\s+([\\d ]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "mp_current_ex_r",
+      "label": "Current charges (ex VAT)",
+      "scope": "document",
+      "pattern": "Current Charges\\s+R\\s+([\\d ]+\\.\\d{2})",
+      "type": "money",
+      "required": true
+    },
+    {
+      "field": "mp_current_vat_r",
+      "label": "Current charges VAT",
+      "scope": "document",
+      "pattern": "Current Charges\\s+R\\s+[\\d ]+\\.\\d{2}\\s+R\\s+([\\d ]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "ml_meter",
+      "label": "Meter number(s)",
+      "scope": "document",
+      "collect": "join_unique",
+      "pattern": "(?m)^(?=[^\\n]{0,200}(?:ACCOUNT BILL TO|GPS COORDINATE))\\s*([A-Z\\d][\\w -]{0,24}?)\\s{3,}[\\d ]{1,14}?\\s{3,}[\\d ]{1,14}?\\s+(?:ACCOUNT BILL TO|GPS COORDINATE)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "fields": [
+        "ml_prev_read",
+        "ml_curr_read"
+      ],
+      "label": "Previous/current reading (first meter)",
+      "scope": "document",
+      "pattern": "(?m)^(?=[^\\n]{0,200}(?:ACCOUNT BILL TO|GPS COORDINATE))\\s*[A-Z\\d][\\w -]{0,24}?\\s{3,}([\\d ]{1,14}?)\\s{3,}([\\d ]{1,14}?)\\s+(?:ACCOUNT BILL TO|GPS COORDINATE)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "ml_from",
+      "label": "Bill from",
+      "scope": "document",
+      "pattern": "ACCOUNT BILL FROM\\s+(\\d{2}-\\w{3}-\\d{2})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "ml_to",
+      "label": "Bill to",
+      "scope": "document",
+      "pattern": "ACCOUNT BILL TO\\s+(\\d{2}-\\w{3}-\\d{2})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "ml_demand",
+      "label": "Demand KVA",
+      "scope": "document",
+      "pattern": "DEMAND KVA\\s+([\\d ,.]+?)\\s*$",
+      "type": "number",
+      "required": false
+    }
+  ],
+  "computes": [
+    {
+      "field": "total_kwh",
+      "op": "prefer",
+      "of": [
+        "mp_kwh"
+      ]
+    },
+    {
+      "field": "other_out_r",
+      "op": "sum",
+      "of": [
+        "mp_basic_r",
+        "mp_demand_r"
+      ]
+    }
+  ],
+  "canonical": {
+    "meter": "ml_meter",
+    "read_start": "ml_from",
+    "read_end": "ml_to",
+    "start_reading_kwh": "ml_prev_read",
+    "end_reading_kwh": "ml_curr_read",
+    "demand_kva": "ml_demand",
+    "site_name": "site_name",
+    "tariff_name": "tariff_name",
+    "reading_type": "_none",
+    "total_kwh": "total_kwh",
+    "standard_r": "standard_r",
+    "other_r": "other_out_r",
+    "total_ex_vat_r": "mp_current_ex_r"
+  },
+  "recon": {
+    "prev_balance": "BALANCE BF\\s+R\\s+(-?[\\d ,]+\\.\\d{2})",
+    "current_ex": "Current Charges\\s+R\\s+([\\d ,]+\\.\\d{2})",
+    "vat": "Current Charges\\s+R\\s+[\\d ,]+\\.\\d{2}\\s+R\\s+([\\d ,]+\\.\\d{2})",
+    "total_due": "Total Due\\s+R\\s+([\\d ,]+\\.\\d{2})",
+    "start_date": "ACCOUNT BILL FROM\\s+(\\d{2}-\\w{3}-\\d{2})",
+    "end_date": "ACCOUNT BILL TO\\s+(\\d{2}-\\w{3}-\\d{2})"
+  }
+}

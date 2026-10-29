@@ -1,0 +1,188 @@
+{
+ "profile_id": "hessequa",
+ "profile_name": "Hessequa Local Municipality (Riversdale, Western Cape)",
+ "short_name": "Hessequa",
+ "_doc": "Afrikaans pre-printed statement delivered through the GYRO e-statement service: the text layer is SHREDDED (one ~26k-char line of tokens in scrambled order, rotated words, adjacent right-aligned figures glued together, e.g. '4752.536135.96'). Only token runs whose order is stable on all 14 bills are used: the BTW row 'BTW <total> PTY Nr.: BTW <elec verbruik><elec basies> <water verbruik><water basies> <riool> <vullis> <total>' and the ex-VAT row '<n> <elec verbruik><elec basies> <water basies> <riool> <vullis> <SUB TOTAAL>' (glued pairs split by the fixed 2 decimals); kWh = the figure right after 'VERBRUIK' (followed by R/KWH or the 'nnnn/nnnn LESINGS' token); previous reading = the figure glued before the water block thresholds; current reading only where printed beside 'HUIDIGE'. No site name, tariff or meter number is recoverable. Account from the print-vendor tag '<!account|...' (same number as the address panel); statement date = the date printed beside the account (fallback: date after 'SKEUR'). FINGERPRINT: the municipality's BTW number as printed + name/domain. total_ex_vat_r = elec verbruik + basies (ex VAT); identity hq_check_sub_r = printed SUB TOTAAL ex VAT - water verbruik - water basies - riool - vullis (validates the glued-number split). Electricity VAT (BTW row) = 15% of total_ex_vat_r on every bill. Checked on 14 bills.",
+ "fingerprint": {
+  "all": [
+   "4780193258"
+  ],
+  "any": [
+   "HESSEQUA MUNICIPALITY",
+   "hessequa.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "\\A",
+   "require": "R/KWH[\\s\\S]*BTW[ \\t]+\\d+\\.\\d{2}[ \\t]+PTY"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account (print-vendor tag, = the account on the address panel)",
+   "scope": "document",
+   "pattern": "<!(\\d{6,})\\|",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "type": "date",
+   "label": "Statement date (date printed beside the account)",
+   "scope": "document",
+   "patterns": [
+    "(\\d{4}/\\d{2}/\\d{2})\\s+\\d{6,}\\s+(?!FAKTUUR)\\S",
+    "SKEUR\\s+(\\d{4}/\\d{2}/\\d{2})(?![\\d/])"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "hq_due_date"
+   ],
+   "types": [
+    "date"
+   ],
+   "label": "Verval datum (date before account + FAKTUUR)",
+   "scope": "document",
+   "pattern": "(\\d{4}/\\d{2}/\\d{2})[ \\t]+(?:-?\\d+\\.\\d{2}[ \\t]+)?\\d{6,}[ \\t]+FAKTUUR"
+  },
+  {
+   "fields": [
+    "hq_vat_total_r",
+    "hq_e_verbr_vat_r",
+    "hq_e_bas_vat_r",
+    "hq_w_verbr_vat_r",
+    "hq_w_bas_vat_r",
+    "hq_riool_vat_r",
+    "hq_vullis_vat_r",
+    "hq_vat_total2_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "BTW row: total, elec verbruik/basies, water verbruik/basies, riool, vullis, total",
+   "scope": "document",
+   "pattern": "BTW[ \\t]+(\\d+\\.\\d{2})[ \\t]+PTY[ \\t]+Nr\\.:[ \\t]+BTW[ \\t]+(\\d+\\.\\d{2})[ \\t]*(\\d+\\.\\d{2})[ \\t]+(\\d+\\.\\d{2})[ \\t]*(\\d+\\.\\d{2})[ \\t]+(\\d+\\.\\d{2})[ \\t]+(\\d+\\.\\d{2})[ \\t]+(\\d+\\.\\d{2})"
+  },
+  {
+   "field": "hq_w_verbr_ex_r",
+   "label": "Water verbruik ex VAT (first figure after KORTING MAAND)",
+   "scope": "document",
+   "pattern": "KORTING[ \\t]+MAAND[ \\t]+(\\d+\\.\\d{2})(?![\\d.])",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "hq_e_verbr_ex_r",
+    "hq_e_bas_ex_r",
+    "hq_w_bas_ex_r",
+    "hq_riool_ex_r",
+    "hq_vullis_ex_r",
+    "hq_sub_ex_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Ex-VAT row: elec verbruik+basies (glued), water basies, riool, vullis, SUB TOTAAL EX",
+   "scope": "section:electricity",
+   "pattern": "(?<![\\d.])[1-9](?![\\d.])[ \\t]+(\\d+\\.\\d{2})[ \\t]*(\\d+\\.\\d{2})[ \\t]+(\\d+\\.\\d{2})[ \\t]+(\\d+\\.\\d{2})[ \\t]+(\\d+\\.\\d{2})[ \\t]+(\\d+\\.\\d{2})(?![\\d.])",
+   "required": true
+  },
+  {
+   "field": "hq_kwh",
+   "label": "Electricity VERBRUIK kWh",
+   "scope": "section:electricity",
+   "pattern": "VERBRUIK\\s+(\\d+\\.\\d{3})\\s+(?:R/KWH|(?:\\d+\\.\\d{3}\\s+)?\\d+/\\d+\\s+LESINGS)",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "start_reading_kwh",
+   "label": "Electricity VORIGE reading (glued before the water block thresholds)",
+   "scope": "section:electricity",
+   "pattern": "(?<![\\d.])(\\d{4,}\\.\\d{3})[ \\t]+0\\.000\\d+\\.000",
+   "type": "number"
+  },
+  {
+   "field": "end_reading_kwh",
+   "label": "Electricity HUIDIGE reading (only when printed beside the label)",
+   "scope": "section:electricity",
+   "pattern": "HUIDIGE[ \\t]+(\\d{5,}\\.\\d{3})",
+   "type": "number"
+  }
+ ],
+ "computes": [
+  {
+   "field": "hq_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "hq_e_verbr_ex_r",
+    "hq_e_bas_ex_r"
+   ]
+  },
+  {
+   "field": "hq_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "hq_e_verbr_vat_r",
+    "hq_e_bas_vat_r"
+   ]
+  },
+  {
+   "field": "hq_check_sub_r",
+   "op": "sub",
+   "of": [
+    "hq_sub_ex_r",
+    "hq_w_verbr_ex_r",
+    "hq_w_bas_ex_r",
+    "hq_riool_ex_r",
+    "hq_vullis_ex_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "_none",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "hq_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "hq_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "hq_e_verbr_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "hq_e_bas_ex_r",
+  "total_ex_vat_r": "hq_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

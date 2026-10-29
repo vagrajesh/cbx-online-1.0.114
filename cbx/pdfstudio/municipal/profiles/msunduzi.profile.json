@@ -1,0 +1,211 @@
+{
+  "profile_id": "msunduzi",
+  "profile_name": "Msunduzi Municipality (Pietermaritzburg)",
+  "short_name": "Msunduzi",
+  "_doc": "TAX INVOICE with a DATE/DETAILS/TARIFF/CHARGE/VAT/AMOUNT charge table. Money uses a TRAILING minus for credits (601.70-). Charge rows are matched by the leading service word; AMOUNT is the last money on the line. Built from a rates-only sample (5 Dely Crescent) - electricity / water / sewerage / refuse rules follow the same row grammar and are ready; confirm against a metered bill when one arrives.",
+  "fingerprint": {
+    "all": [
+      "Msunduzi Municipality"
+    ]
+  },
+  "sections": {
+    "electricity": {
+      "start": "\\d{2}\\.\\d{2}\\.\\d{4}\\s+ELECTRIC"
+    },
+    "water": {
+      "start": "\\d{2}\\.\\d{2}\\.\\d{4}\\s+WATER"
+    },
+    "sewerage": {
+      "start": "\\d{2}\\.\\d{2}\\.\\d{4}\\s+(?:SEWER|SANITAT)"
+    },
+    "refuse": {
+      "start": "\\d{2}\\.\\d{2}\\.\\d{4}\\s+REFUSE"
+    },
+    "rates": {
+      "start": "\\d{2}\\.\\d{2}\\.\\d{4}\\s+RATES"
+    }
+  },
+  "fields": [
+    {
+      "fields": [
+        "account_number",
+        "billing_date"
+      ],
+      "types": [
+        "text",
+        "text"
+      ],
+      "label": "Account + date",
+      "scope": "document",
+      "pattern": "^\\s*0*(\\d{6,})\\s+(\\d{2}\\.\\d{2}\\.\\d{4})(?:\\s|$)",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "statement_month",
+      "label": "Account date",
+      "scope": "document",
+      "pattern": "^\\s*0*\\d{6,}\\s+(\\d{2}\\.\\d{2}\\.\\d{4})(?:\\s|$)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "invoice_number",
+      "label": "Tax invoice number",
+      "scope": "document",
+      "pattern": "TAX INVOICE NUMBER[\\s\\S]*?(\\d{9,})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "municipality",
+      "label": "Municipality",
+      "scope": "document",
+      "pattern": "(Msunduzi) Municipality",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "site_name",
+      "label": "Address",
+      "scope": "document",
+      "pattern": "ADDRESS\\s+(.+?)\\s*$",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "due_date",
+      "label": "Final date for payment",
+      "scope": "document",
+      "pattern": "FINAL DATE FOR PAYMENT[\\s\\S]*?(\\d{2}\\.\\d{2}\\.\\d{4})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "total_due",
+      "label": "Total outstanding",
+      "scope": "document",
+      "pattern": "TOTAL OUTSTANDING[\\s\\S]*?(-?[\\d,]+\\.\\d{2}-?)\\s+\\d{2}\\.\\d{2}\\.\\d{4}",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "vat_r",
+      "label": "VAT total",
+      "scope": "document",
+      "pattern": "VAT TOTAL\\s+TOTAL DUE\\s*\\n(?:[^\\n]*?\\s)(-?[\\d,]+\\.\\d{2}-?)\\s+-?[\\d,]+\\.\\d{2}-?\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "msz_elec_r",
+      "label": "Electricity charges",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "\\d{2}\\.\\d{2}\\.\\d{4}\\s+ELECTRIC[^\\n]*?(-?[\\d,]+\\.\\d{2}-?)\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "msz_water_r",
+      "label": "Water charges",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "\\d{2}\\.\\d{2}\\.\\d{4}\\s+WATER[^\\n]*?(-?[\\d,]+\\.\\d{2}-?)\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "msz_sewer_r",
+      "label": "Sewerage/sanitation charges",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "\\d{2}\\.\\d{2}\\.\\d{4}\\s+(?:SEWER|SANITAT)[^\\n]*?(-?[\\d,]+\\.\\d{2}-?)\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "msz_refuse_r",
+      "label": "Refuse charges",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "\\d{2}\\.\\d{2}\\.\\d{4}\\s+REFUSE[^\\n]*?(-?[\\d,]+\\.\\d{2}-?)\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "msz_rates_r",
+      "label": "Assessment rates",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "\\d{2}\\.\\d{2}\\.\\d{4}\\s+RATES[^\\n]*?(-?[\\d,]+\\.\\d{2}-?)\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "msz_e_present",
+      "scope": "section:electricity",
+      "label": "elec present",
+      "pattern": "(ELECTRIC)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "msz_w_present",
+      "scope": "section:water",
+      "label": "water present",
+      "pattern": "(WATER)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "msz_s_present",
+      "scope": "section:sewerage",
+      "label": "sewer present",
+      "pattern": "(SEWER|SANITAT)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "msz_r_present",
+      "scope": "section:refuse",
+      "label": "refuse present",
+      "pattern": "(REFUSE)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "msz_a_present",
+      "scope": "section:rates",
+      "label": "rates present",
+      "pattern": "(RATES)",
+      "type": "text",
+      "required": false
+    }
+  ],
+  "computes": [
+    {
+      "field": "msz_elec_ex",
+      "op": "prefer",
+      "of": [
+        "msz_elec_r"
+      ]
+    }
+  ],
+  "canonical": {
+    "site_name": "site_name",
+    "tariff_name": "_none",
+    "reading_type": "_none",
+    "total_ex_vat_r": "msz_elec_ex",
+    "other_r": "msz_elec_r"
+  },
+  "recon": {
+    "prev_balance": "BALANCE BROUGHT FORWARD\\s+(-?[\\d,]+\\.\\d{2}-?)\\s*$",
+    "current_incl": "90 DAYS\\+[^\\n]*\\n\\s*(?:-?[\\d,]+\\.\\d{2}-?\\s+){3}(-?[\\d,]+\\.\\d{2}-?)",
+    "vat": "90 DAYS\\+[^\\n]*\\n\\s*(?:-?[\\d,]+\\.\\d{2}-?\\s+){5}(-?[\\d,]+\\.\\d{2}-?)",
+    "total_due": "TOTAL OUTSTANDING[^\\n]*\\n\\s*(-?[\\d,]+\\.\\d{2}-?)",
+    "due_date": "TOTAL OUTSTANDING[^\\n]*\\n\\s*-?[\\d,]+\\.\\d{2}-?\\s+(\\d{2}\\.\\d{2}\\.\\d{4})",
+    "cash": "CASH\\s+(-?[\\d,]+\\.\\d{2}-?)\\s+GUARANTEE",
+    "guarantee": "GUARANTEE\\s+(-?[\\d,]+\\.\\d{2}-?)"
+  }
+}

@@ -1,0 +1,334 @@
+{
+ "profile_id": "masilonyana",
+ "profile_name": "Masilonyana Local Municipality (Theunissen, Free State)",
+ "short_name": "Masilonyana",
+ "_doc": "Masilonyana LM (Theunissen). Same billing vendor as Ditsobotla / uPhongolo. Two shapes: (B) tri-lingual 'TAX INVOICE / STATEMENT' with comma-decimal space-thousands money, ledger Date / Description / VAT / Debit (incl) / Credit / Balance and a meter table under each consumption line (Factor, dates, rate, units, description, reading type, Exclusive) - 8 bills, 5 of them scans read by OCR; (A) older 'TAX INVOICE' with period decimals and a Debit(Incl) column, basic charge only - 1 bill. One OCR file is page 2 of a statement only (no electricity, routes but gives no electricity row). Electricity: basic charge (per kVA), 'Electricity Consumption nKW - [start to end]', 'Electricity Demand Charge nKVA - [..]'; ex VAT = debit - VAT per line, with the meter table's Exclusive preferred. A VAT cell printed ',00' (no rand digit) is left blank (= 0) rather than misread 100x; OCR 'O' for zero in quantities leaves kWh/kVA blank. Account = payment Reference (the 'Account Number' in the bank block is the municipality's bank account). Fingerprint: own VAT number + name/domain. IDENTITY masi_ledger_ex_r = (debit - VAT) of basic + energy + demand ledger lines vs total built from the Exclusive column: 0.00 on 9/9 electricity rows (circular for the basic charge, which has no Exclusive cell; on these bills energy is mostly 0).",
+ "fingerprint": {
+  "all": [
+   "4000846461"
+  ],
+  "any": [
+   "Masilonyana Local Municipality",
+   "masilonyana.co.za",
+   "MASILONYANA LOCAL"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[^\\n]*?Electricity ?(?:Basic|Consumption)",
+   "require": "Basic Charge|Electricity Consumption|Electricity Demand Charge"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account (payment reference)",
+   "scope": "document",
+   "pattern": "Reference[ \\t]*:[ \\t]*(\\d{9,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement date",
+   "scope": "document",
+   "patterns": [
+    "Statement Date/Staat Datum:[ \\t]+(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+    "Statement Date[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+    "Payments up to/ Betalings tot :[ \\t]+(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})"
+   ],
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "masi_month",
+   "label": "Month / period ending",
+   "scope": "document",
+   "patterns": [
+    "Month/Maand:[ \\t]+([A-Za-z]+[ \\t]+\\d{4})",
+    "Period Ending[ \\t]+(\\d{4}/\\d{2}/\\d{2})"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "masi_invoice_no",
+   "label": "Invoice no",
+   "scope": "document",
+   "pattern": "Invoice No:[ \\t]*(INV[ \\t]*[\\d/ ]+?)(?:[ \\t]{2,}|[ \\t]*$)",
+   "type": "text"
+  },
+  {
+   "field": "site_name",
+   "label": "Site (physical address / addressee line)",
+   "scope": "document",
+   "patterns": [
+    "Physical Address[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+    "To: Mr[^\\n]*\\n(?:[ \\t_]*\\n)*[^A-Za-z\\n]*([A-Z][A-Z]+(?: [A-Z]+)*)"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "masi_street",
+   "label": "Street",
+   "scope": "document",
+   "pattern": "Street No/ Straat Nr[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "patterns": [
+    "Deposit/ Deposito[ \\t]+R[ \\t]*(-?\\d{1,3}(?: \\d{3})*,\\d{2})",
+    "Deposit/ Deposito[ \\t]+R[ \\t]*(,00)(?![\\d])"
+   ],
+   "type": "money"
+  },
+  {
+   "field": "masi_vat_total_r",
+   "label": "VAT total (whole bill)",
+   "scope": "document",
+   "patterns": [
+    "VAT Total[ \\t]+R[ \\t]*(-?\\d{1,3}(?: \\d{3})*,\\d{2})(?![\\d])",
+    "VAT TOTAL[ \\t]+(\\d{1,3}(?:,\\d{3})*\\.\\d{2})"
+   ],
+   "type": "money"
+  },
+  {
+   "fields": [
+    "masi_basic_vat_r",
+    "masi_basic_inc_r"
+   ],
+   "label": "Basic charge (VAT, debit incl)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Basic Charge[^\\n]*?[ \\t]{2,}(?:(-?\\d{1,3}(?: \\d{3})*,\\d{2})|,\\d{2})[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]+-?R?-?\\d{1,3}(?: \\d{3})*,\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+Basic Charge[^\\n]*?[ \\t]{2,}(\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]+(\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]+\\(?-?[\\d,]+\\.\\d{2}\\)?[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "field": "masi_basic_rate",
+   "label": "Basic charge rate",
+   "scope": "section:electricity",
+   "pattern": "Basic Charge[ \\t]*-[ \\t]*(R[\\d.]+/KVA)",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "masi_kwh_vat_r",
+    "masi_kwh_inc_r"
+   ],
+   "label": "Energy line (VAT, debit incl)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumption[^\\n]*?KWH?[ \\t]*-[ \\t]*\\[[^\\]\\n]*\\][ \\t]+(?:(-?\\d{1,3}(?: \\d{3})*,\\d{2})|,\\d{2})[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]+-?R?-?\\d{1,3}(?: \\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "masi_kva_vat_r",
+    "masi_kva_inc_r"
+   ],
+   "label": "Demand line (VAT, debit incl)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Demand Charge[^\\n]*?KVA[ \\t]*-[ \\t]*\\[[^\\]\\n]*\\][ \\t]+(?:(-?\\d{1,3}(?: \\d{3})*,\\d{2})|,\\d{2})[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]+-?R?-?\\d{1,3}(?: \\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "field": "total_kwh",
+   "label": "kWh (from description)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Consumption[ \\t]+(\\d[\\d ]*(?:,\\d+)?)KWH?[ \\t]*-",
+   "type": "number"
+  },
+  {
+   "field": "demand_kva",
+   "label": "kVA (from description)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Demand Charge[ \\t]+(\\d[\\d ]*(?:,\\d+)?)KVA[ \\t]*-",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "start_reading_kwh",
+    "end_reading_kwh"
+   ],
+   "label": "kWh register readings (from description)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Consumption[ \\t]+[\\dO][\\d ,]*KWH?[ \\t]*-[ \\t]*\\[[ \\t]*(\\d+)[ \\t]+to[ \\t]+(\\d+)[ \\t]*\\]",
+   "types": [
+    "number",
+    "number"
+   ]
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "label": "Reading period (kWh meter table row)",
+   "scope": "section:electricity",
+   "pattern": "(\\d{2}-\\d{2}-\\d{4})[ \\t]+(\\d{2}-\\d{2}-\\d{4})[^\\n]*?KWH?[ \\t]*-[ \\t]*\\[[^\\]\\n]*\\]",
+   "types": [
+    "date",
+    "date"
+   ]
+  },
+  {
+   "field": "reading_type",
+   "label": "Reading type",
+   "scope": "section:electricity",
+   "pattern": "KWH?[ \\t]*-[ \\t]*\\[[^\\]\\n]*\\][ \\t]+(Actual|Estimated?)\\b",
+   "type": "text"
+  },
+  {
+   "field": "masi_kwh_excl_r",
+   "label": "Energy Exclusive (meter table)",
+   "scope": "section:electricity",
+   "pattern": "KWH?[ \\t]*-[ \\t]*\\[[^\\]\\n]*\\][ \\t]+(?:Actual|Estimated?)[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "masi_kva_excl_r",
+   "label": "Demand Exclusive (meter table)",
+   "scope": "section:electricity",
+   "pattern": "KVA[ \\t]*-[ \\t]*\\[[^\\]\\n]*\\][ \\t]+(?:Actual|Estimated?)[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "masi_kwh_meter",
+   "label": "kWh meter",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(EM\\d+)\\.?KWH\\b",
+   "type": "text"
+  },
+  {
+   "field": "masi_kva_meter",
+   "label": "kVA meter",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(EM\\d+)\\.?KVA\\b",
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "masi_basic_ex_r",
+   "op": "sub",
+   "of": [
+    "masi_basic_inc_r",
+    "masi_basic_vat_r"
+   ]
+  },
+  {
+   "field": "masi_kwh_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "masi_kwh_inc_r",
+    "masi_kwh_vat_r"
+   ]
+  },
+  {
+   "field": "masi_kva_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "masi_kva_inc_r",
+    "masi_kva_vat_r"
+   ]
+  },
+  {
+   "field": "masi_std_r",
+   "op": "prefer",
+   "of": [
+    "masi_kwh_excl_r",
+    "masi_kwh_ex_calc_r"
+   ]
+  },
+  {
+   "field": "masi_demand_r",
+   "op": "prefer",
+   "of": [
+    "masi_kva_excl_r",
+    "masi_kva_ex_calc_r"
+   ]
+  },
+  {
+   "field": "masi_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "masi_std_r",
+    "masi_demand_r",
+    "masi_basic_ex_r"
+   ]
+  },
+  {
+   "field": "masi_ledger_ex_r",
+   "op": "sum",
+   "of": [
+    "masi_kwh_ex_calc_r",
+    "masi_kva_ex_calc_r",
+    "masi_basic_ex_r"
+   ]
+  },
+  {
+   "field": "masi_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "masi_kwh_vat_r",
+    "masi_kva_vat_r",
+    "masi_basic_vat_r"
+   ]
+  },
+  {
+   "field": "masi_meter",
+   "op": "concat",
+   "of": [
+    "masi_kwh_meter"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": [
+   "site_name",
+   "masi_street"
+  ],
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": [
+   "masi_kwh_meter",
+   "masi_kva_meter"
+  ],
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "masi_std_r",
+  "offpeak_r": "_none",
+  "demand_r": "masi_demand_r",
+  "nmd_r": "_none",
+  "other_r": "masi_basic_ex_r",
+  "total_ex_vat_r": "masi_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

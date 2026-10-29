@@ -1,0 +1,184 @@
+{
+ "profile_id": "kamiesberg",
+ "profile_name": "Kamiesberg Local Municipality (Garies, Northern Cape)",
+ "short_name": "Kamiesberg",
+ "_doc": "Kamiesberg does not send a bill here: the folder holds photographed/scanned print-outs of the municipality's 'Current Account Details' terminal screen (header '*-* KAMIESBERG SCOA PROD *-*'), one screen per account, several accounts per PDF. Ledger rows: date, description, reference, tariff code, Debit, Credit, Vat (amounts EX VAT with the VAT in its own column). Electricity = 'ELEKTRISITE' (energy -> standard_r) + 'BASIESE ELE' (basic charge -> other_r); the row is read from the FIRST account screen only (section = first 'Tran Date Description' header to the first '(Use D,L,...' footer). No kWh, readings, meter number, tariff name (only the tariff code) or site address are printed; billing_date = the transaction date of the electricity line. FINGERPRINT: the name as printed in the screen header (the municipality's VAT number is not on these screens). IDENTITY kam_check_elec_r = printed TOTAL/CURRENT BAL - BALANCE B/F + receipts - other services' debit and VAT - electricity VAT. OCR: 8 of the 9 PDFs are scans that OCR'd to unreadable noise (no word of the bill survives, probably rotated pages); they cannot be fingerprinted and stay unrouted. Checked on the 1 readable PDF.",
+ "fingerprint": {
+  "all": [],
+  "any": [
+   "KAMIESBERG SCOA",
+   "KAMIESBERG",
+   "KAMIESBURG",
+   "KAMIES BERG"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[^\\n]*Tran[ \\t]+Date[ \\t]+Description",
+   "overlay": true,
+   "end": "^[^\\n]*\\(Use[ \\t]+D,?L",
+   "require": "^[ \\t_]*\\d{8}[ \\t]+(?:ELEKTRISITE|BASIESE[ \\t]+ELE)[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account (first screen, before OWNER)",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{6})[ \\t]+OWNER\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Transaction date of the electricity line",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t_]*(20\\d{6})[ \\t]+ELEKTRISITE[ \\t]",
+    "^[ \\t_]*(20\\d{6})[ \\t]+BASIESE[ \\t]+ELE[ \\t]"
+   ],
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "kam_due_date",
+   "label": "Due-Date",
+   "scope": "document",
+   "pattern": "Due.?Date:[ \\t]*(20\\d{6})\\b",
+   "type": "date"
+  },
+  {
+   "fields": [
+    "kam_energy_r",
+    "kam_energy_vat_r"
+   ],
+   "label": "ELEKTRISITE debit + VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t_]*20\\d{6}[ \\t]+ELEKTRISITE[ \\t]+(?:\\d+[ \\t]+)?[A-Z]{2}[A-Za-z0-9]{3,5}[ \\t]+(?<![\\d.,])(\\d{1,6}[.,]\\d{2})(?![\\d.,])[ \\t]+(?<![\\d.,])(\\d{1,6}[.,]\\d{2})(?![\\d.,])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "kam_basic_r",
+    "kam_basic_vat_r"
+   ],
+   "label": "BASIESE ELE debit + VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t_]*20\\d{6}[ \\t]+BASIESE[ \\t]+ELE[ \\t]+(?:\\d+[ \\t]+)?[A-Z]{2}[A-Za-z0-9]{3,5}[ \\t]+(?<![\\d.,])(\\d{1,6}[.,]\\d{2})(?![\\d.,])[ \\t]+(?<![\\d.,])(\\d{1,6}[.,]\\d{2})(?![\\d.,])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "field": "tariff_name",
+   "label": "Electricity tariff code",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t_]*20\\d{6}[ \\t]+(?:ELEKTRISITE|BASIESE[ \\t]+ELE)[ \\t]+(?:\\d+[ \\t]+)?((?:EL|BE)\\d{4})[ \\t]",
+   "type": "text"
+  },
+  {
+   "label": "Other services: debit + VAT (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t_]*20\\d{6}[ \\t]+(?!ELEKTRISITE|BASIESE[ \\t]+ELE|BALANCE)[A-Z][^\\n]*?[ \\t](?<![\\d.,])(\\d{1,6}[.,]\\d{2})(?![\\d.,])[ \\t]+(?<![\\d.,])(\\d{1,6}[.,]\\d{2})(?![\\d.,])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "fields": [
+    "kam_nonelec_debit_r",
+    "kam_nonelec_vat_r"
+   ]
+  },
+  {
+   "field": "kam_bf_r",
+   "label": "BALANCE B/F",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t_]*20\\d{6}[ \\t]+BALANCE[ \\t]+B/F[ \\t]+(?<![\\d.,])(\\d{1,6}[.,]\\d{2})(?![\\d.,])[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "kam_receipts_r",
+   "label": "Receipts (RECE lines, sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t_]*20\\d{6}[ \\t]+\\d+[ \\t]+RECE[ \\t]+\\d+[ \\t]+(?<![\\d.,])(\\d{1,6}[.,]\\d{2})(?![\\d.,])[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "kam_total_r",
+   "label": "TOTAL / CURRENT BAL (first account)",
+   "scope": "document",
+   "patterns": [
+    "CURRENT[ \\t]+BAL:[ \\t]*(?<![\\d.,])(\\d{1,6}[.,]\\d{2})(?![\\d.,])",
+    "^[ \\t_]*TOTAL[ \\t]+(?<![\\d.,])(\\d{1,6}[.,]\\d{2})(?![\\d.,])[ \\t]*$"
+   ],
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "kam_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "kam_energy_r",
+    "kam_basic_r"
+   ]
+  },
+  {
+   "field": "kam_tmp_r",
+   "op": "sum",
+   "of": [
+    "kam_total_r",
+    "kam_receipts_r"
+   ]
+  },
+  {
+   "field": "kam_check_elec_r",
+   "op": "sub",
+   "of": [
+    "kam_tmp_r",
+    "kam_bf_r",
+    "kam_nonelec_debit_r",
+    "kam_nonelec_vat_r",
+    "kam_energy_vat_r",
+    "kam_basic_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "_none",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "kam_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "kam_basic_r",
+  "total_ex_vat_r": "kam_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

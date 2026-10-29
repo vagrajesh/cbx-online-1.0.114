@@ -1,0 +1,90 @@
+{
+  "title": "flow.month.title",
+  "enabled": true,
+  "trigger": {
+    "type": "button",
+    "data": "uploads"
+  },
+  "run_as": "starter",
+  "start": "s1",
+  "steps": {
+    "s1": {
+      "type": "require",
+      "match": "all",
+      "when": [
+        {
+          "left": "{{trigger.row.status}}",
+          "op": "equals",
+          "value": "Ready"
+        }
+      ],
+      "message": "These files are still being read, or could not be read — see the note on the upload.",
+      "next": "s2"
+    },
+    "s2": {
+      "type": "require",
+      "match": "all",
+      "when": [
+        {
+          "left": "{{trigger.row.months}}",
+          "op": "contains",
+          "value": "{{trigger.values.answer}}"
+        }
+      ],
+      "message": "That month is not in the movements file. It holds: {{trigger.row.months}}.",
+      "next": "s3"
+    },
+    "s3": {
+      "type": "add_row",
+      "data": "months",
+      "values": {
+        "month": "{{trigger.values.answer}}",
+        "upload": "{{trigger.row.id}}",
+        "status": "Working",
+        "source": "{{trigger.values.source}}"
+      },
+      "as": "m",
+      "next": "s4"
+    },
+    "s4": {
+      "type": "action",
+      "action": "ifrs16.month",
+      "data": "months",
+      "row": "{{m.id}}",
+      "from": {
+        "data": "uploads",
+        "row": "{{trigger.row.id}}"
+      },
+      "in": {
+        "la": "la",
+        "movements": "movements",
+        "sequentra": "sequentra",
+        "steps": "steps",
+        "month": "{{trigger.values.answer}}",
+        "assets": "assets",
+        "ciw_master": "ciw_master",
+        "source": "{{trigger.values.source}}"
+      },
+      "out": {
+        "workbooks": "workbooks",
+        "report": "report",
+        "imports": "imports",
+        "recon": "recon",
+        "papers": "papers"
+      },
+      "fail": {
+        "status": "Failed",
+        "note": "{{error}}"
+      },
+      "next": "s5"
+    },
+    "s5": {
+      "type": "update_row",
+      "data": "months",
+      "row": "{{m.id}}",
+      "values": {
+        "status": "Done"
+      }
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "title": "page.rates.title",
+  "intro": "page.rates.intro",
+  "menu": true,
+  "order": 4,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_rhow",
+                "type": "text",
+                "text": "w.w_rhow.text",
+                "tone": "muted"
+              },
+              {
+                "id": "w_rates",
+                "type": "table",
+                "title": "w.w_rates.title",
+                "source": {
+                  "data": "rates"
+                },
+                "add": true,
+                "search": false,
+                "columns": [
+                  {
+                    "key": "month",
+                    "label": "col.rate_month"
+                  },
+                  {
+                    "key": "a",
+                    "label": "col.band_a"
+                  },
+                  {
+                    "key": "b",
+                    "label": "col.band_b"
+                  },
+                  {
+                    "key": "c",
+                    "label": "col.band_c"
+                  },
+                  {
+                    "key": "d",
+                    "label": "col.band_d"
+                  },
+                  {
+                    "key": "e",
+                    "label": "col.band_e"
+                  },
+                  {
+                    "key": "f",
+                    "label": "col.band_f"
+                  },
+                  {
+                    "key": "note",
+                    "label": "col.note"
+                  }
+                ],
+                "sort": {
+                  "key": "month",
+                  "desc": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

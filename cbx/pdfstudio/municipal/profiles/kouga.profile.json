@@ -1,0 +1,198 @@
+{
+ "profile_id": "kouga",
+ "profile_name": "Kouga Local Municipality (Jeffreys Bay / Humansdorp, Eastern Cape)",
+ "short_name": "Kouga",
+ "_doc": "Kouga LM (Humansdorp/Jeffreys Bay) 'TAX INVOICE / BELASTING FAKTUUR'. All 10 cached texts are OCR of scans (production OCR will be needed; values are read from a scan). Header block ACCOUNT NUMBER / ACCOUNT DATE on the line below the column titles; meter row 'E <meter> <prev> <new> [E] <units> DD/MM-DD/MM' (a trailing E after the new reading = estimated). Charge table SERVICE TYPE / CONSUMPTION / CHARGE / VAT / AMOUNT: 'Electricity Basic' (charge = ex VAT -> other) and one or two 'Electricity Cons@Current|Old Tar.' lines (kWh, VAT, amount; ex = amount - VAT, summed -> standard); some months bill no consumption (basic only). Fingerprint: 'KOUGA BTW REG' + Kouga's own VAT number (present in all 10 OCR texts). IDENTITY x_elec_ex_id = Total monthly - Balance brought forward - receipts/interest - printed TOTAL VAT (the bill carries only electricity VAT): 0.00 on 10/10. 10 bills checked; site/tariff left blank (OCR property block unreliable).",
+ "fingerprint": {
+  "all": [
+   "KOUGA BTW REG"
+  ],
+  "any": [
+   "4070193497"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*SERVICE TYPE[ \\t]+CONSUMPTION",
+   "require": "^[ \\t]*Electricity (?:Basic|Cons@)"
+  }
+ },
+ "fields": [
+  {
+   "fields": [
+    "account_number",
+    "billing_date"
+   ],
+   "label": "Account number / Account date",
+   "scope": "document",
+   "pattern": "ACCOUNT[ \\t]+ACCOUNT DATE[^\\n]*\\n(?:[^\\n]*\\n){1,3}?[ \\t]*(\\d{8,})[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "types": [
+    "text",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "TAX INVOICE NO[ \\t]*\\n[ \\t]*(?:\\S[^\\n]*?[ \\t]{2,})?\\.?(\\d{8,})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "meter",
+    "start_r",
+    "end_r",
+    "reading_type",
+    "kg_meter_kwh",
+    "read_start",
+    "read_end"
+   ],
+   "label": "E meter row",
+   "scope": "document",
+   "pattern": "^[ \\t]*E[ \\t]+(\\d{4,})[ \\t]+(\\d+)[ \\t]+(\\d+)(?:[ \\t]+([AE]))?[ \\t]+(?:(\\d+\\.\\d{3})[ \\t]+)?(\\d{2}/\\d{2})-(\\d{2}/\\d{2})",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "text",
+    "number",
+    "date",
+    "date"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "kg_basic_ex",
+    "kg_basic_vat",
+    "kg_basic_amt"
+   ],
+   "label": "Electricity Basic",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity Basic[ \\t]+(\\d+\\.\\d{5})[ \\t]+(\\d+\\.\\d{2}-?)[ \\t]+(\\d+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "kg_kwh",
+    "kg_energy_vat",
+    "kg_energy_amt"
+   ],
+   "label": "Electricity Cons@ (kWh, VAT, amount)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity Cons@[^\\n]*?[ \\t]{2,}(\\d+)[ \\t]+(\\d+\\.\\d{2}-?)[ \\t]+(\\d+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "x_total_vat",
+   "label": "TOTAL VAT (whole bill)",
+   "scope": "document",
+   "pattern": "TOTAL VAT[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]*(\\d+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_total_monthly",
+   "label": "Total monthly",
+   "scope": "document",
+   "pattern": "Total monthly:[ \\t]+(\\d+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_bbf",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "Balance brought forward:[ \\t]+(\\d+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_ledger",
+   "label": "Receipts/Interest/Journals",
+   "scope": "document",
+   "pattern": "^[ \\t]*(?:Journals|Receipts|Interest/penalties)\\b[^\\n]*?[ \\t](\\d+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "kg_energy_ex",
+   "op": "sub",
+   "of": [
+    "kg_energy_amt",
+    "kg_energy_vat"
+   ]
+  },
+  {
+   "field": "kg_total_ex",
+   "op": "sum",
+   "of": [
+    "kg_basic_ex",
+    "kg_energy_ex"
+   ]
+  },
+  {
+   "field": "x_elec_ex_id",
+   "op": "sub",
+   "of": [
+    "x_total_monthly",
+    "x_bbf",
+    "x_ledger",
+    "x_total_vat"
+   ]
+  },
+  {
+   "field": "kg_total_kwh",
+   "op": "prefer",
+   "of": [
+    "kg_meter_kwh",
+    "kg_kwh"
+   ],
+   "as": "number"
+  }
+ ],
+ "canonical": {
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_r",
+  "end_reading_kwh": "end_r",
+  "total_kwh": "kg_total_kwh",
+  "standard_kwh": "kg_kwh",
+  "standard_r": "kg_energy_ex",
+  "other_r": "kg_basic_ex",
+  "total_ex_vat_r": "kg_total_ex",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "tariff_name": "_none",
+  "site_name": "_none"
+ }
+}

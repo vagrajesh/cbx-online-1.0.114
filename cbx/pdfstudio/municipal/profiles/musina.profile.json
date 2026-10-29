@@ -1,0 +1,224 @@
+{
+ "profile_id": "musina",
+ "profile_name": "Musina Local Municipality (Limpopo)",
+ "short_name": "Musina",
+ "fingerprint": {
+  "all": [
+   "4520119647"
+  ],
+  "any": [
+   "MUSINA LOCAL MUNICIPALITY",
+   "musina.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "require": "BASIC ELECTRICITY CHARGE|ELEC BUSINESS"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account Number:[ \\t]+(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]+(\\d{1,2} [A-Z]{3} \\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Street",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "mus_vat_r",
+   "label": "VAT line (whole bill)",
+   "scope": "document",
+   "pattern": "^[ \\t]+\\d+[ \\t]+VAT[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "meter",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "read_end",
+    "reading_type",
+    "mus_meter_kwh"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "date",
+    "text",
+    "number"
+   ],
+   "label": "ELECTRICITY meter row (new print)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\S+)[ \\t]+ELECTRICITY[ \\t]+(\\d*\\.?\\d+)[ \\t]+(\\d*\\.?\\d+)[ \\t]+(\\d\\d/\\d\\d/\\d{4})[ \\t]+([A-Z])[ \\t]+(\\d*\\.?\\d+)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "meter",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "reading_type",
+    "mus_meter_kwh",
+    "mus_levied_r",
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "text",
+    "number",
+    "money",
+    "date",
+    "date"
+   ],
+   "label": "ELECTRICITY meter row (old print, levied amount)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\S+)[ \\t]+ELECTRICITY[ \\t]+(\\d*\\.?\\d+)[ \\t]+(\\d*\\.?\\d+)[ \\t]+([A-Z])[ \\t]+(\\d*\\.?\\d+)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(\\d\\d/\\d\\d/\\d{4})[ \\t]*-[ \\t]*(\\d\\d/\\d\\d/\\d{4})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "mus_basic_units",
+    "mus_basic_rate",
+    "mus_basic_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "BASIC ELECTRICITY CHARGE",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+\\w+[ \\t]+BASIC ELECTRICITY CHARGE[ \\t]+(\\d*\\.?\\d+)[ \\t]*@[ \\t]*(\\d*\\.?\\d+)[ \\t]*\\*?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "field": "mus_basic_sum_r",
+   "label": "BASIC ELECTRICITY CHARGE (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+\\w+[ \\t]+BASIC ELECTRICITY CHARGE[ \\t]+[\\d.]+[ \\t]*@[ \\t]*[\\d.]+[ \\t]*\\*?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "mus_kwh",
+    "mus_kwh_rate",
+    "mus_kwh_line_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "ELEC BUSINESS (energy)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+\\w+[ \\t]+ELEC BUSINESS[ \\t]+(\\d*\\.?\\d+)[ \\t]*@[ \\t]*(\\d*\\.?\\d+)[ \\t]*\\*?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "mus_kwh_sum",
+    "mus_kwh_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "ELEC BUSINESS (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d\\d/\\d\\d/\\d{4}[ \\t]+\\w+[ \\t]+ELEC BUSINESS[ \\t]+(\\d*\\.?\\d+)[ \\t]*@[ \\t]*[\\d.]+[ \\t]*\\*?[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$"
+  }
+ ],
+ "computes": [
+  {
+   "field": "mus_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "mus_basic_sum_r",
+    "mus_kwh_r"
+   ]
+  },
+  {
+   "field": "mus_kwh_calc_r",
+   "op": "mul",
+   "of": [
+    "mus_kwh",
+    "mus_kwh_rate"
+   ]
+  },
+  {
+   "field": "mus_basic_calc_r",
+   "op": "mul",
+   "of": [
+    "mus_basic_units",
+    "mus_basic_rate"
+   ]
+  },
+  {
+   "field": "mus_elec_check_r",
+   "op": "sum",
+   "of": [
+    "mus_basic_calc_r",
+    "mus_kwh_calc_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "nmd_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "mus_kwh_sum",
+  "standard_kwh": "mus_kwh_sum",
+  "demand_kva": "_none",
+  "standard_r": "mus_kwh_r",
+  "demand_r": "_none",
+  "other_r": "mus_basic_sum_r",
+  "total_ex_vat_r": "mus_elec_ex_r",
+  "deposit_r": "deposit_r"
+ },
+ "_doc": "Musina Local Municipality eMunsoft 'TAX INVOICE / STATEMENT OF ACCOUNT': header (Account Number, Account Date, ERF Description, Street = site_name, Deposit), METER READINGS table and an ACCOUNT DETAILS ledger 'date code DESCRIPTION units @ tariff * value' followed by an undated VAT line. Two table prints: the current one (old/new reading, READING DATE = read_end, READING TYPE code A/I, consumption) and an older one (consumption, LEVIED AMOUNT, READING DATES period). Electricity = 'BASIC ELECTRICITY CHARGE' (other_r) + 'ELEC BUSINESS' (kWh, standard_r); values are ex VAT. Deposit adjustment lines are ignored. Two bills (the same November statement twice) show a meter roll-over (old reading above new), which the READ check flags - the bill's consumption is correct for a 6-digit wrap. Fingerprint: the municipality's VAT number + name/web domain. Identity (--identity mus_elec_check_r): units x printed tariff for both lines (mul) vs the printed values: 0.00 on 10/10. Checked on all 10 bills."
+}

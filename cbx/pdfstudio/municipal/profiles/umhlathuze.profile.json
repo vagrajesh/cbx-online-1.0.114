@@ -1,0 +1,867 @@
+{
+ "profile_id": "umhlathuze",
+ "profile_name": "City of uMhlathuze (Richards Bay)",
+ "short_name": "uMhlathuze",
+ "_doc": "City of uMHLATHUZE (KZN282, Richards Bay / Empangeni) SAP-style tax invoice. Telkom account 953035, ERF 3236, 1 UNION / EMPANGENI CENTRAL, one 11kV Enerflex TOU installation on meter [number removed].\n\nTWO TEXT SHAPES, same rulebook:\n  A) 1-page compact ('COU_953035_953035 (1).pdf', ~9.1k chars). Body lines start at column 0; 'Sub Total' is right-drifted but still preceded only by whitespace; 'Balance Brought Forward' and 'Monthly Charges' print ONE amount; the Reactive Energy line prints 0.00 / 0.00; ACCOUNT NO is zero-padded ('[number removed]'); labels are 'REGION:' / 'WARD NO:' / 'DEPOSIT-CASH'.\n  B) 3-page (~20-23k chars, 10 of 11 files). Body lines are indented; the masthead+column header REPEAT on page 2 and the WATER block continues there; 'Balance Brought Forward' / 'Monthly Charges' print TWO amounts (VAT then total); the Reactive Energy line prints NO amounts at all; ACCOUNT NO is unpadded; labels are 'REGION :' / 'WARD NO :' / 'DEPOSIT- CASH'; header text is rendered out of visual order and GLUED ('City of uMHLATHUZEPrivate Bag X137', 'PAYMENTACCOUNT NO', \"CIENT'S VAT\"), so nothing is anchored on the masthead.\nEvery money/kWh rule is written to satisfy both shapes; account-number leading zeros are stripped outside the capture group so both shapes yield 953035.\n\nCOLUMN CONVENTION - THE TRAP ON THIS BILL: the two numeric columns are 'VAT' and 'AMOUNT (Incl. VAT)'. The printed AMOUNT is VAT-INCLUSIVE. Every canonical Rand column must therefore be AMOUNT - VAT, which is exactly the printed rate x quantity (proved: 14470 KWH x 2.4398 = 35,303.91 = 40,599.50 - 5,295.59). All *_r columns are produced by 'sub' computes on the (incl, vat) pair captured off the same line. Reading the AMOUNT column straight into peak_r/standard_r/... would inflate every Rand column by 15% - the same mistake that once shipped on CoT.\n\nTOU BANDS: three registers on ONE meter, each with its own 'Meter: ... <band> MRD <yyyymmdd> Curr MR: <end> Pr MRD: <start> Cons: <kWh> KWH' line ('Pr MRD' is mislabelled - it is the PREVIOUS READING, not a date). Bands:\n  Peak      'Elec Enerflex 11KV Kwh Peak'      (space before Peak)\n  Standard  'Elec Enerflex 11KV KwhStandard'   (glued)\n  Off Peak  'Elec Enerflex 11KV KwhOff Peak'   (glued 'KwhOff')\nThe Peak pattern demands whitespace between 'Kwh' and 'Peak' so it can never match the Off Peak line. Start/End Reading kWh are the SUM of the three registers, and (end - start) equals peak+standard+offpeak kWh exactly on all 11 bills - that is the built-in self-check for the band split. The bill prints no total kWh, so total_kwh is the sum of the three bands.\n\nDEMAND: 'Elec Enerflex 11KV Demand  <kVA> KVA x <rate>' is the measured/billed maximum demand -> demand_kva/demand_r. 'Elec Enerflex11KVNetworkAccess  800.0000 KVA x <rate>' is the notified/contracted capacity (a flat 800 kVA on every bill) -> nmd_kva/nmd_r. The kVA quantity and the money are captured by SEPARATE rules on purpose: on COU_...2026-02-03 the Demand and NetworkAccess lines print the kVA and rate but NO amounts (the electricity Sub Total confirms they were genuinely not levied that month, 31,191.35 / 239,133.68 = the sum of the other eight lines), so a combined rule would have thrown away demand_kva = 187 as well. The 'Demd MRD' reader line's Cons (e.g. 181000 KVA) is a x1000-scaled register value, kept as a native field only; demand_kva comes off the charge line.\n\nOTHER CHARGES are the genuine sum of real printed lines, never a remainder: 'Electrification&Rural Subsidy' (three lines, one per band, collect:sum), 'Elec Service Charge' (the basic charge, 1.0000 x rate), 'Elec.Admin Charge', and 'Elec Reactive Energy Charge' (0 KRH on every bill so far; amounts printed only on shape A). Because other_r is built from its own lines and total_ex_vat_r comes from the bill's own printed ELECTRICITY 'Sub Total' pair, RECONCILE IS GENUINE here (Rule Zero satisfied): peak+standard+offpeak+demand+nmd+other == Sub Total(AMOUNT) - Sub Total(VAT) to the cent on all 11 bills.\n\nNEVER PRINTED (mapped '_none'): reading type (no Actual/Estimate marker anywhere), and the period START date - the bill prints only one meter reading date (MRD, the period END). read_end is kept exactly as printed, yyyymmdd.\n\nOTHER SERVICES are fenced off by section headings PROPERTY RATES / ELECTRICITY / WASTE MANAGEMENT / WASTE WATER / WATER / Adjustments, each a heading alone on its line. 'WATER' is anchored at the start of its line so 'WASTE WATER' can never satisfy it. 'Adjustments' is declared as sundry so a rebill month's CREDIT FOR CONSUMPTION BILLING block cannot bleed into water. Payments and Balance Brought Forward sit above PROPERTY RATES, i.e. in header scope.\n\nFINGERPRINT: municipal VAT registration 4690193521, verified present in all 11 bills and in none of the other 77 PDFs in the Telkom tree.",
+ "fingerprint": {
+  "all": [
+   "4690193521"
+  ],
+  "any": [
+   "uMHLATHUZE",
+   "umhlathuze.gov.za"
+  ],
+  "reject_if_text": [
+   "Please wait...",
+   "does not support the use of JavaScript"
+  ]
+ },
+ "sections": {
+  "rates": {
+   "start": "^[ \\t]*PROPERTY RATES[ \\t]*$"
+  },
+  "electricity": {
+   "start": "^[ \\t]*ELECTRICITY[ \\t]*$",
+   "require": "Meter:|Elec "
+  },
+  "refuse": {
+   "start": "^[ \\t]*WASTE MANAGEMENT[ \\t]*$"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*WASTE WATER[ \\t]*$"
+  },
+  "water": {
+   "start": "^[ \\t]*WATER[ \\t]*$"
+  },
+  "sundry": {
+   "start": "^[ \\t]*Adjustments[ \\t]*$",
+   "require": "^[ \\t]*Sub Total[ \\t]{2,}-?[\\d, ]+\\.\\d{2}"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "ACCOUNT NO\\.?[ \\t]+0*(\\d{4,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "account_name",
+   "label": "Account Holder",
+   "scope": "document",
+   "pattern": "^[ \\t]*(TELKOM[A-Z .]*?LTD)\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "tax_invoice_no",
+   "label": "Tax Invoice Number",
+   "scope": "document",
+   "pattern": "TAX INVOICE\\b[^\\n]*?[ \\t](\\d{10,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice / Billing Date",
+   "scope": "document",
+   "pattern": "INVOICE DATE[ \\t]+(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due Date",
+   "scope": "document",
+   "pattern": "DUE DATE[ \\t]+(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "munic_vat_reg",
+   "label": "Municipal VAT Reg No",
+   "scope": "document",
+   "pattern": "VAT REG NO\\.?[ \\t]*(\\d{9,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "region",
+   "label": "Region",
+   "scope": "document",
+   "pattern": "REGION[ \\t]*:[ \\t]*(\\d{4}[ \\t]+[A-Z]+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "ward_no",
+   "label": "Ward No",
+   "scope": "document",
+   "pattern": "WARD NO[ \\t]*:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "erf_no",
+   "label": "Erf No",
+   "scope": "document",
+   "pattern": "ERF NO[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "portion_no",
+   "label": "Portion",
+   "scope": "document",
+   "pattern": "PORTION[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "valuation_r",
+   "label": "Market Valuation",
+   "scope": "document",
+   "pattern": "VALUATION[ \\t]+([\\d,]+)(?![\\d])",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "area_m2",
+   "label": "Area (m2)",
+   "scope": "document",
+   "pattern": "AREA \\(M2\\)[ \\t]+([\\d,]+)(?![\\d])",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "site_street",
+   "label": "Site Street",
+   "scope": "document",
+   "patterns": [
+    "[ \\t]{2,}(\\d+ [A-Z][A-Z]*(?: [A-Z]+)*)[ \\t]{2,}ERF NO\\b",
+    "\\bNUMBER[ \\t]{2,}(\\d+ [A-Z][A-Z]*(?: [A-Z]+)*)[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_suburb",
+   "label": "Site Suburb",
+   "scope": "document",
+   "pattern": "\\bADDRESS[ \\t]+([A-Z][A-Z]*(?: [A-Z]+)*)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "deposit_cash_r",
+   "label": "Deposit - Cash",
+   "scope": "document",
+   "patterns": [
+    "DEPOSIT-[ \\t]?CASH \\(R \\)[ \\t]+([\\d, ]+\\.\\d{2})",
+    "AREA \\(M2\\)[ \\t]+[\\d,]+[ \\t]{2,}([\\d,]+)(?![\\d])"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "guarantee_r",
+   "label": "Guarantee",
+   "scope": "document",
+   "pattern": "GUARANTEE[ \\t]+R[ \\t]*([\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "prev_balance_r",
+   "label": "Balance Brought Forward",
+   "scope": "document",
+   "patterns": [
+    "Balance Brought Forward[ \\t]+[\\d, ]+\\.\\d{2}[ \\t]{2,}(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+    "Balance Brought Forward[ \\t]{2,}(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "payment_received_r",
+   "label": "Payment Received",
+   "scope": "document",
+   "pattern": "PAYMENT - THANK YOU[^\\n]*?[ \\t]{2,}(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "account_vat_r",
+    "total_due_r"
+   ],
+   "label": "Total Due (account VAT + total incl VAT)",
+   "scope": "document",
+   "pattern": "Total Due[ \\t]+R[ \\t]*(-?[\\d, ]+\\.\\d{2})[ \\t]*R[ \\t]*(-?[\\d, ]+\\.\\d{2})",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "monthly_charges_r",
+   "label": "Monthly Charges (incl VAT)",
+   "scope": "document",
+   "patterns": [
+    "Monthly Charges[ \\t]+[\\d, ]+\\.\\d{2}[ \\t]{2,}(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+    "Monthly Charges[ \\t]{2,}(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$"
+   ],
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "instalment_r",
+    "aging_current_r",
+    "aging_30_r",
+    "aging_60_r",
+    "aging_90_r"
+   ],
+   "label": "Aging (Instalment / Current / 30 / 60 / 90+)",
+   "scope": "document",
+   "pattern": "^[ \\t]*(-?[\\d, ]+\\.\\d{2})[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "meter",
+    "read_end"
+   ],
+   "label": "Meter + Reading Date (MRD)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*Meter:[ \\t]*(\\d+)[ \\t]+Peak[ \\t]+MRD[ \\t]*:?[ \\t]*(\\d{8})\\b",
+    "^[ \\t]*Meter:[ \\t]*(\\d+)[ \\t]+(?:[A-Za-z-]+[ \\t]+)?MRD[ \\t]*:?[ \\t]*(\\d{8})\\b"
+   ],
+   "types": [
+    "text",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "tariff_name",
+   "label": "Tariff",
+   "scope": "section:electricity",
+   "pattern": "\\bElec (Enerflex[ ]?\\d+KV)[ \\t]*(?:Kwh|Demand)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "pk_end_reading",
+    "pk_start_reading",
+    "pk_cons_kwh"
+   ],
+   "label": "Peak register (end / start / cons)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Meter:[ \\t]*\\d+[ \\t]+Peak[ \\t]+MRD[ \\t]*:?[ \\t]*\\d{8}[ \\t]+Curr MR:[ \\t]*(\\d+)[ \\t]+Pr MRD:[ \\t]*(\\d+)[ \\t]+Cons:[ \\t]*([\\d,.]+)[ \\t]*KWH",
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "st_end_reading",
+    "st_start_reading",
+    "st_cons_kwh"
+   ],
+   "label": "Standard register (end / start / cons)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Meter:[ \\t]*\\d+[ \\t]+Stan[ \\t]+MRD[ \\t]*:?[ \\t]*\\d{8}[ \\t]+Curr MR:[ \\t]*(\\d+)[ \\t]+Pr MRD:[ \\t]*(\\d+)[ \\t]+Cons:[ \\t]*([\\d,.]+)[ \\t]*KWH",
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "op_end_reading",
+    "op_start_reading",
+    "op_cons_kwh"
+   ],
+   "label": "Off Peak register (end / start / cons)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Meter:[ \\t]*\\d+[ \\t]+Off-P[ \\t]+MRD[ \\t]*:?[ \\t]*\\d{8}[ \\t]+Curr MR:[ \\t]*(\\d+)[ \\t]+Pr MRD:[ \\t]*(\\d+)[ \\t]+Cons:[ \\t]*([\\d,.]+)[ \\t]*KWH",
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "react_end_reading",
+    "react_start_reading",
+    "react_kvarh"
+   ],
+   "label": "Reactive register (end / start / cons KRH)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Meter:[ \\t]*\\d+[ \\t]+MRD[ \\t]*:?[ \\t]*\\d{8}[ \\t]+Curr MR:[ \\t]*(\\d+)[ \\t]+Pr MRD:[ \\t]*(\\d+)[ \\t]+Cons:[ \\t]*([\\d,.]+)[ \\t]*KRH",
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "required": false
+  },
+  {
+   "field": "demand_register_kva",
+   "label": "Demand register Cons (x1000 scale)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Meter:[ \\t]*\\d+[ \\t]+Demd[ \\t]+MRD[ \\t]*:?[ \\t]*\\d{8}[ \\t]+Curr MR:[ \\t]*\\d+[ \\t]+Pr MRD:[ \\t]*\\d+[ \\t]+Cons:[ \\t]*([\\d,.]+)[ \\t]*KVA",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "peak_kwh",
+    "peak_vat_r",
+    "peak_incl_r"
+   ],
+   "label": "Peak kWh / VAT / Amount incl",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec Enerflex[^\\n]*?Kwh[ \\t]+Peak[ \\t]+([\\d,]+\\.\\d{4})[ \\t]*KWH[ \\t]*x[ \\t]*[\\d,.]+[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "standard_kwh",
+    "standard_vat_r",
+    "standard_incl_r"
+   ],
+   "label": "Standard kWh / VAT / Amount incl",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec Enerflex[^\\n]*?Kwh[ \\t]*Standard[ \\t]+([\\d,]+\\.\\d{4})[ \\t]*KWH[ \\t]*x[ \\t]*[\\d,.]+[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "offpeak_kwh",
+    "offpeak_vat_r",
+    "offpeak_incl_r"
+   ],
+   "label": "Off Peak kWh / VAT / Amount incl",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec Enerflex[^\\n]*?Kwh[ \\t]*Off[ \\t]*Peak[ \\t]+([\\d,]+\\.\\d{4})[ \\t]*KWH[ \\t]*x[ \\t]*[\\d,.]+[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "demand_kva",
+   "label": "Demand kVA (billed)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec Enerflex[^\\n]*?[ \\t]Demand[ \\t]+([\\d,]+\\.\\d{4})[ \\t]*KVA[ \\t]*x",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "demand_vat_r",
+    "demand_incl_r"
+   ],
+   "label": "Demand VAT / Amount incl",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec Enerflex[^\\n]*?[ \\t]Demand[ \\t]+[\\d,]+\\.\\d{4}[ \\t]*KVA[ \\t]*x[ \\t]*[\\d,.]+[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "nmd_kva",
+   "label": "Notified Max Demand kVA (Network Access)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec Enerflex[^\\n]*?NetworkAccess[ \\t]+([\\d,]+\\.\\d{4})[ \\t]*KVA[ \\t]*x",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "nmd_vat_r",
+    "nmd_incl_r"
+   ],
+   "label": "Network Access VAT / Amount incl",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec Enerflex[^\\n]*?NetworkAccess[ \\t]+[\\d,]+\\.\\d{4}[ \\t]*KVA[ \\t]*x[ \\t]*[\\d,.]+[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "subsidy_kwh",
+    "subsidy_vat_r",
+    "subsidy_incl_r"
+   ],
+   "label": "Electrification & Rural Subsidy (all bands)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electrification&Rural Subsidy[ \\t]+([\\d,]+\\.\\d{4})[ \\t]*KWH[ \\t]*x[ \\t]*[\\d,.]+[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "basic_vat_r",
+    "basic_incl_r"
+   ],
+   "label": "Elec Service Charge (basic)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec Service Charge[ \\t]+[\\d,]+\\.\\d{4}[ \\t]*x[ \\t]*[\\d,.]+[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "admin_vat_r",
+    "admin_incl_r"
+   ],
+   "label": "Elec Admin Charge",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec\\.?[ \\t]?Admin Charge[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "react_vat_r",
+    "react_incl_r"
+   ],
+   "label": "Reactive Energy Charge",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec Reactive Energy Charge[ \\t]+[\\d,]+\\.\\d{4}[ \\t]*KRH[ \\t]*x[ \\t]*[\\d,.]+[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]{2,}([\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "elec_sub_vat_r",
+    "elec_sub_incl_r"
+   ],
+   "label": "ELECTRICITY Sub Total (VAT / incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Sub Total[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "rates_sub_vat_r",
+    "rates_sub_incl_r"
+   ],
+   "label": "PROPERTY RATES Sub Total",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*Sub Total[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "rates_basis",
+   "label": "Rates basis",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*(Rates [^\\n]*?/\\d+)[ \\t]{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "refuse_sub_vat_r",
+    "refuse_sub_incl_r"
+   ],
+   "label": "WASTE MANAGEMENT Sub Total",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*Sub Total[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "refuse_service",
+   "label": "Refuse service",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*(Solid Waste[^\\n]*?)[ \\t]{2,}[\\d, ]+\\.\\d{2}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "sewer_meter",
+    "sewer_read_end",
+    "sewer_end_reading",
+    "sewer_start_reading",
+    "sewer_kl"
+   ],
+   "label": "Waste Water meter / MRD / readings / cons",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*Meter:[ \\t]*(\\d+)[ \\t]+MRD[ \\t]*:?[ \\t]*(\\d{8})[ \\t]+Curr MR:[ \\t]*(\\d+)[ \\t]+Pr MRD:[ \\t]*(\\d+)[ \\t]+Cons:[ \\t]*([\\d,.]+)",
+   "types": [
+    "text",
+    "date",
+    "number",
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "sewer_sub_vat_r",
+    "sewer_sub_incl_r"
+   ],
+   "label": "WASTE WATER Sub Total",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*Sub Total[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "water_meter",
+    "water_read_end",
+    "water_end_reading",
+    "water_start_reading",
+    "water_kl"
+   ],
+   "label": "Water meter / MRD / readings / cons kL",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Meter:[ \\t]*(\\d+)[ \\t]+[A-Za-z]+[ \\t]+MRD[ \\t]+MRD[ \\t]*:?[ \\t]*(\\d{8})[ \\t]+Curr MR:[ \\t]*(\\d+)[ \\t]+Pr MRD:[ \\t]*(\\d+)[ \\t]+Cons:[ \\t]*([\\d,.]+)[ \\t]*KL",
+   "types": [
+    "text",
+    "date",
+    "number",
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "water_sub_vat_r",
+    "water_sub_incl_r"
+   ],
+   "label": "WATER Sub Total",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Sub Total[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "sundry_sub_vat_r",
+    "sundry_sub_incl_r"
+   ],
+   "label": "Adjustments Sub Total",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*Sub Total[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]{2,}(-?[\\d, ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "site_street",
+    "site_suburb"
+   ]
+  },
+  {
+   "field": "peak_r",
+   "op": "sub",
+   "of": [
+    "peak_incl_r",
+    "peak_vat_r"
+   ]
+  },
+  {
+   "field": "standard_r",
+   "op": "sub",
+   "of": [
+    "standard_incl_r",
+    "standard_vat_r"
+   ]
+  },
+  {
+   "field": "offpeak_r",
+   "op": "sub",
+   "of": [
+    "offpeak_incl_r",
+    "offpeak_vat_r"
+   ]
+  },
+  {
+   "field": "demand_r",
+   "op": "sub",
+   "of": [
+    "demand_incl_r",
+    "demand_vat_r"
+   ]
+  },
+  {
+   "field": "nmd_r",
+   "op": "sub",
+   "of": [
+    "nmd_incl_r",
+    "nmd_vat_r"
+   ]
+  },
+  {
+   "field": "subsidy_r",
+   "op": "sub",
+   "of": [
+    "subsidy_incl_r",
+    "subsidy_vat_r"
+   ]
+  },
+  {
+   "field": "basic_r",
+   "op": "sub",
+   "of": [
+    "basic_incl_r",
+    "basic_vat_r"
+   ]
+  },
+  {
+   "field": "admin_r",
+   "op": "sub",
+   "of": [
+    "admin_incl_r",
+    "admin_vat_r"
+   ]
+  },
+  {
+   "field": "reactive_r",
+   "op": "sub",
+   "of": [
+    "react_incl_r",
+    "react_vat_r"
+   ]
+  },
+  {
+   "field": "other_r",
+   "op": "sum",
+   "of": [
+    "subsidy_r",
+    "basic_r",
+    "admin_r",
+    "reactive_r"
+   ]
+  },
+  {
+   "field": "elec_total_ex_r",
+   "op": "sub",
+   "of": [
+    "elec_sub_incl_r",
+    "elec_sub_vat_r"
+   ]
+  },
+  {
+   "field": "total_kwh",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "peak_kwh",
+    "standard_kwh",
+    "offpeak_kwh"
+   ]
+  },
+  {
+   "field": "start_reading_kwh",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "pk_start_reading",
+    "st_start_reading",
+    "op_start_reading"
+   ]
+  },
+  {
+   "field": "end_reading_kwh",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "pk_end_reading",
+    "st_end_reading",
+    "op_end_reading"
+   ]
+  },
+  {
+   "field": "reading_diff_kwh",
+   "op": "diff",
+   "as": "number",
+   "of": [
+    "end_reading_kwh",
+    "start_reading_kwh"
+   ]
+  },
+  {
+   "field": "elec_parts_r",
+   "op": "sum",
+   "of": [
+    "peak_r",
+    "standard_r",
+    "offpeak_r",
+    "demand_r",
+    "nmd_r",
+    "other_r"
+   ]
+  },
+  {
+   "field": "elec_recon_gap_r",
+   "op": "diff",
+   "of": [
+    "elec_parts_r",
+    "elec_total_ex_r"
+   ]
+  },
+  {
+   "field": "sewer_total_ex_r",
+   "op": "sub",
+   "of": [
+    "sewer_sub_incl_r",
+    "sewer_sub_vat_r"
+   ]
+  },
+  {
+   "field": "water_total_ex_r",
+   "op": "sub",
+   "of": [
+    "water_sub_incl_r",
+    "water_sub_vat_r"
+   ]
+  },
+  {
+   "field": "refuse_total_ex_r",
+   "op": "sub",
+   "of": [
+    "refuse_sub_incl_r",
+    "refuse_sub_vat_r"
+   ]
+  },
+  {
+   "field": "rates_total_ex_r",
+   "op": "sub",
+   "of": [
+    "rates_sub_incl_r",
+    "rates_sub_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "peak_kwh",
+  "standard_kwh": "standard_kwh",
+  "offpeak_kwh": "offpeak_kwh",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "nmd_kva",
+  "peak_r": "peak_r",
+  "standard_r": "standard_r",
+  "offpeak_r": "offpeak_r",
+  "demand_r": "demand_r",
+  "nmd_r": "nmd_r",
+  "other_r": "other_r",
+  "total_ex_vat_r": "elec_total_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "deposit_cash_r",
+  "guarantee_r": "guarantee_r",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "Balance Brought Forward[^\\n]*?(-?[\\d, ]+\\.\\d{2})[ \\t]*$",
+  "incoming_payment": "PAYMENT - THANK YOU[^\\n]*?(-?[\\d, ]+\\.\\d{2})[ \\t]*$",
+  "current_incl": "Monthly Charges[^\\n]*?(-?[\\d, ]+\\.\\d{2})[ \\t]*$",
+  "vat": "Total Due[ \\t]+R[ \\t]*(-?[\\d, ]+\\.\\d{2})",
+  "total_due": "Total Due[ \\t]+R[ \\t]*-?[\\d, ]+\\.\\d{2}[ \\t]*R[ \\t]*(-?[\\d, ]+\\.\\d{2})",
+  "due_date": "DUE DATE[ \\t]+(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+  "guarantee": "GUARANTEE[ \\t]+R[ \\t]*([\\d, ]+\\.\\d{2})",
+  "deposit": "DEPOSIT-[ \\t]?CASH \\(R \\)[ \\t]+([\\d, ]+\\.\\d{2})"
+ }
+}

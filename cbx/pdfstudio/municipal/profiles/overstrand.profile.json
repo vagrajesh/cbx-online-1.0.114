@@ -1,0 +1,208 @@
+{
+ "profile_id": "overstrand",
+ "profile_name": "Overstrand Municipality (Hermanus)",
+ "short_name": "Overstrand",
+ "_doc": "Western Cape (Hermanus / Kleinmond / Stanford). Carries the gyro_utilities email that Mangaung fingerprints on, so it MUST be matched on its own VAT 4140106396 and Mangaung rejects that VAT. Charge table: 'ELECT/ELEK <code> <consum> <AMOUNT> <VAT>' (sum AMOUNT for ex-VAT electricity, sum VAT for the VAT). kWh = the CONSUMPTION column of the SERVICE 'E' meter line(s); TOU bills print peak/std/offpeak registers which we sum. English TAX INVOICE and Afrikaans KOPIE statement share this layout. | CBX 1.0.77 (tested on the Telkom folder): half the bills print the Afrikaans header (REKENING NOMMER / MAANDELIKSE REKENING / DEBITEUR BTW REG) with the values on the next line — patterns added for those.",
+ "fingerprint": {
+  "all": [
+   "4140106396"
+  ],
+  "any": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "ELECT/ELEK"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account",
+   "scope": "document",
+   "patterns": [
+    "ACCOUNT NUMBER[^\\n]*\\n\\s*(\\d{9,})",
+    "REKENING NOMMER:?\\s*(\\d{9,})",
+    "REKENING NOMMER[^\\n]*\\n\\s*(\\d{9,})"
+   ],
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "billing_date",
+   "label": "Billing month",
+   "scope": "document",
+   "patterns": [
+    "MONTHLY ACCOUNT FOR[^\\n]*\\n\\s*(?:\\d{9,}\\s+)?([A-Z][a-z\\u00e9]+\\s+\\d{4})",
+    "FAKTUUR VIR:?\\s*([A-Z][a-z\\u00e9]+\\s+\\d{4})",
+    "MAANDELIKSE REKENING[^\\n]*\\n\\s*(?:\\d{9,}\\s+)?([A-Z][a-z\\u00e9]+\\s+\\d{4})"
+   ],
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "document",
+   "pattern": "PAYABLE ON OR BEFORE\\s+(\\d{1,2}/\\d{1,2}/\\d{4})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "site_name",
+   "label": "Customer / site",
+   "scope": "document",
+   "type": "text",
+   "required": false,
+   "patterns": [
+    "DEBTORS VAT REG[^\\n]*\\n\\s*([A-Z][A-Za-z0-9 ().]+?)\\s*$",
+    "DEBITEUR BTW REG[^\\n]*\\n\\s*([A-Z][A-Za-z0-9 ().]+?)\\s*$"
+   ]
+  },
+  {
+   "field": "ov_total_due_r",
+   "label": "Total amount due",
+   "scope": "document",
+   "patterns": [
+    "TOTAL AMOUNT DUE\\s+([\\d ,]+\\.\\d{2})",
+    "TOTAAL\\s+([\\d ,]+\\.\\d{2})"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "ov_deposit_r",
+   "label": "Electricity deposit",
+   "scope": "document",
+   "patterns": [
+    "DEP:?\\s*ELECT:?\\s*(-?\\d{2,})\\b",
+    "DEP:?\\s*ELECT:[^\\n]*\\n\\s*\\S[^\\n]*?\\s(-?\\d{2,})\\s+-?[\\d.]"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "ov_elec_ex",
+    "ov_elec_vat"
+   ],
+   "label": "ELECT/ELEK charge (ex + VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "ELECT/ELEK[^\\n]*?\\s+\\d+\\s+([\\d ,]+\\.\\d{2})\\s+([\\d ,]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "ov_kwh",
+   "label": "Consumption (kWh)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "(?m)^E\\s+\\S+\\s+\\d{2}/\\d{2}(?:\\s*-\\s*|\\s+)\\d{2}/\\d{2}\\s+\\d+\\s+\\d+\\s+(\\d+)\\b",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "ov_meter",
+   "label": "Meter number(s)",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "(?m)^E\\s+(\\S+)\\s+\\d{2}/\\d{2}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "ov_prev_read",
+    "ov_curr_read"
+   ],
+   "label": "Previous/current reading (first meter)",
+   "scope": "document",
+   "pattern": "(?m)^E\\s+\\S+\\s+\\d{2}/\\d{2}(?:\\s*-\\s*|\\s+)\\d{2}/\\d{2}\\s+(\\d+)\\s+(\\d+)\\s+\\d+\\b",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "ov_from",
+    "ov_to"
+   ],
+   "label": "Reading period (dd/mm, as printed)",
+   "scope": "document",
+   "pattern": "(?m)^E\\s+\\S+\\s+(\\d{2}/\\d{2})(?:\\s*-\\s*|\\s+)(\\d{2}/\\d{2})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "ov_peak_kwh",
+   "label": "Peak units",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "ELECT/ELEK[^\\n]*?(?<!-)PEAK\\s+([\\d ,]+?)\\s+[\\d ,]+\\.\\d{2}"
+  },
+  {
+   "field": "ov_std_kwh",
+   "label": "Standard units",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "ELECT/ELEK[^\\n]*?\\sSTANDARD\\s+([\\d ,]+?)\\s+[\\d ,]+\\.\\d{2}"
+  },
+  {
+   "field": "ov_off_kwh",
+   "label": "Off-peak units",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "ELECT/ELEK[^\\n]*?OFF-?PEAK\\s+([\\d ,]+?)\\s+[\\d ,]+\\.\\d{2}"
+  },
+  {
+   "field": "ov_demand_kva",
+   "label": "KVA UMD (used demand)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "ELECT/ELEK[^\\n]*?KVA UMD\\s+([\\d ,]+?)\\s+[\\d ,]+\\.\\d{2}"
+  },
+  {
+   "field": "ov_nmd_kva",
+   "label": "KVA NMD (notified demand)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "ELECT/ELEK[^\\n]*?KVA NMD\\s+([\\d ,]+?)\\s+[\\d ,]+\\.\\d{2}"
+  },
+  {
+   "field": "ov_e_present",
+   "scope": "section:electricity",
+   "label": "elec present",
+   "pattern": "(ELECT/ELEK)",
+   "type": "text",
+   "required": false
+  }
+ ],
+ "computes": [],
+ "canonical": {
+  "site_name": "site_name",
+  "account_number": "account_number",
+  "billing_date": "billing_date",
+  "due_date": "due_date",
+  "tariff_name": "_none",
+  "reading_type": "_none",
+  "total_ex_vat_r": "ov_elec_ex",
+  "other_r": "ov_elec_ex",
+  "total_kwh": "ov_kwh",
+  "deposit_r": "ov_deposit_r",
+  "meter": "ov_meter",
+  "start_reading_kwh": "ov_prev_read",
+  "end_reading_kwh": "ov_curr_read",
+  "read_start": "ov_from",
+  "read_end": "ov_to",
+  "peak_kwh": "ov_peak_kwh",
+  "standard_kwh": "ov_std_kwh",
+  "offpeak_kwh": "ov_off_kwh",
+  "demand_kva": "ov_demand_kva",
+  "nmd_kva": "ov_nmd_kva"
+ },
+ "recon": {
+  "prev_balance": "BALANCE (?:BROUGHT|CARRIED) FORWARD[^\\n]*?([\\d ,]+\\.\\d{2})\\s*$",
+  "current_incl": "CREDIT\\s+90 DAY\\+[^\\n]*\\n\\s*(?:-?[\\d ,]+\\.\\d{2}\\s+){5}(-?[\\d ,]+\\.\\d{2})",
+  "total_due": "(?:TOTAL AMOUNT DUE|TOTAAL)\\s+([\\d ,]+\\.\\d{2})",
+  "due_date": "PAYABLE ON OR BEFORE\\s+(\\d{1,2}/\\d{1,2}/\\d{4})"
+ }
+}

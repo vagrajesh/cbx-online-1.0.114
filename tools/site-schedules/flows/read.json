@@ -1,0 +1,86 @@
+{
+  "title": "flow.read.title",
+  "enabled": true,
+  "trigger": {
+    "type": "row_changed",
+    "data": "quotes"
+  },
+  "run_as": "starter",
+  "start": "if1",
+  "steps": {
+    "s1": {
+      "type": "action",
+      "action": "swiftnet.read_pdfs",
+      "data": "quotes",
+      "row": "{{trigger.row.id}}",
+      "in": {
+        "quote": "quote",
+        "more": "more"
+      },
+      "out": {
+        "site_name": "site_name",
+        "company": "company",
+        "lease_type": "lease_type",
+        "start_date": "start_date",
+        "term_years": "term_years",
+        "term_months": "term_months",
+        "esc_year": "esc_year",
+        "col_id": "col_id",
+        "contract_no": "contract_no",
+        "soc_no": "soc_no",
+        "t100_ref": "t100_ref",
+        "t000_ref": "t000_ref",
+        "co_code": "co_code",
+        "lease_code": "lease_code",
+        "swiftnet_rep": "swiftnet_rep",
+        "couser_rep": "couser_rep",
+        "stac": "stac",
+        "pid": "pid",
+        "region": "region",
+        "lat": "lat",
+        "lon": "lon",
+        "struct_name": "struct_name",
+        "struct_cat": "struct_cat",
+        "site_owner": "site_owner",
+        "co_site_name": "co_site_name",
+        "bs_site_no": "bs_site_no",
+        "co_region": "co_region",
+        "mast_cat": "mast_cat",
+        "mast_hagl": "mast_hagl",
+        "inst_hagl": "inst_hagl",
+        "scope": "scope",
+        "equip_comments": "equip_comments",
+        "monthly": "monthly",
+        "charges": "charges",
+        "read_from": "read_from",
+        "checks": "checks",
+        "details": "details"
+      },
+      "next": "s2"
+    },
+    "s2": {
+      "type": "update_row",
+      "data": "quotes",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "status": "Read"
+      }
+    },
+    "if1": {
+      "type": "if",
+      "match": "all",
+      "when": [
+        {
+          "left": "{{trigger.row.quote}}",
+          "op": "not_empty"
+        },
+        {
+          "left": "{{trigger.row.status}}",
+          "op": "equals",
+          "value": "New"
+        }
+      ],
+      "yes": "s1"
+    }
+  }
+}

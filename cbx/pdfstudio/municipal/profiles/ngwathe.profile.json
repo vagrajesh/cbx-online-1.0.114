@@ -1,0 +1,584 @@
+{
+ "profile_id": "ngwathe",
+ "profile_name": "Ngwathe Local Municipality (Parys, Free State)",
+ "short_name": "Ngwathe",
+ "_doc": "NGWATHE LOCAL MUNICIPALITY / PLAASLIKE MUNISIPALITEIT, PO Box 359 | Parys | 9585, [address removed], Tel (056) 816 2700, Fax (056) 817 6343.  ONE profile covers BOTH of Edwin's Ngwathe accounts ([number removed] Loop Street exchange, metered; [number removed] MSAN elec-box line, unmetered flat basic charge) - every identifier is read out of the bill text, nothing is hard-coded.\n\nFINGERPRINT: the bill prints NO VAT registration number.  'Tax Registration No.' is printed as a bare label with an EMPTY value on all 12 labelled bills and is not printed at all on the 8 unlabelled ones; there is no BTW / Vat Reg / VAT No anywhere, on any line, split or otherwise.  Fingerprint is therefore the municipality's own billing e-mail '[address removed]' (20/20 bills, 2 folders, 0 other files out of 487 in the tree) plus 'PO Box 359 | Parys | 9585' as an any-marker.  Deliberately NOT used: TELKOM SA SOC / PRIVATE BAG X137 / CENTURION (the Telkom addressee block - 136 files across 17 folders carry that recipient), and the masthead word NGWATHE on its own (fine here, but the e-mail is stricter and survives the unlabelled shape).\n\nTWO LAYOUTS, same billing system:\n  Shape A - 'labelled' (12 bills, ~115 KB, 1 page, ALL CAPS).  Prints the masthead 'NGWATHE / LOCAL MUNICIPALITY / PLAASLIKE MUNISIPALITEIT' (the extractor interleaves the masthead words - write patterns against --raw, not against the picture), and prints field labels: Account Number, Deposit, Tax Invoice No., Month, Tax Registration No., Details, Street Address, Reference, and the column band 'Old Reading / New Reading / Consumption / Tariff / Number / Amount Incl. VAT', plus 'Total' and 'Payable before'.\n  Shape B - 'unlabelled' (8 bills: 4 at ~143 KB 1 page, 4 at ~490 KB 2 pages, Title Case).  Same ledger, but every label lives in the pre-printed background artwork, so the text layer carries VALUES ONLY: one header line 'reference  account  Mon YYYY  valuation' and a second line 'street  deposit  taxinvoiceno'.  Account number, month, invoice no, valuation, deposit, total and due date are therefore read positionally from those two lines (with the bottom EasyPay line '7 1008 <account> <check>' as the universal account-number fallback, present on 20/20).\n  The 4 x ~490 KB shape-B files are shape B page 1 (real text layer) plus a SCANNED page-2 debt-incentive-scheme flyer.  read_pdf flags the file ocr/scanned and force-flags the row OCR; that is correct but ZERO billed values come from OCR - PROVEN, not assumed: read_pdf(ocr='never') returns a page-1 text layer that is BYTE-IDENTICAL to read_pdf(ocr='auto') on all 4 files, extract() produces identical rows and identical field values under both, and running extract() on page 2 ALONE yields 0 rows and 47 N/A + 17 MISS diagnostics - no field can match anything on the OCR page.  So the per-field OCR error rate is 0 errors over 0 OCR-sourced fields; the OCR flag on those 4 rows is a truthful provenance warning about the attached flyer, not a data-quality problem.  All patterns are anchored on '^\\\\d{4}/\\\\d{2}/\\\\d{2}' ledger lines or on page-1 label/value lines, none of which exist in the OCR page.\n\nMONEY: period decimals, comma thousands ('90,426.36' style never actually appears - the bill prints '90426.36'), zero printed as '00.00', credits as a leading minus, quantity credits as a TRAILING minus ('240.000-').  No comma-decimal anywhere, so no 100x trap.\n\nTHE ONE REAL LIMITATION - the amount column is VAT-INCLUSIVE.  The ledger's only money column is headed 'Amount Incl. VAT'.  There is ONE aggregate 'VAT' line for the whole bill and NO per-line VAT split, and property rates are exempt, so the electricity share of the VAT is not separable.  Deriving ex-VAT needs a divide by 1.15, which the compute engine cannot express (no div op, no literal constants, and the bill prints no VAT rate).  Consequence, stated plainly: standard_r / other_r / total_ex_vat_r on Ngwathe electricity rows carry the bill's printed VAT-INCLUSIVE rands.  For the unmetered account the true ex-VAT figure IS printed (in the Tariff column, quantity 1.000) and is kept as ngw_basic_ex_r; for the metered account nothing ex-VAT is printed at all.  Do not 'fix' this by netting the whole-bill VAT off electricity - on handover months that VAT line is negative (-7816.44) and belongs to the whole account.\n\nELECTRICITY, account [number removed] (metered): one ledger line 'E<meter> 7 ELECTRICITY CONSUMPTION BUSINESS - PARYS  <old>  <new>  <consumption>  <amount incl>'.  Single band, no TOU, no demand, no NMD, no Actual/Estimate flag, no period dates, no printed R/kWh.  Single band is routed to STANDARD (Ekurhuleni / CoJ-flat convention).  The Jan-2026 bill carries TWO meters (E[number removed] + E[number removed]); kWh, readings and rands are collect:'sum' over both (readings sum, and new-old still equals total kWh to the milli-unit), meter numbers join_unique.\nELECTRICITY, account [number removed] (unmetered): no meter, no readings, no kWh - one flat line '7 BASIC ELECTRICITY BUSINESS - PARYS  1.000  <ex-VAT tariff>  <amount incl>' (R1351.92 ex to Jun-2026, R1500.63 from Jul-2026).  Blank kWh/meter/reading columns on that account are CORRECT, not a miss.  Its 'INTEREST ON ARREARS (BASIC_)ELECTRICITY' lines are interest (VAT-exempt) and are kept OUT of the electricity total, in ngw_elec_interest_r, and surface on the sundry row.\n\nSECTIONS: the ledger has NO service headings - it is one flat transaction list.  electricity is the only boundary-forming section (first ledger line containing ELECTRICITY, running to end of document); water / sewerage / refuse / rates / sundry are 'overlay': true with 'end': '\\\\Z' so none of them cuts another short, and every rule anchors on its own description text, which is unique per service.  All meta fields use document scope, so nothing depends on where 'header' happens to end.\n\nOTHER SERVICES on account [number removed]: WATER INTERIM (60.000 or 40.000 kL, with its own '60.00 @ 16.89 = 1013.40' ex-VAT basis line - split over TWO lines in shape B, handled by a patterns fallback), one WATER CONSUMPTION true-up (readings 8721.000 -> 8721.000, 00.00) with an INTERIM REVERSAL credit (-4661.64, quantity '240.000-'), IRRIGATION WATER (1784.000, always 00.00), BASIC WATER BUSINESS, SEWER BUSINESS, REFUSE REMOVAL BUSS/REST/CAFE/GOV, PROPERTY RATES-BUSINESS-PARYS with its VA-VALUE-EXCLUSION credit.  Refuse / sewer / basic water / basic electricity all print quantity x ex-VAT tariff, so their ex-VAT amount IS recoverable (tariff x 1.000) and is captured as *_ex_r.\n\nHANDOVER MACHINERY (both accounts, from Oct-2025): 'B<ref> HANDOVERS' credits move 90+ day debt to a hand-over account, 'R<ref> H/O REVERSAL - R<ref>' brings it back, and 'In <no> Interest Adjustment 2425 Be/El' lines re-post interest.  These are summed onto the sundry row (ngw_handover_r, ngw_ho_reversal_r, ngw_interest_adj_r) and are why the printed VAT line is negative on some months.  Some bills also print 'Hand Over Balance <amount>' with the hand-over account number.\n\nNEVER PRINTED (mapped _none): reading period dates, Actual/Estimate flag, peak/off-peak, demand kVA, NMD, cash/guarantee/security deposits, tariff name in any codified form (the ledger DESCRIPTION is used as Tariff Name), VAT registration number.\n\nVERIFIED (see /root/work/reports/ngwathe.md).  ACCOUNT NUMBER: read from the bill text on 20/20 - 'Account Number  <n>' on the 12 labelled bills, the positional header line on the 8 unlabelled ones, EasyPay '7 1008 <n> <check>' as a third fallback - and comes out [number removed] on exactly the 10 OneDrive_4 bills and [number removed] on exactly the 10 OneDrive_5 bills.  Cross-checked against the bottom EasyPay line and the '>>>>>> 9 1003 0001 0067 7413' / '...1400 8498' barcode on every bill.  540/540 fields exact against an independent second parser over all 20 bills.  IDENTITY A: printed Total - sum(every ledger Amount-Incl-VAT line) is in [0.00, 1.00) on all 20 (max 0.97) - the bill rounds a positive total UP to the next whole rand and prints a credit total exactly.  IDENTITY B: (New Reading - Old Reading) - Consumption = 0.000 exactly on all 10 metered bills, including the two-meter Jan-2026 bill.  IDENTITY C (cross-bill): my summed ledger for month N equals the NEXT bill's printed BALANCE B/FWD exactly - 0.00 on all 16 consecutive month-pairs present (9 on [number removed], 7 on [number removed]).  IDENTITY D (VAT-inclusivity proof): sum(vatable Incl-VAT lines) x 15/115 equals the printed VAT line within 1 cent on the 15 bills that carry no HANDOVERS / H-O REVERSAL line (exact on 10, 1c out on 5, from per-line rounding).  It breaks on the 5 hand-over months, because the moved debt contains VAT-exempt property rates - so the VAT line there is not 15/115 of the current month's charges.  This is the direct proof that the Amount column is VAT-INCLUSIVE.  DUPLICATE FILES: '[number removed] (5).pdf' and '[number removed] (6).pdf' are BYTE-IDENTICAL (same md5) copies of the Oct-2025 bill, so account [number removed] yields 10 rows for 9 distinct months.  Nov-2025 and Dec-2025 are missing for [number removed].  All 10 files on [number removed] are distinct months (Oct-2025..Jul-2026).  billing_date is ngw_levy_date, captured at DOCUMENT scope so every service row of a bill carries the same date (it was section:electricity, which gave the electricity row '2025/10/21' and the water/refuse/rates rows 'Oct 2025' on the same bill).  ngw_month keeps the printed Month label.",
+ "fingerprint": {
+  "all": [
+   "billing@ngwathe.co.za"
+  ],
+  "any": [
+   "PO Box 359 | Parys | 9585",
+   "NGWATHE"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^\\d{4}/\\d{2}/\\d{2}[ \\t][^\\n]*ELECTRICITY",
+   "require": "ELECTRICITY"
+  },
+  "water": {
+   "start": "^\\d{4}/\\d{2}/\\d{2}[ \\t][^\\n]*(?:WATER|IRRIGATION|INTERIM REVERSAL)",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "sewerage": {
+   "start": "^\\d{4}/\\d{2}/\\d{2}[ \\t][^\\n]*(?:SEWER|EFFLUENT)",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "refuse": {
+   "start": "^\\d{4}/\\d{2}/\\d{2}[ \\t][^\\n]*REFUSE",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "rates": {
+   "start": "^\\d{4}/\\d{2}/\\d{2}[ \\t][^\\n]*(?:PROPERTY RATES|VA-VALUE-EXCLUSION)",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "sundry": {
+   "start": "^\\d{4}/\\d{2}/\\d{2}[ \\t][^\\n]*(?:BALANCE B/FWD|RECEIPT|HANDOVER|H/O REVERSAL|INTEREST)",
+   "overlay": true,
+   "end": "\\Z"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "type": "text",
+   "required": true,
+   "patterns": [
+    "\\bAccount Number[ \\t]{2,}(\\d{6,})(?![\\d])",
+    "^[ \\t]*101\\d[\\dA-Za-z]{10,}[ \\t]{2,}(\\d{6,})[ \\t]{2,}[A-Za-z]{3}[ \\t]+\\d{4}\\b",
+    "^[ \\t]*7[ \\t]+1008[ \\t]+(\\d{6,})[ \\t]+\\d(?![\\d])"
+   ]
+  },
+  {
+   "field": "ngw_street",
+   "label": "Street Address",
+   "scope": "document",
+   "type": "text",
+   "patterns": [
+    "^[ \\t]*101\\d[\\dA-Za-z]{10,}[ \\t]{2,}([A-Za-z][A-Za-z0-9 .'/-]*[A-Za-z])[ \\t]*$",
+    "^[ \\t]{2,}([A-Za-z][A-Za-z0-9 .'/-]*[A-Za-z])[ \\t]{2,}[\\d,]*\\d\\.\\d{2}[ \\t]{2,}\\d{8}[ \\t]*$"
+   ]
+  },
+  {
+   "field": "ngw_addressee",
+   "label": "Addressee (Telkom site descriptor)",
+   "scope": "document",
+   "type": "text",
+   "pattern": "^[ \\t]*([A-Za-z][A-Za-z0-9 ()_/&.'-]*?)(?:[ \\t]{2,}[^\\n]*)?\\n[ \\t]*TELKOM SA SOC\\b"
+  },
+  {
+   "field": "ngw_month",
+   "label": "Billing Month",
+   "scope": "document",
+   "type": "text",
+   "required": true,
+   "patterns": [
+    "^[ \\t]*Month[ \\t]{2,}([A-Za-z]{3}[ \\t]+\\d{4})\\b",
+    "^[ \\t]*101\\d[\\dA-Za-z]{10,}[ \\t]{2,}\\d{6,}[ \\t]{2,}([A-Za-z]{3}[ \\t]+\\d{4})\\b"
+   ]
+  },
+  {
+   "field": "ngw_tax_invoice_no",
+   "label": "Tax Invoice No.",
+   "scope": "document",
+   "type": "text",
+   "required": true,
+   "patterns": [
+    "\\bTax Invoice No\\.[ \\t]{2,}(\\d{6,})(?![\\d])",
+    "^[ \\t]{2,}(?:[A-Za-z][^\\n]*?[ \\t]{2,})?[\\d,]*\\d\\.\\d{2}[ \\t]{2,}(\\d{8})(?![\\d])[ \\t]*$"
+   ]
+  },
+  {
+   "field": "ngw_deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "type": "money",
+   "patterns": [
+    "\\bDeposit[ \\t]{2,}([\\d,]*\\d\\.\\d{2})(?![\\d])",
+    "^[ \\t]{2,}(?:[A-Za-z][^\\n]*?[ \\t]{2,})?([\\d,]*\\d\\.\\d{2})[ \\t]{2,}\\d{8}(?![\\d])[ \\t]*$"
+   ]
+  },
+  {
+   "field": "ngw_valuation",
+   "label": "Valuation",
+   "scope": "document",
+   "type": "number",
+   "patterns": [
+    "\\bDeposit[ \\t]{2,}[\\d,]*\\d\\.\\d{2}[ \\t]{2,}(\\d+)(?![\\d])",
+    "^[ \\t]*101\\d[\\dA-Za-z]{10,}[ \\t]{2,}\\d{6,}[ \\t]{2,}[A-Za-z]{3}[ \\t]+\\d{4}[ \\t]{2,}(\\d+)(?![\\d])[ \\t]*$"
+   ]
+  },
+  {
+   "field": "due_date",
+   "label": "Payable Before",
+   "scope": "document",
+   "type": "date",
+   "required": true,
+   "patterns": [
+    "Payable before[ \\t]+(20\\d{6})(?![\\d])",
+    "^[^\\n]*?[ \\t]{2,}(20\\d{6})(?![\\d])[ \\t]*$"
+   ]
+  },
+  {
+   "field": "ngw_vat_total_r",
+   "label": "VAT (whole bill)",
+   "scope": "document",
+   "type": "money",
+   "required": true,
+   "pattern": "^[ \\t]*VAT[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_total_due_r",
+   "label": "Total Due",
+   "scope": "document",
+   "type": "money",
+   "required": true,
+   "patterns": [
+    "\\bTotal[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$",
+    ">>>>>>[^\\n]*\\n(?:[ \\t]*\\n)?[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+   ]
+  },
+  {
+   "fields": [
+    "ngw_age_current_r",
+    "ngw_age_30_r",
+    "ngw_age_60_r",
+    "ngw_age_90_r",
+    "ngw_age_120_r"
+   ],
+   "label": "Ageing row",
+   "scope": "document",
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "pattern": "^[ \\t]*Current[ \\t]{2,}30 Days[^\\n]*\\n[ \\t]*(-?[\\d,]*\\d\\.\\d{2})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])"
+  },
+  {
+   "field": "ngw_elec_meter",
+   "label": "Electricity meter no",
+   "scope": "section:electricity",
+   "type": "text",
+   "collect": "join_unique",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+(E\\d+)[ \\t]+\\d[ \\t]*ELECTRICITY[ \\t]+CONSUMPTION"
+  },
+  {
+   "fields": [
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "total_kwh",
+    "ngw_elec_incl_r"
+   ],
+   "label": "Electricity consumption line (old / new / kWh / amount incl VAT)",
+   "scope": "section:electricity",
+   "types": [
+    "number",
+    "number",
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+E\\d+[ \\t]+\\d[ \\t]*ELECTRICITY[ \\t]+CONSUMPTION[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{3})[ \\t]{2,}(\\d[\\d,]*\\.\\d{3})[ \\t]{2,}(\\d[\\d,]*\\.\\d{3})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_elec_cons_desc",
+   "label": "Electricity consumption description",
+   "scope": "section:electricity",
+   "type": "text",
+   "collect": "join_unique",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+E\\d+[ \\t]+\\d[ \\t]*(ELECTRICITY[ \\t]+CONSUMPTION(?:[A-Za-z ,._/-]*[A-Za-z])?)[ \\t]{2,}"
+  },
+  {
+   "field": "ngw_basic_desc",
+   "label": "Basic electricity description",
+   "scope": "section:electricity",
+   "type": "text",
+   "collect": "join_unique",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d[ \\t]*(BASIC[ \\t]+ELECTRICITY(?:[A-Za-z ,._/-]*[A-Za-z])?)[ \\t]{2,}"
+  },
+  {
+   "fields": [
+    "ngw_basic_qty",
+    "ngw_basic_ex_r",
+    "ngw_basic_incl_r"
+   ],
+   "label": "Basic electricity line (qty / ex-VAT tariff / amount incl VAT)",
+   "scope": "section:electricity",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d[ \\t]*BASIC[ \\t]+ELECTRICITY[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{3})[ \\t]{2,}([\\d,]*\\d\\.\\d{4})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_elec_interest_r",
+   "label": "Interest on arrears - electricity (VAT exempt, excluded from the electricity total)",
+   "scope": "section:electricity",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d[ \\t]*INTEREST ON ARREARS[^\\n]*ELECTRICITY[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_levy_date",
+   "label": "Levy date (the date every charge line on the bill is levied)",
+   "scope": "document",
+   "type": "date",
+   "patterns": [
+    "^(\\d{4}/\\d{2}/\\d{2})[ \\t]+E\\d+[ \\t]+\\d[ \\t]*ELECTRICITY[ \\t]+CONSUMPTION",
+    "^(\\d{4}/\\d{2}/\\d{2})[ \\t]+\\d[ \\t]*BASIC[ \\t]+ELECTRICITY"
+   ]
+  },
+  {
+   "field": "ngw_water_meter",
+   "label": "Water meter no",
+   "scope": "section:water",
+   "type": "text",
+   "collect": "join_unique",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+(W\\d+)[ \\t]+"
+  },
+  {
+   "fields": [
+    "ngw_water_interim_kl",
+    "ngw_water_interim_r"
+   ],
+   "label": "Water interim (kL / amount incl VAT)",
+   "scope": "section:water",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+W\\d+[ \\t]+\\d?[ \\t]*WATER[ \\t]+INTERIM[ \\t]{2,}(\\d[\\d,]*\\.\\d{3})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ngw_water_basis_kl",
+    "ngw_water_rate",
+    "ngw_water_interim_ex_r"
+   ],
+   "label": "Water interim basis line (kL @ rate = ex-VAT amount)",
+   "scope": "section:water",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "patterns": [
+    "^[ \\t]+([\\d,]*\\d\\.\\d{2})[ \\t]*@[ \\t]*([\\d,]*\\d\\.\\d{2})[ \\t]*=[ \\t]{1,}([\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$",
+    "^[ \\t]+([\\d,]*\\d\\.\\d{2})[ \\t]*@[ \\t]*([\\d,]*\\d\\.\\d{2})[ \\t]*=[ \\t]*\\n[ \\t]+([\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+   ]
+  },
+  {
+   "fields": [
+    "ngw_water_start_reading",
+    "ngw_water_end_reading",
+    "ngw_water_cons_r"
+   ],
+   "label": "Water consumption line (old / new / amount incl VAT)",
+   "scope": "section:water",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+W\\d+[ \\t]+\\d?[ \\t]*WATER[ \\t]+CONSUMPTION[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{3})[ \\t]{2,}(\\d[\\d,]*\\.\\d{3})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ngw_water_reversal_kl",
+    "ngw_water_reversal_r"
+   ],
+   "label": "Water interim reversal (kL / amount)",
+   "scope": "section:water",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+W\\d+[ \\t]+\\d?[ \\t]*INTERIM[ \\t]+REVERSAL[ \\t]{2,}(\\d[\\d,]*\\.\\d{3}-?)[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ngw_basic_water_qty",
+    "ngw_basic_water_ex_r",
+    "ngw_basic_water_incl_r"
+   ],
+   "label": "Basic water (qty / ex-VAT tariff / amount incl VAT)",
+   "scope": "section:water",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d?[ \\t]*BASIC[ \\t]+WATER[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{3})[ \\t]{2,}([\\d,]*\\d\\.\\d{4})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ngw_irrigation_kl",
+    "ngw_irrigation_r"
+   ],
+   "label": "Irrigation water (qty / amount incl VAT)",
+   "scope": "section:water",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d?[ \\t]*IRRIGATION[ \\t]+WATER[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{3})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_water_desc",
+   "label": "Water description(s)",
+   "scope": "section:water",
+   "type": "text",
+   "collect": "join_unique",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+(?:W\\d+[ \\t]+)?\\d?[ \\t]*((?:BASIC[ \\t]+WATER|IRRIGATION[ \\t]+WATER|WATER[ \\t]+INTERIM|WATER[ \\t]+CONSUMPTION|INTERIM[ \\t]+REVERSAL)(?:[A-Za-z ,._/-]*[A-Za-z])?)[ \\t]{2,}"
+  },
+  {
+   "fields": [
+    "ngw_sewer_qty",
+    "ngw_sewer_ex_r",
+    "ngw_sewer_incl_r"
+   ],
+   "label": "Sewer (qty / ex-VAT tariff / amount incl VAT)",
+   "scope": "section:sewerage",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d?[ \\t]*SEWER[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{3})[ \\t]{2,}([\\d,]*\\d\\.\\d{4})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_sewer_desc",
+   "label": "Sewer description",
+   "scope": "section:sewerage",
+   "type": "text",
+   "collect": "join_unique",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d?[ \\t]*(SEWER(?:[A-Za-z ,._/-]*[A-Za-z])?)[ \\t]{2,}"
+  },
+  {
+   "fields": [
+    "ngw_refuse_qty",
+    "ngw_refuse_ex_r",
+    "ngw_refuse_incl_r"
+   ],
+   "label": "Refuse (qty / ex-VAT tariff / amount incl VAT)",
+   "scope": "section:refuse",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d?[ \\t]*REFUSE[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{3})[ \\t]{2,}([\\d,]*\\d\\.\\d{4})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_refuse_desc",
+   "label": "Refuse description",
+   "scope": "section:refuse",
+   "type": "text",
+   "collect": "join_unique",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d?[ \\t]*(REFUSE(?:[A-Za-z ,._/-]*[A-Za-z])?)[ \\t]{2,}"
+  },
+  {
+   "fields": [
+    "ngw_rates_factor",
+    "ngw_rates_r"
+   ],
+   "label": "Property rates (cent-in-the-rand / amount)",
+   "scope": "section:rates",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+PROPERTY[ \\t]+RATES[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{7})[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_rates_exclusion_r",
+   "label": "VA-Value-Exclusion credit",
+   "scope": "section:rates",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+VA-VALUE-EXCLUSION[^\\n]*?[ \\t]{2,}\\d[\\d,]*\\.\\d{7}[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_rates_desc",
+   "label": "Rates description",
+   "scope": "section:rates",
+   "type": "text",
+   "collect": "join_unique",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+(PROPERTY[ \\t]+RATES(?:[A-Za-z ,._/-]*[A-Za-z])?)[ \\t]{2,}"
+  },
+  {
+   "field": "ngw_prev_balance_r",
+   "label": "Balance brought forward",
+   "scope": "section:sundry",
+   "type": "money",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+BALANCE B/FWD[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_receipt_r",
+   "label": "Receipts",
+   "scope": "section:sundry",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d{6,}[ \\t]+\\d+[ \\t]*RECEIPT[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_handover_r",
+   "label": "Handovers (debt moved to hand-over account)",
+   "scope": "section:sundry",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+B\\d+[ \\t]+HANDOVERS[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_ho_reversal_r",
+   "label": "Hand-over reversals",
+   "scope": "section:sundry",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+R\\d+[ \\t]+H/O REVERSAL[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_interest_adj_r",
+   "label": "Interest adjustments",
+   "scope": "section:sundry",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+In[ \\t]+\\d+[ \\t]+INTEREST ADJUSTMENT[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "ngw_interest_arrears_r",
+   "label": "Interest on arrears (all services)",
+   "scope": "section:sundry",
+   "type": "money",
+   "collect": "sum",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d[ \\t]*INTEREST ON ARREARS[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ngw_handover_acct",
+    "ngw_handover_balance_r"
+   ],
+   "label": "Hand Over Balance",
+   "scope": "document",
+   "types": [
+    "text",
+    "money"
+   ],
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]{2,}Hand Over Balance[ \\t]+(-?[\\d,]*\\d\\.\\d{2})(?![\\d])[ \\t]*$"
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "prefer",
+   "of": [
+    "ngw_street",
+    "ngw_addressee"
+   ]
+  },
+  {
+   "field": "billing_date",
+   "op": "prefer",
+   "of": [
+    "ngw_levy_date",
+    "ngw_month"
+   ]
+  },
+  {
+   "field": "ngw_reading_diff_kwh",
+   "op": "diff",
+   "of": [
+    "end_reading_kwh",
+    "start_reading_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "ngw_elec_total_incl_r",
+   "op": "sum",
+   "of": [
+    "ngw_elec_incl_r",
+    "ngw_basic_incl_r"
+   ]
+  },
+  {
+   "field": "ngw_water_total_incl_r",
+   "op": "sum",
+   "of": [
+    "ngw_water_interim_r",
+    "ngw_water_cons_r",
+    "ngw_water_reversal_r",
+    "ngw_basic_water_incl_r",
+    "ngw_irrigation_r"
+   ]
+  },
+  {
+   "field": "ngw_rates_net_r",
+   "op": "sum",
+   "of": [
+    "ngw_rates_r",
+    "ngw_rates_exclusion_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": [
+   "ngw_elec_cons_desc",
+   "ngw_basic_desc"
+  ],
+  "account_number": "account_number",
+  "meter": "ngw_elec_meter",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "ngw_elec_incl_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "ngw_basic_incl_r",
+  "total_ex_vat_r": "ngw_elec_total_incl_r",
+  "deposit_r": "ngw_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?i)^\\d{4}/\\d{2}/\\d{2}[ \\t]+BALANCE B/FWD[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})[ \\t]*$",
+  "incoming_payment": "(?i)^\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d{6,}[ \\t]+\\d+[ \\t]*RECEIPT[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})[ \\t]*$",
+  "vat": "(?i)^[ \\t]*VAT[ \\t]{2,}(-?[\\d,]*\\d\\.\\d{2})[ \\t]*$",
+  "total_due": "(?i)>>>>>>[ \\t]*9[ \\t\\d]+?(?:[ \\t]{2,}|[ \\t]*\\n[ \\t\\n]*)(-?[\\d,]*\\d\\.\\d{2})[ \\t]*$",
+  "deposito": "(?i)\\bDeposit[ \\t]{2,}([\\d,]*\\d\\.\\d{2})"
+ }
+}

@@ -1,0 +1,323 @@
+{
+ "profile_id": "lekwa_teemane",
+ "profile_name": "Lekwa-Teemane Local Municipality (Christiana / Bloemhof)",
+ "short_name": "Lekwa-Teemane",
+ "_doc": "Two layouts. 2026 bills (6): the same trilingual 'TAX INVOICE / BELASTINGFAKTUUR' ledger as Kgatelopele (period decimals) with meter detail rows; they print Kgatelopele's VAT number in the masthead. 2025 bills (4): an older 'STATEMENT / TAX INVOICE' (Vat / Levy Amount / Credit / Balance, M/D/Y or Y/M/D dates, own VAT number, no meter rows, readings wrapped away). Fingerprint: 'Lekwa-Teemane Local Municipality' + either VAT number. Electricity: Electricity Consumption - KWH (kWh from the description, readings from the detail row of the non-zero register -> standard), Basic Elec and Network Access Charge (-> other); interest and 'Payment - Electricity ...' lines are excluded. Ex VAT = Levy/Debit - VAT per line. IDENTITY x_elec_resid_r = Amount Due - Balance Brought Forward + payments - non-electricity debits - (VAT Total - non-electricity VAT): 0.00 gap on all 10 bills; the 2025 layout prints no VAT Total, so there the VAT part uses the summed line VATs (balance part still independent). 10 bills checked; kWh is the same estimated/averaged figure on most months, as printed.",
+ "fingerprint": {
+  "all": [
+   "Lekwa-Teemane Local Municipality"
+  ],
+  "any": [
+   "4570111379",
+   "4700111893"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Date[ \\t]+Description[ \\t]",
+   "require": "Electricity Consumption - KWH|Basic Elec|Network Access Charge -"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Reference (= account number)",
+   "scope": "document",
+   "pattern": "Ref(?:erence)?[ \\t]*:[ \\t]+(\\d{3,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "type": "date",
+   "required": true,
+   "patterns": [
+    "Statement Date/Staat Datum[^\\n]*\\n(?:[^\\n]*\\n)?[ \\t]*(\\d{1,2} [A-Za-z]+ \\d{4})[ \\t]*$",
+    "Statement Date:[ \\t]+(\\d{1,2}-[A-Za-z]+-\\d{4})"
+   ]
+  },
+  {
+   "field": "invoice_number",
+   "label": "Invoice No",
+   "scope": "document",
+   "pattern": "Invoice No:[ \\t]*(INV[ \\t]*\\d+(?:[ \\t]+\\d+)?)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "site_name",
+   "label": "Site (street / erf)",
+   "scope": "document",
+   "type": "text",
+   "required": false,
+   "patterns": [
+    "Street No/ Straat Nr/ Leina[^\\n]*\\n[ \\t]*(?:\\S+[ \\t]{2,})?(\\S[^\\n]*?)[ \\t]*$",
+    "Street Name:[ \\t]+(\\S[^\\n]*?)[ \\t]{2,}"
+   ]
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "type": "money",
+   "required": false,
+   "patterns": [
+    "Deposit/ Deposito/ Peeletso[ \\t]+R[ \\t]*((?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2}))",
+    "Deposit/ Deposito/ Peeletso[ \\t]+(\\d+)[ \\t]{2,}",
+    "^[ \\t]*DEPOSIT:[ \\t]+(\\d[\\d ,]*(?:\\.\\d{1,2})?)[ \\t]*$"
+   ]
+  },
+  {
+   "field": "meter",
+   "label": "Meter number(s) (detail rows)",
+   "scope": "document",
+   "pattern": "(?:Actual|Estimated?|Interim|Average)[ \\t]+(?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2})[ \\t]*\\n[ \\t]*(\\w+)[ \\t]",
+   "type": "text",
+   "required": false,
+   "collect": "join_unique"
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Detail row Date From / Date To",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{2}-\\d{2}-\\d{4})[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]",
+   "required": false
+  },
+  {
+   "field": "reading_type",
+   "label": "Reading type(s)",
+   "scope": "document",
+   "pattern": "\\][ \\t]+(Actual|Estimated?|Interim|Average)[ \\t]+(?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false,
+   "collect": "join_unique"
+  },
+  {
+   "field": "total_kwh",
+   "label": "kWh (ledger description)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}/\\d{2}/\\d{2})[ \\t]+Electricity Consumption - KWH (\\d+)KW",
+   "type": "number",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "start_reading_kwh",
+    "end_reading_kwh"
+   ],
+   "types": [
+    "number",
+    "number"
+   ],
+   "label": "Readings [old to new] (detail row)",
+   "scope": "section:electricity",
+   "pattern": "\\b[1-9]\\d*KW - \\[(\\d+) to[ \\t]+(\\d+)\\]",
+   "required": false
+  },
+  {
+   "fields": [
+    "lt_energy_vat_r",
+    "lt_energy_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Electricity Consumption - KWH",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}/\\d{2}/\\d{2})[ \\t]+Electricity Consumption - KWH[^\\n]*?[ \\t]{2,}((?:\\d{1,3}(?:[ ,]\\d{3})+(?:[.,]\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?|[.,]\\d{2}))[ \\t]{2,}((?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2}))[ \\t]{2,}-?(?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2})-?[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "lt_basic_vat_r",
+    "lt_basic_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Basic Elec",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}/\\d{2}/\\d{2})[ \\t]+Basic Elec[^\\n]*?[ \\t]{2,}((?:\\d{1,3}(?:[ ,]\\d{3})+(?:[.,]\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?|[.,]\\d{2}))[ \\t]{2,}((?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2}))[ \\t]{2,}-?(?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2})-?[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "lt_nac_vat_r",
+    "lt_nac_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Network Access Charge",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}/\\d{2}/\\d{2})[ \\t]+Network Access Charge[^\\n]*?[ \\t]{2,}((?:\\d{1,3}(?:[ ,]\\d{3})+(?:[.,]\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?|[.,]\\d{2}))[ \\t]{2,}((?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2}))[ \\t]{2,}-?(?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2})-?[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "x_nonelec_vat_r",
+    "x_nonelec_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Non-electricity charge lines (VAT, incl)",
+   "scope": "document",
+   "pattern": "^[ \\t]*(?:\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}/\\d{2}/\\d{2})[ \\t]+(?![ \\t]|(?:Payment|TELKOMSA|Receipt|Direct Deposit|EFT)\\b|Balance Brought)(?!(?![^\\n]*Interest)[^\\n]*(?:Elec|Elc\\b|Network Access))[^\\n]*?[ \\t]{2,}((?:\\d{1,3}(?:[ ,]\\d{3})+(?:[.,]\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?|[.,]\\d{2}))[ \\t]{2,}((?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2}))[ \\t]{2,}-?(?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2})-?[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "field": "x_payments_r",
+   "label": "Payments (credit column)",
+   "scope": "document",
+   "pattern": "^[ \\t]*(?:\\d{1,2}/\\d{1,2}/\\d{4}|\\d{4}/\\d{2}/\\d{2})[ \\t]+(?:Payment|TELKOMSA|Receipt|Direct Deposit|EFT)\\b[^\\n]*?[ \\t]{2,}(?:\\d{1,3}(?:[ ,]\\d{3})+(?:[.,]\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?|[.,]\\d{2})[ \\t]{2,}((?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2}))[ \\t]{2,}-?(?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2})-?[ \\t]*$",
+   "type": "money",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "field": "x_bbf_r",
+   "label": "Balance Brought Forward",
+   "scope": "document",
+   "pattern": "Balance Brought Forward[ \\t]+(?:(?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2})[ \\t]+)?(-?(?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2})-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_amount_due_r",
+   "label": "Amount Due",
+   "scope": "document",
+   "pattern": "Amount Due(?:/Verskuldig/)?[ \\t]+R[ \\t]*(-?(?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2})-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_vat_total_r",
+   "label": "VAT Total (whole bill)",
+   "scope": "document",
+   "pattern": "VAT Total[ \\t]+R[ \\t]*(-?(?:\\d{1,3}(?:[ ,]\\d{3})*[.,]\\d{2}|\\d+[.,]\\d{2}|[.,]\\d{2}))",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "standard_r",
+   "op": "sub",
+   "of": [
+    "lt_energy_inc_r",
+    "lt_energy_vat_r"
+   ]
+  },
+  {
+   "field": "lt_basic_r",
+   "op": "sub",
+   "of": [
+    "lt_basic_inc_r",
+    "lt_basic_vat_r"
+   ]
+  },
+  {
+   "field": "lt_nac_r",
+   "op": "sub",
+   "of": [
+    "lt_nac_inc_r",
+    "lt_nac_vat_r"
+   ]
+  },
+  {
+   "field": "other_r",
+   "op": "sum",
+   "of": [
+    "lt_basic_r",
+    "lt_nac_r"
+   ]
+  },
+  {
+   "field": "lt_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "standard_r",
+    "other_r"
+   ]
+  },
+  {
+   "field": "x_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "lt_energy_vat_r",
+    "lt_basic_vat_r",
+    "lt_nac_vat_r"
+   ]
+  },
+  {
+   "field": "x_all_vat_r",
+   "op": "sum",
+   "of": [
+    "x_nonelec_vat_r",
+    "x_elec_vat_r"
+   ]
+  },
+  {
+   "field": "x_vat_used_r",
+   "op": "prefer",
+   "of": [
+    "x_vat_total_r",
+    "x_all_vat_r"
+   ]
+  },
+  {
+   "field": "x_resid_a_r",
+   "op": "sub",
+   "of": [
+    "x_amount_due_r",
+    "x_bbf_r",
+    "x_nonelec_inc_r",
+    "x_vat_used_r"
+   ]
+  },
+  {
+   "field": "x_elec_resid_r",
+   "op": "sum",
+   "of": [
+    "x_resid_a_r",
+    "x_payments_r",
+    "x_nonelec_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "standard_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "tariff_name": "_none",
+  "nmd_kva": "_none",
+  "nmd_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "total_ex_vat_r": "lt_elec_ex_r",
+  "demand_kva": "_none",
+  "demand_r": "_none"
+ }
+}

@@ -1,0 +1,248 @@
+{
+ "profile_id": "kai_garib",
+ "profile_name": "Kai !Garib Local Municipality (Kakamas, Northern Cape)",
+ "short_name": "Kai Garib",
+ "_doc": "Kai !Garib LM (Kakamas). Statement print shared with Kopanong: ledger 'Belastingfaktuur / Tax invoice | Datum | Beskrywing | Heffing | BTW | Bedrag' (Afrikaans or English per bill), a 'Meterlesings / Meter readings' table (type, previous date + reading, current date + reading, consumption; the meter number sits on the 'Mtr:' line above its row) and a property box. Only 2 bills (2020, two sites). total_ex_vat_r = sum of the Charge column of the Elektrisiteit / Electricity ledger lines; no basic/energy split is printed, so it is all mapped to standard_r (single-band). Readings, kWh and period from the E row; site = Ligging/Location + Uitbreiding/Extension; deposit printed as a credit and stored as the held amount. Water, vacuum tank (sewer), refuse and rates rows from their lines. Fingerprint: own VAT number (masthead) + name/e-mail domain. IDENTITY kg_identity_r = printed Totals charge column - every non-electricity charge line: 0.00 on 2/2 (a ledger-completeness check; the electricity split itself is by label), 0 checks.",
+ "fingerprint": {
+  "all": [
+   "4170193371"
+  ],
+  "any": [
+   "KAI GARIB MUNICIPALITY",
+   "KAI GARIB MUNISIPALITEIT",
+   "kaigarib.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*(?:Belastingfaktuur|Tax invoice)\\b",
+   "overlay": true,
+   "end": "\\Z",
+   "require": "^[^\\n]*?(?<![\\d/])(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+(?:Elektrisiteit|Electricity)[^\\n]*?[ \\t]{2,}(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$"
+  },
+  "water": {
+   "start": "^[ \\t]*(?:Belastingfaktuur|Tax invoice)\\b",
+   "overlay": true,
+   "end": "\\Z",
+   "require": "^[^\\n]*?(?<![\\d/])(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+Water[^\\n]*?[ \\t]{2,}(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*(?:Belastingfaktuur|Tax invoice)\\b",
+   "overlay": true,
+   "end": "\\Z",
+   "require": "^[^\\n]*?(?<![\\d/])(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+(?:Suigtenk|Vacuum tank)[^\\n]*?[ \\t]{2,}(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$"
+  },
+  "refuse": {
+   "start": "^[ \\t]*(?:Belastingfaktuur|Tax invoice)\\b",
+   "overlay": true,
+   "end": "\\Z",
+   "require": "^[^\\n]*?(?<![\\d/])(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+(?:Monthly refuse|Vullis)[^\\n]*?[ \\t]{2,}(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$"
+  },
+  "rates": {
+   "start": "^[ \\t]*(?:Belastingfaktuur|Tax invoice)\\b",
+   "overlay": true,
+   "end": "\\Z",
+   "require": "^[^\\n]*?(?<![\\d/])(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+(?:Monthly Rates|Eiendomsbelasting)[^\\n]*?[ \\t]{2,}(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "patterns": [
+    "(?:Rekeningnommer|Account number)[ \\t]*\\n(?:[ \\t]*\\n)?[ \\t]*(\\d{6}/\\d{6}|\\d{9,})(?![\\d/])"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice date (lone date under Faktuurdatum / Invoice date)",
+   "scope": "document",
+   "pattern": "^[ \\t]*((?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4}))[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "kg_location",
+   "label": "Location",
+   "scope": "document",
+   "pattern": "(?:Ligging|Location)[ \\t]+(\\S[^\\n]*?)(?:[ \\t]{2,}|[ \\t]*$)",
+   "type": "text"
+  },
+  {
+   "field": "kg_town",
+   "label": "Extension / town",
+   "scope": "document",
+   "pattern": "(?:Uitbreiding|Extension)[ \\t]+(\\S[^\\n]*?)(?:[ \\t]{2,}|[ \\t]*$)",
+   "type": "text"
+  },
+  {
+   "field": "kg_erf",
+   "label": "Erf / stand",
+   "scope": "document",
+   "pattern": "^[^\\n]*?(?:Erf|Stand)[ \\t]+(\\d{6,})[ \\t]*",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit held",
+   "scope": "document",
+   "patterns": [
+    "Deposit(?:o)?[ \\t]+-?(\\d[\\d,]*\\.\\d{2})",
+    "Deposito /[ \\t]*\\n[ \\t]*R[ \\t]*(\\d[\\d ,]*\\.\\d{2})"
+   ],
+   "type": "money"
+  },
+  {
+   "field": "kg_charges_ex_r",
+   "label": "All current charge lines, charge column",
+   "scope": "document",
+   "pattern": "^[^\\n]*?(?<![\\d/])(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+(?!Saldo|Bal(?:ance)? brought|Betaling|Payment|Receipts?\\b|Opening Balance|Sub Totals|Total)[A-Za-z][^\\n]*?[ \\t]{2,}(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(?:\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]+)?\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "kg_elec_ex_r",
+    "kg_elec_vat_r"
+   ],
+   "label": "Electricity ledger lines (charge, VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[^\\n]*?(?<![\\d/])(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+(?:Elektrisiteit|Electricity)[^\\n]*?[ \\t]{2,}(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "read_start",
+    "start_reading_kwh",
+    "read_end",
+    "end_reading_kwh",
+    "total_kwh"
+   ],
+   "label": "Electricity meter row",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*E(?:[ \\t]*/[ \\t]*E)?\\d{3}[ \\t]+((?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4}))[ \\t]+(\\d[\\d,]*(?:\\.\\d+)?)[ \\t]+((?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4}))[ \\t]+(\\d[\\d,]*(?:\\.\\d+)?)[ \\t]+(\\d[\\d,]*(?:\\.\\d+)?)(?:[ \\t]|$)",
+   "types": [
+    "date",
+    "number",
+    "date",
+    "number",
+    "number"
+   ]
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meter number (line above the E row)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Mtr:[ \\t]+(\\d+)[^\\n]*\\n[ \\t]*E(?:[ \\t]*/[ \\t]*E)?\\d{3}[ \\t]+(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "kg_totals_ex_r",
+    "kg_totals_vat_r"
+   ],
+   "label": "Totals row (charge, VAT)",
+   "scope": "document",
+   "pattern": "^[^\\n]*(?:Totaal|Totals)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "field": "kg_water_r",
+   "label": "Water",
+   "scope": "section:water",
+   "pattern": "^[^\\n]*?(?<![\\d/])(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+Water[^\\n]*?[ \\t]{2,}(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "field": "kg_sewer_r",
+   "label": "Vacuum tank (sewer)",
+   "scope": "section:sewerage",
+   "pattern": "^[^\\n]*?(?<![\\d/])(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+(?:Suigtenk|Vacuum tank)[^\\n]*?[ \\t]{2,}(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "field": "kg_refuse_r",
+   "label": "Refuse",
+   "scope": "section:refuse",
+   "pattern": "^[^\\n]*?(?<![\\d/])(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+(?:Monthly refuse|Vullis)[^\\n]*?[ \\t]{2,}(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "field": "kg_rates_r",
+   "label": "Rates",
+   "scope": "section:rates",
+   "pattern": "^[^\\n]*?(?<![\\d/])(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+(?:Monthly Rates|Eiendomsbelasting)[^\\n]*?[ \\t]{2,}(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+(\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?)[ \\t]+\\(?-?(?:R[ \\t]?)?-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}\\)?[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  }
+ ],
+ "computes": [
+  {
+   "field": "kg_site",
+   "op": "concat",
+   "of": [
+    "kg_location",
+    "kg_town"
+   ]
+  },
+  {
+   "field": "kg_nonelec_ex_r",
+   "op": "sub",
+   "of": [
+    "kg_charges_ex_r",
+    "kg_elec_ex_r"
+   ]
+  },
+  {
+   "field": "kg_identity_r",
+   "op": "sub",
+   "of": [
+    "kg_totals_ex_r",
+    "kg_nonelec_ex_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "kg_site",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "kg_elec_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "_none",
+  "total_ex_vat_r": "kg_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

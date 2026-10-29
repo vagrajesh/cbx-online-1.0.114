@@ -1,0 +1,535 @@
+{
+ "profile_id": "edumbe",
+ "profile_name": "eDumbe Local Municipality (Paulpietersburg, KZN)",
+ "short_name": "eDumbe",
+ "_doc": "eDumbe Local Municipality (Paulpietersburg, KZN 261) - Telkom account [number removed],\nERF 247 Paulpietersburg, VACANT LAND, single commercial electricity meter\nE714839.  Municipal VAT reg 4780102754.\n\nFINGERPRINT.  \"all\": the municipal VAT registration number 4780102754.\n\"any\": the two mastheads AS PRINTED plus the e-mail domain.  The bill\nmisspells its own name on one of its two templates - \"eDumbe Local\nMuniciaplity\" - so BOTH spellings are listed verbatim and neither is\n\"corrected\".  Nothing from the addressee block (TELKOM S A / PRIVATE BAG\nX137 / CENTURION / Telkom VAT 4680101146) is used, and no CBRE/Excellerate\naddress - that is the bug that made mangaung steal Dihlabeng + Breede Valley.\n\nTWO TEMPLATES (grouped by SHAPE, not by filename - the filename groups cut\nacross the shapes):\n\n  Shape A - \"TAX INVOICE /STATEMENT\", masthead \"eDumbe Local Municipality\"\n    (spelled correctly), \"VAT No.  4780102754\", labels WITH colons\n    (\"Month:\", \"Statement Date:\", \"Due Date:\"), ledger header ends\n    \"... Credit       Balance\", and it additionally prints Land Area,\n    Deposit and Street No.  4 bills: Sep 2025, Oct 2025, Dec 2025, Jan 2026.\n\n  Shape B - masthead \"eDumbe Local Municiaplity\" (SIC) + \"VAT Reg No.  :\n    4780102754\" + \"Website  https://edumbe.gov.za/\", labels WITHOUT colons,\n    ledger header ends \"... Debit          Credit\" (no Balance header), no\n    Land Area / Deposit / Street No.  6 bills: Jul 2025, Aug 2025, Feb 2026,\n    May 2026, Jun 2026, Jul 2026.\n\nEverything else is common: comma-decimal / space-thousand money, the ledger\ncolumns Date / Description / VAT / Debit / Credit, and a per-consumption\nmeter table whose \"Exclusive\" column prints the genuine ex-VAT amount.\n\nMONEY IS VAT-INCLUSIVE.  The Debit column includes VAT and the VAT is\nprinted in its own column; ex-VAT is therefore derived per line with 'sub'\ncomputes and cross-checked against the printed \"Exclusive\" column.\n\nCOMMA DECIMALS.  Money prints \"1 810,49\".  _to_decimal() strips spaces AND\ncommas, so a full capture would arrive 100x too big.  Following the\nDitsobotla convention every money pattern captures the RAND PART ONLY, so\neach figure reads up to R0.99 low, and the exact printed string is kept\nalongside in edu_*_txt natives.  The two-line engine fix is in\nreports/ditsobotla.md sec 2.\n\nSECTIONS.  Both templates repeat the whole masthead on continuation pages\nand print the \"Electricity\" group heading TWICE (once above the basic\ncharge, once above the consumption charge), so ordinary boundaries would\nchop the electricity span.  Electricity is therefore the ONLY\nboundary-forming section (first \"Electricity\" -> end of document) and\nProperty Rates / Refuse are overlays with \"end\": \"\\\\Z\".  Every rule anchors\non its own description text, which is unique per service, so nothing leaks.\n\nPAYMENT/REVERSAL LINES.  The ledger also carries \"Payment for Services\",\n\"Payment - Electricity Basic\" and \"Payment - Electricity Consumption\"\ncredits.  The charge patterns anchor on \"Electricity Basic-<tariff>\" and\n\"Electricity Consumption <n>KWH\", neither of which those lines print, so\ncredits can never be added into consumption.  Payments are reported in\n\"recon\" (incoming_payment) instead of as a sundry row.\n\n\"NOV AND DEC\" FILE.  EDU_[number removed]_[number removed]  NOV AND DEC.pdf is ONE statement\n(Invoice INV [number removed] 202512, Month December 2025, Statement Date\n31 December 2025) printed over 2 pages, whose ledger carries BOTH the\nNovember and the December charge lines - November was billed late.  It is\nNOT two statements, so one row per account is correct.  collect:\"sum\"\naggregates it: 235 + 1681 = 1916 kWh, R777,45 + R5 561,25 ex VAT energy,\n2 x Electricity Basic.  start reading [number removed], end reading [number removed].\n\nEND READING.  Taken two ways: edu_end_read_raw greedily takes the LAST\n\"[<start> to <end>]\" printed, and edu_end_read_calc = start + total kWh.\nThey agree on all 10 bills, which is the folder's arithmetic self-check.\n\nRULE ZERO.  The bill prints NO independent ex-VAT electricity total, so\ntotal_ex_vat_r = standard_r + other_r is CIRCULAR and the harness reconcile\nis meaningless here.  The genuine checks are (a) the printed \"Exclusive\"\ncolumn vs Debit-minus-VAT, and (b) the printed per-line VAT vs 15% of the\nderived ex-VAT.  Both are in reports/edumbe.md.\n\nSINGLE-BAND CONVENTION (as Ekurhuleni / KwaDukuza / Ditsobotla): the one\nenergy register goes to the STANDARD band; standard_kwh = total_kwh,\nstandard_r = the energy ex-VAT figure, other_r = Electricity Basic ex VAT.\nNo TOU, no demand, no NMD, no water, no sanitation on this account.",
+ "fingerprint": {
+  "all": [
+   "4780102754"
+  ],
+  "any": [
+   "eDumbe Local Municiaplity",
+   "eDumbe Local Municipality",
+   "EDUMBE LOCAL MUNICIPALITY",
+   "info@edumbe.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity[ \\t]*$",
+   "require": "Electricity (?:Basic-|Consumption[ \\t]+\\d)"
+  },
+  "rates": {
+   "start": "^[ \\t]*Property Rates[ \\t]*$",
+   "overlay": true,
+   "end": "\\Z",
+   "require": "Property Rates-"
+  },
+  "refuse": {
+   "start": "^[ \\t]*Refuse[ \\t]*$",
+   "overlay": true,
+   "end": "\\Z",
+   "require": "Refuse Removal"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "patterns": [
+    "Invoice No:[ \\t]*INV[ \\t]+(\\d{5,})",
+    "^[ \\t]*Reference:[ \\t]*(\\d{5,})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "edu_invoice_period",
+   "label": "Invoice period (YYYYMM)",
+   "scope": "document",
+   "pattern": "Invoice No:[ \\t]*INV[ \\t]+\\d{5,}[ \\t]+(\\d{6})",
+   "type": "text"
+  },
+  {
+   "field": "edu_vat_reg",
+   "label": "Municipality VAT reg no",
+   "scope": "document",
+   "pattern": "VAT (?:Reg )?No\\.?[ \\t]*:?[ \\t]*(\\d{10})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "pattern": "Statement Date:?[ \\t]{2,}(\\d{1,2} [A-Za-z]+ \\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "statement_month",
+   "label": "Month",
+   "scope": "document",
+   "pattern": "^[ \\t]*Month:?[ \\t]{2,}([A-Za-z]+ \\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due Date",
+   "scope": "document",
+   "pattern": "Due Date:?[ \\t]{2,}(\\d{1,2} [A-Za-z]+ \\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "edu_customer",
+   "label": "Addressee",
+   "scope": "document",
+   "pattern": "^[ \\t]*(TELKOM[A-Za-z ]*[A-Za-z])",
+   "type": "text"
+  },
+  {
+   "field": "edu_erf",
+   "label": "ERF No",
+   "scope": "document",
+   "pattern": "^[ \\t]*ERF(?: No)?[ \\t]{2,}(\\d+[ \\t]+Ptn_\\d+)",
+   "type": "text"
+  },
+  {
+   "field": "edu_suburb",
+   "label": "Surburb",
+   "scope": "document",
+   "pattern": "Surburb[ \\t]{2,}(\\S+)",
+   "type": "text"
+  },
+  {
+   "field": "edu_street",
+   "label": "Street No",
+   "scope": "document",
+   "pattern": "Street No[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "edu_category",
+   "label": "Property category",
+   "scope": "document",
+   "pattern": "Category[ \\t]{2,}([A-Z][A-Z ]*[A-Z])[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "edu_market_value_r",
+   "label": "Market Value (rand part)",
+   "scope": "document",
+   "pattern": "Market Value[ \\t]{2,}R(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "edu_land_area",
+   "label": "Land Area",
+   "scope": "document",
+   "pattern": "^[ \\t]*Land Area[ \\t]{2,}(\\d+)",
+   "type": "number"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "^[ \\t]*Deposit[ \\t]{2,}(-?\\d+)(?:[ \\t]|$)",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "edu_ageing_current_r",
+    "edu_ageing_due_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Ageing row: Current + Amount Due",
+   "scope": "document",
+   "pattern": "^[ \\t]*180 Days[^\\n]*Amount Due[ \\t]*$[\\s\\S]{0,120}?^[ \\t]*(?:(?:-?[\\d ]{0,14}),\\d{2}[ \\t]+){6}(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]+(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]*$"
+  },
+  {
+   "field": "edu_amount_due_r",
+   "label": "Amount Due",
+   "scope": "document",
+   "patterns": [
+    "Amount Due[ \\t]{2,}((?:-[ ]?)?R[ ]?-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+    "Amount Due[ \\t]*\\n[ \\t]*((?:-[ ]?)?R[ ]?-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])"
+   ],
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "edu_amount_due_txt",
+   "label": "Amount Due (as printed)",
+   "scope": "document",
+   "patterns": [
+    "Amount Due[ \\t]{2,}((?:-[ ]?)?R[ ]?-?\\d{1,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])",
+    "Amount Due[ \\t]*\\n[ \\t]*((?:-[ ]?)?R[ ]?-?\\d{1,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "edu_elec_tariff",
+   "label": "Electricity tariff",
+   "scope": "section:electricity",
+   "pattern": "Electricity Basic-([A-Za-z][A-Za-z ]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "edu_basic_vat_r",
+    "edu_basic_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Electricity Basic: VAT + Amount inc VAT",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Basic-[^\\n]*?[ \\t]{2,}(?<![\\d,])(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "required": true
+  },
+  {
+   "field": "edu_basic_vat_txt",
+   "label": "Electricity Basic VAT (as printed)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Basic-[^\\n]*?[ \\t]{2,}(?<![\\d,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?![\\d])[ \\t]{2,}(?:-?[\\d ]{0,14}),\\d{2}",
+   "type": "text"
+  },
+  {
+   "field": "edu_basic_inc_txt",
+   "label": "Electricity Basic inc VAT (as printed)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Basic-[^\\n]*?[ \\t]{2,}(?:-?[\\d ]{0,14}),\\d{2}[ \\t]{2,}(?<![\\d,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?![\\d])",
+   "type": "text"
+  },
+  {
+   "field": "total_kwh",
+   "label": "Total kWh (sum of consumption lines)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Electricity Consumption[ \\t]+(\\d+)KWH",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "edu_kwh_vat_r",
+    "edu_kwh_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Electricity Consumption: VAT + Amount inc VAT",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Consumption[ \\t]+\\d+KWH[^\\n]*?[ \\t]{2,}(?<![\\d,])(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "required": true
+  },
+  {
+   "field": "edu_kwh_vat_txt",
+   "label": "Consumption VAT (as printed)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Consumption[ \\t]+\\d+KWH[^\\n]*?[ \\t]{2,}(?<![\\d,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?![\\d])[ \\t]{2,}(?:-?[\\d ]{0,14}),\\d{2}",
+   "type": "text"
+  },
+  {
+   "field": "edu_kwh_inc_txt",
+   "label": "Consumption inc VAT (as printed)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Electricity Consumption[ \\t]+\\d+KWH[^\\n]*?[ \\t]{2,}(?:-?[\\d ]{0,14}),\\d{2}[ \\t]{2,}(?<![\\d,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?![\\d])",
+   "type": "text"
+  },
+  {
+   "field": "edu_kwh_excl_r",
+   "label": "Consumption ex VAT (printed Exclusive col)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?:Actual|Estimated)[ \\t]{2,}(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "edu_kwh_excl_txt",
+   "label": "Exclusive column (as printed)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "(?:Actual|Estimated)[ \\t]{2,}(?<![\\d,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?![\\d])[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "edu_reading_type",
+   "label": "Reading Type",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "[ \\t]{2,}(Actual|Estimated)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "edu_read_from",
+    "edu_read_to"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Meter reading period",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{2}-\\d{2}-\\d{4})[ \\t]{2,}(\\d{2}-\\d{2}-\\d{4})[ \\t]{2,}0,00",
+   "required": true
+  },
+  {
+   "field": "edu_meter",
+   "label": "Meter Number",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*([A-Z]{1,3}\\d{5,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "edu_rate_txt",
+   "label": "R/kWh rate (as printed)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "(\\d{1,2},\\d{2})[ \\t]+\\d{1,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]+\\d+KWH",
+   "type": "text"
+  },
+  {
+   "field": "edu_start_read",
+   "label": "Start reading kWh",
+   "scope": "section:electricity",
+   "pattern": "Electricity Consumption[ \\t]+\\d+KWH[ \\t]*-[ \\t]*\\[[ \\t]*(\\d+)",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "edu_end_read_raw",
+   "label": "End reading kWh (last printed)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Consumption[\\s\\S]*\\bto\\b[^\\]]{0,200}?(\\d+)\\]",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "rates_total_r",
+   "label": "Property Rates: Amount inc VAT",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Property Rates-[^\\n]*?[ \\t]{2,}(?:-?[\\d ]{0,14}),\\d{2}[ \\t]{2,}(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "rates_vat_r",
+   "label": "Property Rates: VAT",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Property Rates-[^\\n]*?[ \\t]{2,}(?<![\\d,])(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(?:-?[\\d ]{0,14}),\\d{2}",
+   "type": "money"
+  },
+  {
+   "field": "rates_total_txt",
+   "label": "Property Rates inc VAT (as printed)",
+   "scope": "section:rates",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Property Rates-[^\\n]*?[ \\t]{2,}(?:-?[\\d ]{0,14}),\\d{2}[ \\t]{2,}(?<![\\d,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?![\\d])",
+   "type": "text"
+  },
+  {
+   "field": "edu_rates_desc",
+   "label": "Rates description",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+(Property Rates-[A-Za-z][^\\n]*?)[ \\t]{2,}",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "refuse_vat_r",
+    "refuse_total_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Refuse Removal: VAT + Amount inc VAT",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Refuse Removal[^\\n]*?[ \\t]{2,}(?<![\\d,])(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "required": true
+  },
+  {
+   "field": "refuse_total_txt",
+   "label": "Refuse inc VAT (as printed)",
+   "scope": "section:refuse",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Refuse Removal[^\\n]*?[ \\t]{2,}(?:-?[\\d ]{0,14}),\\d{2}[ \\t]{2,}(?<![\\d,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?![\\d])",
+   "type": "text"
+  },
+  {
+   "field": "edu_refuse_desc",
+   "label": "Refuse description",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+(Refuse Removal[^\\n]*?)[ \\t]{2,}",
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "edu_erf_site",
+   "op": "concat",
+   "of": [
+    "edu_erf",
+    "edu_suburb"
+   ]
+  },
+  {
+   "field": "site_name",
+   "op": "prefer",
+   "of": [
+    "edu_erf_site",
+    "edu_street"
+   ]
+  },
+  {
+   "field": "other_r",
+   "op": "sub",
+   "of": [
+    "edu_basic_inc_r",
+    "edu_basic_vat_r"
+   ]
+  },
+  {
+   "field": "edu_kwh_excl_calc",
+   "op": "sub",
+   "of": [
+    "edu_kwh_inc_r",
+    "edu_kwh_vat_r"
+   ]
+  },
+  {
+   "field": "standard_r",
+   "op": "prefer",
+   "of": [
+    "edu_kwh_excl_r",
+    "edu_kwh_excl_calc"
+   ]
+  },
+  {
+   "field": "edu_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "edu_basic_vat_r",
+    "edu_kwh_vat_r"
+   ]
+  },
+  {
+   "field": "edu_elec_inc_r",
+   "op": "sum",
+   "of": [
+    "edu_basic_inc_r",
+    "edu_kwh_inc_r"
+   ]
+  },
+  {
+   "field": "total_ex_vat_r",
+   "op": "sum",
+   "of": [
+    "standard_r",
+    "other_r"
+   ]
+  },
+  {
+   "field": "edu_end_read_calc",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "edu_start_read",
+    "total_kwh"
+   ]
+  },
+  {
+   "field": "end_reading_kwh",
+   "op": "prefer",
+   "of": [
+    "edu_end_read_raw",
+    "edu_end_read_calc"
+   ]
+  },
+  {
+   "field": "edu_read_diff_kwh",
+   "op": "sub",
+   "as": "number",
+   "of": [
+    "edu_end_read_raw",
+    "edu_start_read"
+   ]
+  },
+  {
+   "field": "rates_total_ex_r",
+   "op": "sub",
+   "of": [
+    "rates_total_r",
+    "rates_vat_r"
+   ]
+  },
+  {
+   "field": "refuse_total_ex_r",
+   "op": "sub",
+   "of": [
+    "refuse_total_r",
+    "refuse_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "edu_elec_tariff",
+  "account_number": "account_number",
+  "meter": "edu_meter",
+  "reading_type": "edu_reading_type",
+  "read_start": "edu_read_from",
+  "read_end": "edu_read_to",
+  "start_reading_kwh": "edu_start_read",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "standard_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "other_r",
+  "total_ex_vat_r": "total_ex_vat_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?i)Balance Brought Forward[ \\t]{2,}(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+  "incoming_payment": "(?i)^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+Payment[^\\n]*?[ \\t]{2,}(?:-?[\\d ]{0,14}),\\d{2}[ \\t]{2,}(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+  "current_incl": "(?i)^[ \\t]*(?:(?:-?[\\d ]{0,14}),\\d{2}[ \\t]+){6}(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]+(?:-?[\\d ]{0,14}),\\d{2}[ \\t]*$",
+  "total_due": "(?i)^[ \\t]*(?:(?:-?[\\d ]{0,14}),\\d{2}[ \\t]+){7}(?<![\\d,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]*$",
+  "due_date": "(?i)Due Date:?[ \\t]{2,}(\\d{1,2} [A-Za-z]+ \\d{4})"
+ }
+}

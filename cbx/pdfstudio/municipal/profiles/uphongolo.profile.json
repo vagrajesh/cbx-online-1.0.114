@@ -1,0 +1,719 @@
+{
+ "profile_id": "uphongolo",
+ "profile_name": "uPhongolo Local Municipality",
+ "short_name": "uPhongolo",
+ "_doc": "uPhongolo Local Municipality - 'TAX INVOICE/ STATEMENT', VAT REG NO 4000791873, account [number removed] (master list '01/[number removed]', site 'Pongola ETE & PO', 50/R_NEW REPUBLEC STREET, Pongola). SAME billing vendor and near-identical to Ditsobotla shape B, so the same traps apply.\nSERVICE SUB-HEADINGS on their own lines ARE present and reliable on all 10 bills: 'Electricity Basic', 'Electricity Consumption' (TWICE - once for the kVA demand register, once for the kWh register), 'Interest on Arrears', 'Rentals', and 'Property Rates' on 9 of 10 / 'Payments' on 1 of 10. Because the whole masthead + column header is REPEATED on page 2 and the service headings interleave across the page break, only ELECTRICITY is a boundary-forming section (it runs from the first 'Electricity Basic' to the end of the document); rates and sundry are 'overlay': true with 'end': '\\\\Z'. Every rule anchors on its own description text, which is unique per service, so nothing leaks across services.\nLedger columns: Date / Description / VAT / Debit / Credit / Balance. THE DEBIT COLUMN IS VAT-INCLUSIVE with the VAT printed separately, so ex-VAT is derived per line with a 'sub' compute. The meter table under each consumption row also prints the bill's OWN ex-VAT figure in its 'Exclusive' column, which is preferred over the derived one (they agree to the cent).\nMONEY IS COMMA-DECIMAL / SPACE-THOUSANDS ('46 106,70'). _to_decimal strips the comma as a thousands separator, which would make every figure 100x too big, so - following the Ditsobotla convention - every money pattern captures the RAND PART ONLY, '(-?\\\\d{0,3}(?:[ ]\\\\d{3})*),\\\\d{2}'. Each Rand figure therefore reads up to R0.99 LOW; the exact printed string is kept alongside in the parallel *_txt native fields (uph_kwh_inc_txt, uph_kwh_excl_txt, uph_vat_total_txt, ...).\nMeter table layout (wraps badly - never read the numeric columns positionally):\n  Meter Number Factor Date From Date To Band From Band End Rate Units Description  Reading Type Exclusive\n                1   15-05-2026 15-06-2026  0,00  9 999 999  1,82  22  22029KW - [434800 to 456829]  Actual  40 092,78\n   W50B/1                                        999,00         029,00\nThe METER NUMBER is on the line BELOW the data row (W50B/1 = kWh register, V50B/1 = kVA register) and the wide numeric columns (Band End, Units) wrap onto that line too. So kWh/kVA quantities and the register readings are taken from the DESCRIPTION text ('22029KW - [434800 to 456829]') and never from the Units column. Note the description says 'KW', not 'KWH' - '\\\\d+KW[ \\\\t]*-' also safely excludes '38KVA -'. On the LEDGER row the description wraps mid-bracket ('22029KW - [434800 to' / newline / '456829]'), so the readings are read off the meter-table copy, which is always on one line.\nSingle-band industrial supply (one kWh register + one kVA demand register, no TOU, no NMD): the single energy register is routed to the STANDARD band per the Ekurhuleni / KwaDukuza / Ditsobotla convention. Rule Zero: the bill prints no electricity-only ex-VAT subtotal, so total_ex_vat_r is the sum of its own parts and the built-in reconcile is therefore circular for this profile. The genuine checks are (a) the printed 'Exclusive' column against Debit-VAT per line, and (b) the printed whole-bill 'VAT Total' against the sum of the per-line VAT figures.\n'UPH_174_CustomerStatementReport 174 April.pdf' is only named differently - it is the SAME layout and the SAME billing data (it is the April 2026 statement, the month otherwise missing from the nine 'Statement-...' files). It is handled by the ordinary rules and is NOT rejected.\nTwo layout quirks worth knowing: the EFT PAYMENT ledger row sits ABOVE the first 'Electricity Basic' heading on 9 of 10 bills (so it is in the header, not in any section) and under a 'Payments' heading on page 2 of the July bill - the payment rules are therefore 'document' scope with collect:'sum'. And the interest row is printed BOTH as 'Interest [number removed]' and 'Interest: [number removed]' (with a colon), so the pattern allows an optional colon.",
+ "fingerprint": {
+  "all": [],
+  "any": [
+   "4000791873",
+   "uPhongolo Local Municipality",
+   "uphongolo.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity Basic[ \\t]*$",
+   "require": "Basic Electricity|Electricity Consumption K"
+  },
+  "rates": {
+   "start": "^[ \\t]*Property Rates[ \\t]*$",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "sundry": {
+   "start": "^[ \\t]*(?:Interest on Arrears|Rentals|Payments|Other)[ \\t]*$",
+   "overlay": true,
+   "end": "\\Z"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "patterns": [
+    "Reference:[ \\t]{2,}(\\d{9,12})(?![\\d])",
+    "Invoice No:[ \\t]+INV[ \\t]+(\\d{9})\\d{6}"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_invoice_no",
+   "label": "Invoice number",
+   "scope": "document",
+   "pattern": "Invoice No:[ \\t]+(INV[ \\t]+\\d{10,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Site (street address)",
+   "scope": "header",
+   "pattern": "Street No[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement date",
+   "scope": "header",
+   "pattern": "Statement Date[ \\t]{2,}(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "header",
+   "pattern": "Due Date[ \\t]{2,}(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "uph_month",
+   "label": "Billing month",
+   "scope": "header",
+   "pattern": "Month[ \\t]{2,}([A-Za-z]+[ \\t]+\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_erf",
+   "label": "ERF number",
+   "scope": "header",
+   "pattern": "ERF No[ \\t]{2,}(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_suburb",
+   "label": "Suburb",
+   "scope": "header",
+   "pattern": "Surburb[ \\t]{2,}([A-Za-z][A-Za-z ]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_category",
+   "label": "Property category",
+   "scope": "header",
+   "pattern": "Category[ \\t]{2,}([A-Za-z][A-Za-z &]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_land_area",
+   "label": "Land area",
+   "scope": "header",
+   "pattern": "Land Area[ \\t]{2,}(\\d[\\d ]*?)[ \\t]{2,}",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "uph_market_value_r",
+   "label": "Market value",
+   "scope": "header",
+   "pattern": "Market Value[ \\t]{2,}R?[ \\t]*(-?\\d{1,3}(?:[ ]?\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "uph_market_value_txt",
+   "label": "Market value as printed",
+   "scope": "header",
+   "pattern": "Market Value[ \\t]{2,}(R?[ \\t]*-?\\d{1,3}(?:[ ]?\\d{3})*,\\d{2})(?![\\d])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_deposit_r",
+   "label": "Deposit",
+   "scope": "header",
+   "patterns": [
+    "Deposit[ \\t]{2,}R?[ \\t]*(-?\\d{1,3}(?:[ ]?\\d{3})*),\\d{2}(?![\\d])",
+    "Deposit[ \\t]{2,}(0)[ \\t]{2,}Street No"
+   ],
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "uph_deposit_txt",
+   "label": "Deposit as printed",
+   "scope": "header",
+   "patterns": [
+    "Deposit[ \\t]{2,}(R?[ \\t]*-?\\d{1,3}(?:[ ]?\\d{3})*,\\d{2})(?![\\d])",
+    "Deposit[ \\t]{2,}(0)[ \\t]{2,}Street No"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_vat_total_r",
+   "label": "VAT Total (whole bill)",
+   "scope": "document",
+   "pattern": "VAT Total[ \\t]{2,}R[ \\t]*(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "uph_vat_total_txt",
+   "label": "VAT Total as printed",
+   "scope": "document",
+   "pattern": "VAT Total[ \\t]{2,}R[ \\t]*(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_amount_due_r",
+   "label": "AMOUNT DUE",
+   "scope": "document",
+   "pattern": "AMOUNT DUE[ \\t]{2,}R[ \\t]*(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "uph_amount_due_txt",
+   "label": "AMOUNT DUE as printed",
+   "scope": "document",
+   "pattern": "AMOUNT DUE[ \\t]{2,}R[ \\t]*(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_balance_bf_r",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "Balance Brought Forward[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "uph_ageing_current_r",
+   "label": "Ageing: Current column",
+   "scope": "document",
+   "pattern": "180 Days[^\\n]*\\n[\\s]*(?:-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]+){6}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "uph_ageing_30d_r",
+   "label": "Ageing: 30 Days column",
+   "scope": "document",
+   "pattern": "180 Days[^\\n]*\\n[\\s]*(?:-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]+){5}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "uph_payments_up_to",
+   "label": "Payments up to",
+   "scope": "document",
+   "pattern": "Payments up to:[ \\t]{2,}(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "uph_ebasic_vat_r",
+    "uph_ebasic_inc_r"
+   ],
+   "label": "Electricity Basic: VAT + amount incl VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Basic Electricity[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "uph_ebasic_vat_txt",
+    "uph_ebasic_inc_txt"
+   ],
+   "label": "Electricity Basic: VAT + incl VAT as printed",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Basic Electricity[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": true
+  },
+  {
+   "field": "tariff_name",
+   "label": "Tariff (from Basic Electricity description)",
+   "scope": "section:electricity",
+   "pattern": "Basic Electricity[ \\t]+([A-Za-z][A-Za-z ]*?)[ \\t]*-[ \\t]*Units",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_ebasic_date",
+   "label": "Basic charge transaction date",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]+Basic Electricity",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "uph_kva_vat_r",
+    "uph_kva_inc_r"
+   ],
+   "label": "Electricity Consumption KVA: VAT + amount incl VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumption KVA[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "uph_kva_vat_txt",
+    "uph_kva_inc_txt"
+   ],
+   "label": "Electricity Consumption KVA: VAT + incl VAT as printed",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumption KVA[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "uph_kwh_vat_r",
+    "uph_kwh_inc_r"
+   ],
+   "label": "Electricity Consumption KWH: VAT + amount incl VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumption KWH[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "uph_kwh_vat_txt",
+    "uph_kwh_inc_txt"
+   ],
+   "label": "Electricity Consumption KWH: VAT + incl VAT as printed",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Consumption KWH[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": true
+  },
+  {
+   "field": "uph_kwh_date",
+   "label": "kWh row transaction date",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]+Electricity Consumption KWH",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "total_kwh",
+   "label": "Total kWh (from description)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Consumption KWH[ \\t]*(\\d+)KW(?![A-Z])",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "demand_kva",
+   "label": "Demand kVA (from description)",
+   "scope": "section:electricity",
+   "pattern": "Electricity Consumption KVA[ \\t]*(\\d+)KVA",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "start_reading_kwh",
+    "end_reading_kwh"
+   ],
+   "label": "kWh register readings (meter-table description)",
+   "scope": "section:electricity",
+   "pattern": "(?<![A-Z])\\d+KW[ \\t]*-[ \\t]*\\[[ \\t]*(\\d+)[ \\t]+to[ \\t]+(\\d+)[ \\t]*\\]",
+   "types": [
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "uph_kva_start_reading",
+    "uph_kva_end_reading"
+   ],
+   "label": "kVA register readings (description)",
+   "scope": "section:electricity",
+   "pattern": "\\d+KVA[ \\t]*-[ \\t]*\\[[ \\t]*(\\d+)[ \\t]+to[ \\t]+(\\d+)[ \\t]*\\]",
+   "types": [
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "label": "Reading period (kWh meter row)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d+[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]+(\\d{2}-\\d{2}-\\d{4})[^\\n]*?(?<![A-Z])\\d+KW[ \\t]*-[ \\t]*\\[",
+   "types": [
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "uph_kva_read_start",
+    "uph_kva_read_end"
+   ],
+   "label": "Reading period (kVA meter row)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d+[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]+(\\d{2}-\\d{2}-\\d{4})[^\\n]*?\\d+KVA[ \\t]*-[ \\t]*\\[",
+   "types": [
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "reading_type",
+   "label": "Actual / Estimated (kWh register)",
+   "scope": "section:electricity",
+   "pattern": "(?<![A-Z])\\d+KW[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(Actual|Estimated|Estimate)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_kwh_meter",
+   "label": "kWh register meter no",
+   "scope": "section:electricity",
+   "pattern": "(?<![A-Z])\\d+KW[ \\t]*-[ \\t]*\\[[^\\n]*\\n[ \\t]*([A-Z0-9]+/\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_kva_meter",
+   "label": "kVA register meter no",
+   "scope": "section:electricity",
+   "pattern": "\\d+KVA[ \\t]*-[ \\t]*\\[[^\\n]*\\n[ \\t]*([A-Z0-9]+/\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_kwh_rate",
+   "label": "kWh rate as printed",
+   "scope": "section:electricity",
+   "pattern": "(\\d{1,3},\\d{2})[ \\t]{2,}(?:\\d[\\d ]*[ \\t]{2,})?(?<![A-Z])\\d+KW[ \\t]*-[ \\t]*\\[",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_kva_rate",
+   "label": "kVA rate as printed",
+   "scope": "section:electricity",
+   "pattern": "(\\d{1,3},\\d{2})[ \\t]{2,}\\d{1,4},\\d{2}[ \\t]{2,}\\d+KVA[ \\t]*-[ \\t]*\\[",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_kwh_excl_r",
+   "label": "kWh ex-VAT (printed Exclusive)",
+   "scope": "section:electricity",
+   "pattern": "(?<![A-Z])\\d+KW[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "uph_kwh_excl_txt",
+   "label": "kWh Exclusive as printed",
+   "scope": "section:electricity",
+   "pattern": "(?<![A-Z])\\d+KW[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "uph_kva_excl_r",
+   "label": "kVA ex-VAT (printed Exclusive)",
+   "scope": "section:electricity",
+   "pattern": "\\d+KVA[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "uph_kva_excl_txt",
+   "label": "kVA Exclusive as printed",
+   "scope": "section:electricity",
+   "pattern": "\\d+KVA[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "uph_rates_vat_r",
+    "uph_rates_inc_r"
+   ],
+   "label": "Property rates: VAT + amount incl VAT",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Property Rates[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "uph_rates_vat_txt",
+    "uph_rates_inc_txt"
+   ],
+   "label": "Property rates: VAT + incl VAT as printed",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Property Rates[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "field": "uph_rates_desc",
+   "label": "Property rates description",
+   "scope": "section:rates",
+   "pattern": "(Property Rates[ \\t]*-[ \\t]*[A-Za-z&][A-Za-z& ]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "uph_interest_vat_r",
+   "label": "Interest on arrears: VAT",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Interest:?[ \\t]+\\d{8}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "uph_interest_inc_r",
+   "label": "Interest on arrears: amount incl VAT",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Interest:?[ \\t]+\\d{8}[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "uph_rental_vat_r",
+    "uph_rental_inc_r"
+   ],
+   "label": "Rentals (advert poster): VAT + amount incl VAT",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+ADVERT[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "uph_rental_vat_txt",
+    "uph_rental_inc_txt"
+   ],
+   "label": "Rentals: VAT + incl VAT as printed",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+ADVERT[^\\n]*?[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "types": [
+    "text",
+    "text"
+   ],
+   "required": false
+  },
+  {
+   "field": "uph_payment_r",
+   "label": "EFT payments received (credit column)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+EFT PAYMENT[^\\n]*?[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "uph_payment_txt",
+   "label": "EFT payments as printed",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+EFT PAYMENT[^\\n]*?[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2})(?![\\d])[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+   "type": "text",
+   "collect": "join_unique",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "uph_ebasic_ex_r",
+   "op": "sub",
+   "of": [
+    "uph_ebasic_inc_r",
+    "uph_ebasic_vat_r"
+   ]
+  },
+  {
+   "field": "uph_kwh_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "uph_kwh_inc_r",
+    "uph_kwh_vat_r"
+   ]
+  },
+  {
+   "field": "uph_kva_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "uph_kva_inc_r",
+    "uph_kva_vat_r"
+   ]
+  },
+  {
+   "field": "uph_std_r_out",
+   "op": "prefer",
+   "of": [
+    "uph_kwh_excl_r",
+    "uph_kwh_ex_calc_r"
+   ]
+  },
+  {
+   "field": "uph_demand_r_out",
+   "op": "prefer",
+   "of": [
+    "uph_kva_excl_r",
+    "uph_kva_ex_calc_r"
+   ]
+  },
+  {
+   "field": "uph_elec_total_ex_r",
+   "op": "sum",
+   "of": [
+    "uph_std_r_out",
+    "uph_demand_r_out",
+    "uph_ebasic_ex_r"
+   ]
+  },
+  {
+   "field": "uph_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "uph_kwh_vat_r",
+    "uph_kva_vat_r",
+    "uph_ebasic_vat_r"
+   ]
+  },
+  {
+   "field": "uph_elec_total_inc_r",
+   "op": "sum",
+   "of": [
+    "uph_kwh_inc_r",
+    "uph_kva_inc_r",
+    "uph_ebasic_inc_r"
+   ]
+  },
+  {
+   "field": "uph_kwh_excl_delta",
+   "op": "diff",
+   "of": [
+    "uph_kwh_excl_r",
+    "uph_kwh_ex_calc_r"
+   ]
+  },
+  {
+   "field": "uph_kva_excl_delta",
+   "op": "diff",
+   "of": [
+    "uph_kva_excl_r",
+    "uph_kva_ex_calc_r"
+   ]
+  },
+  {
+   "field": "uph_reading_kwh",
+   "op": "diff",
+   "as": "number",
+   "of": [
+    "end_reading_kwh",
+    "start_reading_kwh"
+   ]
+  },
+  {
+   "field": "uph_rates_ex_r",
+   "op": "sub",
+   "of": [
+    "uph_rates_inc_r",
+    "uph_rates_vat_r"
+   ]
+  },
+  {
+   "field": "uph_rental_ex_r",
+   "op": "sub",
+   "of": [
+    "uph_rental_inc_r",
+    "uph_rental_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": [
+   "uph_kwh_meter",
+   "uph_kva_meter"
+  ],
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "uph_std_r_out",
+  "offpeak_r": "_none",
+  "demand_r": "uph_demand_r_out",
+  "nmd_r": "_none",
+  "other_r": "uph_ebasic_ex_r",
+  "total_ex_vat_r": "uph_elec_total_ex_r",
+  "deposit_r": "uph_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "Balance Brought Forward[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}[ \\t]*$",
+  "incoming_payment": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+EFT PAYMENT[^\\n]*?[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]{2,}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}[ \\t]{2,}-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]*$",
+  "vat": "VAT Total[ \\t]{2,}R[ \\t]*(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}",
+  "total_due": "AMOUNT DUE[ \\t]{2,}R[ \\t]*(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}",
+  "current_incl": "180 Days[^\\n]*\\n[\\s]*(?:-?\\d{0,3}(?:[ ]\\d{3})*,\\d{2}[ \\t]+){6}(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}",
+  "due_date": "Due Date[ \\t]{2,}(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+  "deposito": "Deposit[ \\t]{2,}R?[ \\t]*(-?\\d{1,3}(?:[ ]?\\d{3})*),\\d{2}(?![\\d])"
+ }
+}

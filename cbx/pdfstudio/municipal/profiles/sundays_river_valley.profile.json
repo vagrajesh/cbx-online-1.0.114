@@ -1,0 +1,231 @@
+{
+ "profile_id": "sundays_river_valley",
+ "profile_name": "Sundays River Valley Local Municipality (Kirkwood, Eastern Cape)",
+ "short_name": "Sundays River Valley",
+ "_doc": "Sundays River Valley LM (Kirkwood). Same compact ledger print engine as the built-in king_sabata_dalindyebo profile (aging header '120 DAYS PLUS', 'REFERENCE:'), but no masthead text except on the one scanned bill. Header row '<key> <statement date> <account date>' (account date used, as KSD does), site street/town in the right column. Ledger lines 'dd/mm/yy E<ref>N Electricity Sales:<tariff> (<from>-<to>)  VAT  amount incl.' for kWh and 'K<ref>' for kVA, each followed by 'new - old = n KWH|KVA' (CT multiplier, so new-old is not the kWh: canonical start/end readings left blank, raw kept natively) and 'dd/mm/yyyy n KWH|KVA @ rate = amount' (ex VAT): energy -> standard band, kVA -> demand. Fingerprint: 'Electricity Sales:' (only this folder in the corpus) + name / municipal VAT / '120 DAYS PLUS'. ROUTING: the built-in king_sabata_dalindyebo profile still takes the 9 text bills (they never print 'SUNDAYS RIVER VALLEY'); it needs 'Electricity Sales:' in its reject_if_text. IDENTITY (with that reject applied): ledger amount - ledger VAT vs total_ex_vat_r (sum of the printed 'units @ rate = amount'): R0.00 on 9/9; the scanned bill routes, reads account/meter/tariff/period but its rate lines are OCR-garbled, so its Rand/kWh stay blank. Checked on 10 bills.",
+ "fingerprint": {
+  "all": [
+   "Electricity Sales:"
+  ],
+  "any": [
+   "SUNDAYS RIVER VALLEY",
+   "4010195131",
+   "120 DAYS PLUS"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\S+[ \\t]+Electricity Sales:",
+   "overlay": true,
+   "end": "TOTAL VAT:"
+  }
+ },
+ "fields": [
+  {
+   "label": "Account (REFERENCE / <account>-MM-YY)",
+   "scope": "document",
+   "field": "account_number",
+   "patterns": [
+    "REFERENCE:[ \\t]+(\\d{6,})",
+    "^[ \\t]{2,}(\\d{6,})-\\d{2}-\\d{2}[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "label": "Header row: statement date / account date (same print engine as KSD; account date used)",
+   "scope": "document",
+   "fields": [
+    "srv_stmt_date",
+    "billing_date"
+   ],
+   "pattern": "^[ \\t]{5,}\\d+[ \\t]{2,}(\\d{2}/\\d{2}/\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{2})[ \\t]*$",
+   "types": [
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "label": "Site street (right column)",
+   "scope": "document",
+   "field": "srv_street",
+   "pattern": "^[ \\t]{40,}([A-Z][A-Z0-9 ]*[A-Z])[ \\t]*\\n[^\\n]*?[ \\t]{2,}[A-Z][a-z]+[ \\t]*\\n[ \\t]*PRIVATE BAG",
+   "type": "text"
+  },
+  {
+   "label": "Site town (right column)",
+   "scope": "document",
+   "field": "srv_town",
+   "pattern": "\\n[^\\n]*?[ \\t]{2,}([A-Z][a-z]+(?: [A-Z][a-z]+)*)[ \\t]*\\n[ \\t]*PRIVATE BAG",
+   "type": "text"
+  },
+  {
+   "label": "TOTAL VAT",
+   "scope": "document",
+   "field": "srv_vat_total_r",
+   "pattern": "TOTAL VAT:[ \\t|]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "label": "Electricity Sales kWh ledger line (meter, tariff, period, VAT, amount incl.)",
+   "scope": "section:electricity",
+   "fields": [
+    "meter",
+    "tariff_name",
+    "read_start",
+    "read_end",
+    "srv_energy_vat_r",
+    "srv_energy_incl_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+(E\\w+)[ \\t]+Electricity Sales:([^(\\n]*?)[ \\t]*\\((\\d{2}/\\d{2}/\\d{4})-(\\d{2}/\\d{2}/\\d{4})\\)[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "text",
+    "text",
+    "date",
+    "date",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "kWh register: new - old = kWh (CT multiplier applied, so new-old != kWh)",
+   "scope": "section:electricity",
+   "fields": [
+    "srv_end_reading",
+    "srv_start_reading",
+    "srv_reg_kwh"
+   ],
+   "pattern": "^[ \\t]*(\\d+)[ \\t]*-[ \\t]*(\\d+)[ \\t]*=[ \\t]*(\\d+)[ \\t]*KWH\\b",
+   "types": [
+    "number",
+    "number",
+    "number"
+   ]
+  },
+  {
+   "label": "kWh @ rate = amount (ex VAT)",
+   "scope": "section:electricity",
+   "fields": [
+    "total_kwh",
+    "srv_kwh_rate_sum",
+    "standard_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(\\d+(?:\\.\\d+)?)[ \\t]*KWH[ \\t]*@[ \\t]*(\\d+\\.\\d+)[ \\t]*=[ \\t]*(\\d+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "label": "Electricity Sales kVA ledger line (VAT, amount incl.)",
+   "scope": "section:electricity",
+   "fields": [
+    "srv_demand_vat_r",
+    "srv_demand_incl_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+K\\w+[ \\t]+Electricity Sales:[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "kVA @ rate = amount (ex VAT)",
+   "scope": "section:electricity",
+   "fields": [
+    "demand_kva",
+    "srv_kva_rate_sum",
+    "demand_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(\\d+(?:\\.\\d+)?)[ \\t]*KVA[ \\t]*@[ \\t]*(\\d+\\.\\d+)[ \\t]*=[ \\t]*(\\d+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "label": "Any other electricity ledger line (none seen)",
+   "scope": "section:electricity",
+   "field": "srv_other_elec_incl_r",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+(?![EK]\\w+[ \\t]+Electricity Sales:)\\S+[ \\t]+Electricity[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  }
+ ],
+ "computes": [
+  {
+   "field": "srv_site",
+   "op": "concat",
+   "of": [
+    "srv_street",
+    "srv_town"
+   ]
+  },
+  {
+   "field": "standard_kwh",
+   "op": "prefer",
+   "of": [
+    "total_kwh"
+   ]
+  },
+  {
+   "field": "srv_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "standard_r",
+    "demand_r"
+   ]
+  },
+  {
+   "field": "srv_elec_incl_r",
+   "op": "sum",
+   "of": [
+    "srv_energy_incl_r",
+    "srv_demand_incl_r"
+   ]
+  },
+  {
+   "field": "srv_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "srv_energy_vat_r",
+    "srv_demand_vat_r"
+   ]
+  },
+  {
+   "field": "srv_elec_ex_by_ledger_r",
+   "op": "sub",
+   "of": [
+    "srv_elec_incl_r",
+    "srv_elec_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "srv_site",
+  "reading_type": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "_none",
+  "total_ex_vat_r": "srv_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

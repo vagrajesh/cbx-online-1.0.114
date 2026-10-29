@@ -1,0 +1,210 @@
+{
+ "profile_id": "gamagara",
+ "profile_name": "Gamagara Local Municipality (Kathu, Northern Cape)",
+ "short_name": "Gamagara",
+ "_doc": "Sebata-style 'TAX INVOICE / STATEMENT OF ACCOUNT' (two prints: one with 'Account Number:' on its own line, one with 'Account / Number:' split around the account date). A METER READINGS table (meter no., type, old/new reading, flag, consumption, levied amount, reading dates) precedes ACCOUNT DETAILS (date, code, description, units @ tariff, value EX VAT); VAT is one whole-bill line. Electricity lines carry codes nnEnnn ('INTEREST nnEnnn ...' lines are interest, not counted). On all 10 bills the electricity meter is idle (old = new reading, 0 kWh, levied 0.00) and only 'BASIC - COMMERCIAL THREE PHASE' is charged, so standard_r stays blank and other_r = total. FINGERPRINT: municipal VAT number + name/domain. total_ex_vat_r = sum of nnEnnn line values; identity gam_check_r = units x tariff of the basic line (mul) + any other nnEnnn line - independent of the printed value column for the basic charge. One bill is OCR (reads cleanly). Checked on 10 bills.",
+ "fingerprint": {
+  "all": [
+   "4040120927"
+  ],
+  "any": [
+   "Gamagara Local Municipality",
+   "gamagara.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "require": "^[ \\t]*\\S+[ \\t]+ELECTRICITY[ \\t]+\\d|^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{2}E\\d{3}[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "patterns": [
+    "^Account Number:[ \\t]*(\\d{6,})",
+    "^Account[ \\t]+(\\d{6,})[ \\t]{2,}Account Date",
+    "^ACCOUNT NUMBER:?[ \\t]+(\\d{6,})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]+(\\d{1,2}[ \\t]+[A-Za-z]{3}[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "gam_tax_invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Tax Invoice No:[ \\t]+(\\d+)",
+   "type": "text"
+  },
+  {
+   "field": "site_name",
+   "label": "Street",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "gam_due_date",
+   "label": "TOTAL DUE ON OR BEFORE",
+   "scope": "document",
+   "pattern": "TOTAL DUE ON OR BEFORE:?[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "gam_vat_r",
+   "label": "VAT line (whole bill)",
+   "scope": "document",
+   "pattern": "^[ \\t]+\\d{6}[ \\t]+VAT[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "meter",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "gam_read_code",
+    "gam_meter_kwh"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "text",
+    "number"
+   ],
+   "label": "METER READINGS electricity row",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\S+)[ \\t]+ELECTRICITY[ \\t]+((?<![\\d.,])\\d+(?:\\.\\d+)?)(?![\\d])[ \\t]+((?<![\\d.,])\\d+(?:\\.\\d+)?)(?![\\d])(?:[ \\t]+([A-Z]))?[ \\t]+((?<![\\d.,])\\d*\\.\\d+)(?![\\d])",
+   "required": true
+  },
+  {
+   "fields": [
+    "gam_levied_r",
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "money",
+    "date",
+    "date"
+   ],
+   "label": "METER READINGS levied amount + reading dates",
+   "scope": "section:electricity",
+   "pattern": "ELECTRICITY[ \\t]+[\\d.]+[ \\t]+[\\d.]+(?:[ \\t]+[A-Z])?[ \\t]+\\d*\\.\\d+[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})"
+  },
+  {
+   "field": "gam_read_end_only",
+   "label": "Reading date (when only one printed)",
+   "scope": "section:electricity",
+   "pattern": "ELECTRICITY[ \\t]+[\\d.]+[ \\t]+[\\d.]+[^\\n]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*$",
+   "type": "date"
+  },
+  {
+   "fields": [
+    "tariff_name",
+    "gam_basic_units",
+    "gam_basic_tariff",
+    "gam_basic_r"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "BASIC electricity line (units @ tariff = value, ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{2}E\\d{3}[ \\t]+(BASIC[^\\n]*?)[ \\t]{2,}([\\d.]+)@?[ \\t]+([\\d.]+)(?:[ \\t]+\\*)?[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "gam_elec_lines_r",
+   "label": "All E-coded charge lines (sum, ex VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{2}E\\d{3}[ \\t]+[^\\n]*?[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "gam_energy_r",
+   "label": "E-coded non-basic (energy) lines",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{2}E\\d{3}[ \\t]+(?![ \\t])(?!BASIC)[^\\n]*?[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "read_end",
+   "op": "prefer",
+   "of": [
+    "read_end",
+    "gam_read_end_only"
+   ]
+  },
+  {
+   "field": "gam_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "gam_elec_lines_r"
+   ]
+  },
+  {
+   "field": "gam_basic_calc_r",
+   "op": "mul",
+   "of": [
+    "gam_basic_units",
+    "gam_basic_tariff"
+   ]
+  },
+  {
+   "field": "gam_check_r",
+   "op": "sum",
+   "of": [
+    "gam_basic_calc_r",
+    "gam_energy_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "gam_meter_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "gam_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "gam_basic_r",
+  "total_ex_vat_r": "gam_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

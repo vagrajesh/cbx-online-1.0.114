@@ -1,0 +1,58 @@
+{
+  "kind": "table",
+  "title": "data.goals.title",
+  "scope": "team",
+  "write": "managers",
+  "columns": [
+    {
+      "key": "title",
+      "label": "col.title",
+      "type": "text",
+      "required": true
+    },
+    {
+      "key": "target",
+      "label": "col.target",
+      "type": "int",
+      "required": true
+    },
+    {
+      "key": "size",
+      "label": "col.size",
+      "type": "choice",
+      "options": [
+        "Small",
+        "Medium",
+        "Complex"
+      ]
+    },
+    {
+      "key": "starts",
+      "label": "col.starts",
+      "type": "date",
+      "required": true,
+      "default": "today"
+    },
+    {
+      "key": "ends",
+      "label": "col.ends",
+      "type": "date",
+      "required": true
+    },
+    {
+      "key": "reward",
+      "label": "col.reward",
+      "type": "text"
+    },
+    {
+      "key": "counts",
+      "label": "col.counts",
+      "type": "choice",
+      "options": [
+        "Each person",
+        "The team"
+      ],
+      "default": "Each person"
+    }
+  ]
+}

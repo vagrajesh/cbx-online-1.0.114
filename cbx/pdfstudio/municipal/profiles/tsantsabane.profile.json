@@ -1,0 +1,208 @@
+{
+ "profile_id": "tsantsabane",
+ "profile_name": "Tsantsabane Local Municipality (Postmasburg, Northern Cape) - reNRG / Innovative Online Metering invoice",
+ "short_name": "Tsantsabane",
+ "_doc": "Tsantsabane LM (Postmasburg) electricity invoice issued through reNRG / 'Innovative Online Metering': masthead name + municipal VAT number, 'Date:' (ISO), 'Device: <site code> / <id>' where the id is the account/payment reference, then 'Date Details Amount (Excl) VAT Amount (Incl)' lines: Basic charge (other_r), Electricity Usage (register id = meter; Start/End Reading kWh with timestamps; Units = kWh, single-rate -> standard band), kVA Demand (kVA + Rand), then Sub-Total / VAT / Total. Fingerprint: municipal VAT number + name, any of the metering-vendor footer or website. IDENTITY: printed Sub-Total (ts_subtotal_r) vs total_ex_vat_r (sum of the three Excl cells): R0.00 on 7/10, R0.01 on 3/10 (line rounding). Checked on 10 bills (one file carries a DAW_ prefix but is this account).",
+ "fingerprint": {
+  "all": [
+   "4470123300",
+   "TSANTSABANE LOCAL MUNICIPALITY"
+  ],
+  "any": [
+   "Innovative Online Metering",
+   "tsantsabane.co.za"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Date[ \\t]+Details of Goods / Services\\b"
+  }
+ },
+ "fields": [
+  {
+   "label": "Invoice date",
+   "scope": "header",
+   "field": "billing_date",
+   "pattern": "\\bDate:[ \\t]+(\\d{4}-\\d{2}-\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "label": "Device / account id (= payment reference)",
+   "scope": "header",
+   "field": "account_number",
+   "pattern": "\\bDevice:[ \\t]+\\S+[ \\t]*/[ \\t]*(\\d{6,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "label": "Device site code",
+   "scope": "header",
+   "field": "ts_site_code",
+   "pattern": "\\bDevice:[ \\t]+([A-Z]{2,}\\d+)\\b",
+   "type": "text"
+  },
+  {
+   "label": "Site street (line above Device)",
+   "scope": "header",
+   "field": "ts_street",
+   "pattern": "\\n[ \\t]*(\\d+[A-Za-z]? [A-Za-z][^\\n]*?)[ \\t]*\\n[ \\t]*Device:",
+   "type": "text"
+  },
+  {
+   "label": "Invoice No",
+   "scope": "header",
+   "field": "ts_invoice_no",
+   "pattern": "Invoice No:[ \\t]+(\\S+)",
+   "type": "text"
+  },
+  {
+   "label": "Basic charge (excl, VAT, incl)",
+   "scope": "section:electricity",
+   "fields": [
+    "ts_basic_ex_r",
+    "ts_basic_vat_r",
+    "ts_basic_incl_r"
+   ],
+   "pattern": "^[ \\t]*\\d{4}-\\d{2}-\\d{2}[ \\t]+Basic charge\\b[^\\n]*?[ \\t]{2,}R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]+R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]+R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "Electricity Usage (register, excl, VAT, incl)",
+   "scope": "section:electricity",
+   "fields": [
+    "meter",
+    "ts_energy_ex_r",
+    "ts_energy_vat_r",
+    "ts_energy_incl_r"
+   ],
+   "pattern": "^[ \\t]*\\d{4}-\\d{2}-\\d{2}[ \\t]+Electricity Usage:[ \\t]*\\((\\w+)\\)[ \\t]+R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]+R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]+R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "text",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "Start Reading",
+   "scope": "section:electricity",
+   "fields": [
+    "start_reading_kwh",
+    "read_start"
+   ],
+   "pattern": "^[ \\t]*Start Reading:[ \\t]+(\\d+(?:\\.\\d+)?)[ \\t]*kWh[ \\t]*\\((\\d{4}-\\d{2}-\\d{2})",
+   "types": [
+    "number",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "label": "End Reading",
+   "scope": "section:electricity",
+   "fields": [
+    "end_reading_kwh",
+    "read_end"
+   ],
+   "pattern": "^[ \\t]*End Reading:[ \\t]+(\\d+(?:\\.\\d+)?)[ \\t]*kWh[ \\t]*\\((\\d{4}-\\d{2}-\\d{2})",
+   "types": [
+    "number",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "label": "Units (kWh)",
+   "scope": "section:electricity",
+   "field": "total_kwh",
+   "pattern": "^[ \\t]*Units:[ \\t]*\\+?(\\d+(?:\\.\\d+)?)[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "label": "kVA Demand (kVA, excl, VAT, incl)",
+   "scope": "section:electricity",
+   "fields": [
+    "demand_kva",
+    "demand_r",
+    "ts_demand_vat_r",
+    "ts_demand_incl_r"
+   ],
+   "pattern": "^[ \\t]*\\d{4}-\\d{2}-\\d{2}[ \\t]+kVA Demand:[ \\t]*(\\d+(?:\\.\\d+)?)[ \\t]*kVA\\b[^\\n]*?[ \\t]{2,}R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]+R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]+R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "Sub-Total (excl VAT, printed)",
+   "scope": "section:electricity",
+   "field": "ts_subtotal_r",
+   "pattern": "Sub-Total:[ \\t]+R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "label": "VAT",
+   "scope": "section:electricity",
+   "field": "ts_vat_r",
+   "pattern": "^[ \\t]*VAT:[ \\t]+R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "label": "Total",
+   "scope": "section:electricity",
+   "field": "ts_total_r",
+   "pattern": "^[ \\t]*Total:[ \\t]+R[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "ts_site",
+   "op": "concat",
+   "of": [
+    "ts_site_code",
+    "ts_street"
+   ]
+  },
+  {
+   "field": "ts_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "ts_basic_ex_r",
+    "ts_energy_ex_r",
+    "demand_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "ts_site",
+  "tariff_name": "_none",
+  "reading_type": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "ts_energy_ex_r",
+  "offpeak_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "ts_basic_ex_r",
+  "total_ex_vat_r": "ts_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

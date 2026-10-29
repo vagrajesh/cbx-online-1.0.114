@@ -1,0 +1,187 @@
+{
+ "profile_id": "nala",
+ "profile_name": "Nala Local Municipality (Bothaville, Free State)",
+ "short_name": "Nala",
+ "fingerprint": {
+  "all": [
+   "4000846602"
+  ],
+  "any": [
+   "NALA LOCAL MUNICIPALITY"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Date[ \\t]+Document type[ \\t]+Doc no",
+   "require": "^\\s+ELECT:"
+  },
+  "water": {
+   "start": "^[ \\t]+WATER[ \\t]*:",
+   "end": "^[ \\t]+VAT[ \\t]+\\(",
+   "overlay": true
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account no",
+   "scope": "document",
+   "pattern": "Account no[ \\t]+(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Printed on",
+   "scope": "document",
+   "pattern": "Printed on[ \\t]+(\\d{1,2} [A-Za-z]+ \\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "nala_month",
+   "label": "Account month",
+   "scope": "document",
+   "pattern": "Account month[ \\t]+([A-Za-z]+ \\d{4})",
+   "type": "text"
+  },
+  {
+   "field": "site_name",
+   "label": "Address",
+   "scope": "document",
+   "pattern": "[ \\t]Address[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "^[ \\t]+Deposit[ \\t]+(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Meter read period",
+   "scope": "document",
+   "pattern": "Meter read period[ \\t]+(\\d{4}/\\d\\d/\\d\\d)[ \\t]*-[ \\t]*(\\d{4}/\\d\\d/\\d\\d)"
+  },
+  {
+   "field": "nala_vat_base_r",
+   "label": "VAT base (taxable total, printed in the VAT line)",
+   "scope": "document",
+   "pattern": "^[ \\t]+VAT[ \\t]+\\(([\\d.]+)x\\d+%\\)",
+   "type": "money"
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meters (joined)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]+Mtr (\\d{6,}) old:",
+   "type": "text"
+  },
+  {
+   "field": "tariff_name",
+   "label": "Energy tariff description",
+   "scope": "section:electricity",
+   "type": "text",
+   "pattern": "^[ \\t]+ELECT:((?!BASIC)\\S[^\\n]*?)[ \\t]+\\.[ \\t]+\\("
+  },
+  {
+   "field": "nala_basic_r",
+   "label": "ELECT:BASIC line(s)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "^[ \\t]+ELECT:BASIC[^\\n]*\\([\\d.]+x[\\d ]+\\)[ \\t]+(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2}-?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "nala_kwh",
+    "nala_energy_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "ELECT: ... KWH lines (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "required": true,
+   "pattern": "^[ \\t]+ELECT:(?!BASIC)[^\\n]*?KWH[ \\t]+\\.[ \\t]+\\([\\d.]+x(\\d+(?: \\d{3})*)\\)[ \\t]+(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "field": "nala_water_r",
+   "label": "WATER lines (sum)",
+   "scope": "section:water",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "^[ \\t]+WATER[ \\t]*:[^\\n]*\\([\\d.]+x[\\d ]+\\)[ \\t]+(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "field": "nala_water_r",
+   "label": "WATER lines (sum, for the identity)",
+   "scope": "document",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "^[ \\t]+WATER[ \\t]*:[^\\n]*\\([\\d.]+x[\\d ]+\\)[ \\t]+(-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2}-?)[ \\t]*$"
+  }
+ ],
+ "computes": [
+  {
+   "field": "nala_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "nala_basic_r",
+    "nala_energy_r"
+   ]
+  },
+  {
+   "field": "nala_elec_check_r",
+   "op": "sub",
+   "of": [
+    "nala_vat_base_r",
+    "nala_water_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "nala_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "nala_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "nala_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "nala_basic_r",
+  "total_ex_vat_r": "nala_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "_doc": "Nala Local Municipality (Bothaville) 'Monthly Statement / Tax Invoice': header (Account no, Account month, Printed on = billing_date, Address = site_name, Deposit, Meter read period = read_start/read_end) and a ledger whose 'Levy' entry is itemised as 'DESCRIPTION . (rate x units) value' lines followed by 'Mtr ... old: n(date) new: n(date) units: n' rows and a 'VAT (base x15%)' line. Electricity = 'ELECT:BASIC-...' (other_r) + one 'ELECT:BUSINESS/INDUSTRIAL KWH' line per meter (three meters; kWh and Rands summed, meters joined, so per-meter readings are not mapped). Water lines give a water row. Values are ex VAT with space thousands. Fingerprint: the municipality's VAT number + name. Identity (--identity nala_elec_check_r): the VAT line's printed taxable base minus the water lines (property tax is zero-rated): 0.00 on 10/10; checks 0. Checked on all 10 bills."
+}

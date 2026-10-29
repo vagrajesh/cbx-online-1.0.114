@@ -1,0 +1,671 @@
+{
+ "profile_id": "naledi",
+ "profile_name": "Naledi Local Municipality (Vryburg, North West)",
+ "short_name": "Naledi",
+ "_doc": "NALEDI LM (Vryburg, NW) - ledger/statement layout, account [number removed], dept code VRYM. Verified against 9 bills (2025/08 - 2026/07). All 9 have a real text layer; ocr='never' and ocr='auto' give byte-identical text, so nothing here is OCR-sourced. LAYOUT: the first text on the page is the ADDRESSEE block (TELKOM SA LTD / C/O TFMC PTY LTD / PRIVATE BAG X137 / CENTURION / 0046) - that is Telkom, NOT the issuer. The municipality's own identity is further down: the two masthead lines 'VRYBURG MUNICIPALITY' (remittance/bank block) and 'NALEDI MUNICIPALITY' (statement masthead, followed by dept code + account number). The bill prints the label 'VAT Reg. #:' with NOTHING after it - Naledi genuinely publishes no VAT registration number on this statement - so the fingerprint is the masthead string 'NALEDI MUNICIPALITY' (verified: present on 9/9 Naledi bills and on 0 of the other 210 bills in the Telkom tree). Never fingerprint on TELKOM SA LTD / PRIVATE BAG X137 / CENTURION / 4680101146 - those are on nearly every bill in the portfolio. TWO NUMBERS WORTH KNOWING: the line 'VRYBURG MUNICIPALITY  <n>  <amount>' carries the STATEMENT/INVOICE NUMBER and the WHOLE-ACCOUNT VAT TOTAL (verified to the cent on 9/9 as 15/115 of the VAT-bearing charges); the bare-date line under the masthead row is the DUE DATE. HEADER AGING ROW is '[30-day] [current charges incl VAT] ... [total due]' - the middle figure equals the sum of every ledger charge line incl VAT on 7/9 bills (2025/08 is reduced by a 'Transfers:' line, 2026/04 prints only '.00'). METER TABLE ('Tp. Meter No. Previous New Reading Factor Consumption Period Daily Aver'): Tp W = water, E = kWh registers (suffix OP/S/P = off-peak/standard/peak), K = the kVA demand register. Readings never carry a decimal point; the Consumption column always does ('.000') - that is what separates them when the Previous column is blank (blank Previous happens on 5 of 9 bills). Period prints DD/MM-DD/MM only, no year, and is kept exactly as printed. LEDGER TABLE ('Service type Tariff Consumption Basic'): every charge row prints amount EX VAT with FIVE decimals, then amount INCL VAT with TWO decimals, then the VAT which is RIGHT-TRUNCATED by the column width (129.0, 42.3, 8235.7) and must never be read as a value. Two independently printed columns therefore exist per row, which is the genuine identity check: sum(ex VAT) x 1.15 == sum(incl VAT). Services interleave in ARBITRARY order in that one table (SEWER / REFUSE / WATER / ELECTRICITY / ELEC.TOU / PSI), so electricity is the only positional section and water, sewerage, refuse and rates are OVERLAY sections over the same span - separation is enforced by line-anchored patterns, not by position. On one bill (2025/08) the ledger table is SPLIT BY THE PAGE BREAK with the whole page-2 header block in between and the STANDARD/PEAK rows after it; the electricity section therefore runs to end of document. SEWER prints only the incl-VAT and VAT columns (no ex-VAT figure), so sewer ex VAT is computed as incl - VAT. PSI ('[number removed] @ .00229' = property valuation @ cent-in-rand / 12) is ASSESSMENT RATES and is VAT-exempt - it is deliberately kept out of every electricity column. NOT PRINTED ANYWHERE: reading type (Actual/Estimate), notified max demand, cash/security-held. 'Deposit:' and 'Guarantee:' labels are printed but always blank on these 9 bills. The number 155 printed on the 'Erf:' line is constant on all 9 bills while billed kVA varies 116-155; it is captured as the erf/stand descriptor and is NOT claimed as an NMD - if Edwin can confirm it is the notified maximum demand, map nmd_kva to naledi_erf_2. RULE ZERO: no electricity-only ex-VAT total is printed on this bill, so total_ex_vat_r is the sum of the five electricity charge rows and the reconcile check is CIRCULAR - it proves nothing. The real checks are (a) sum(ex VAT) x 1.15 == sum(incl VAT) per row and in total, (b) the printed account VAT on the VRYBURG MUNICIPALITY line == 15/115 of (aging 'current' figure - PSI), (c) each ledger kWh bucket == the matching meter register's printed Consumption.",
+ "fingerprint": {
+  "all": [
+   "NALEDI MUNICIPALITY"
+  ],
+  "any": [
+   "VRYBURG MUNICIPALITY",
+   "Tp. Meter No.",
+   "ELEC.TOU"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^Tp\\. Meter No\\.",
+   "require": "^ELEC\\.TOU[ \\t]|^ELECTRICITY[ \\t]+Basic"
+  },
+  "water": {
+   "start": "^Tp\\. Meter No\\.",
+   "overlay": true,
+   "require": "^WATER[ \\t]"
+  },
+  "sewerage": {
+   "start": "^Tp\\. Meter No\\.",
+   "overlay": true,
+   "require": "^SEWER\\b"
+  },
+  "refuse": {
+   "start": "^Tp\\. Meter No\\.",
+   "overlay": true,
+   "require": "^REFUSE\\b"
+  },
+  "rates": {
+   "start": "^Tp\\. Meter No\\.",
+   "overlay": true,
+   "require": "^[ \\t]+PSI[ \\t]+[\\d,]*\\.\\d{2}[ \\t]*$"
+  }
+ },
+ "fields": [
+  {
+   "fields": [
+    "naledi_dept",
+    "account_number"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "Masthead: dept code + account number",
+   "scope": "header",
+   "patterns": [
+    "^NALEDI MUNICIPALITY[ \\t]+([A-Z]{2,8})[ \\t]+(\\d{6,})[ \\t]*$",
+    "^NALEDI[ \\t]+MUNICIPALITY[ \\t]+([A-Z]{2,8})[ \\t]+(\\d{6,})[ \\t]*$"
+   ],
+   "required": true
+  },
+  {
+   "field": "naledi_billing_date_printed",
+   "label": "Date of account (as printed)",
+   "scope": "header",
+   "pattern": "^[ \\t]*\\S[^\\n]*?Date of account:[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "naledi_date_real",
+   "label": "Date of account (real dates only)",
+   "scope": "header",
+   "pattern": "Date of account:[ \\t]+((?!00/00/0000)\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "naledi_billing_period",
+   "label": "Billing period (YYYY/MM)",
+   "scope": "header",
+   "pattern": "(?<![\\d/])(\\d{4}/\\d{2})[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due date (bare-date line under masthead row)",
+   "scope": "header",
+   "pattern": "^[ \\t]{10,}(\\d{2}/\\d{2}/\\d{4})[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "naledi_receipts_posted_to",
+   "label": "Receipts posted to",
+   "scope": "header",
+   "pattern": "Receipts posted to:[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "invoice_number",
+    "naledi_vat_total_r"
+   ],
+   "types": [
+    "text",
+    "money"
+   ],
+   "label": "Remittance line: statement no + whole-account VAT",
+   "scope": "header",
+   "pattern": "^VRYBURG MUNICIPALITY[ \\t]+(\\d{5,})[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "naledi_bank_ref",
+   "label": "Remittance reference",
+   "scope": "header",
+   "pattern": "^[ \\t]{10,}(\\d{10})[ \\t]+\\d{1,3}[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "naledi_erf",
+    "naledi_erf_2"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "Erf / stand",
+   "scope": "header",
+   "pattern": "^[^\\n]*?Erf:[ \\t]+(\\S+)(?:[ \\t]+(\\S+))?[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "naledi_build",
+   "label": "Building / site description",
+   "scope": "header",
+   "pattern": "Build\\.:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "naledi_street",
+    "naledi_street_no"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "Site street + number",
+   "scope": "header",
+   "patterns": [
+    "Site:[ \\t]*(\\S[^\\n]*?)[ \\t]{2,}(\\d+[A-Z]?)[ \\t]*$",
+    "Site:[ \\t]*(\\S[^\\n]*?)[ \\t]*()$"
+   ],
+   "required": true
+  },
+  {
+   "field": "naledi_vat_reg_no",
+   "label": "Municipality VAT registration no (label printed, value blank)",
+   "scope": "header",
+   "pattern": "^VAT Reg\\.[ \\t]*#:[ \\t]*(\\d[\\d ]{7,})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit held",
+   "scope": "header",
+   "pattern": "Deposit:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "guarantee_r",
+   "label": "Guarantee held",
+   "scope": "header",
+   "pattern": "Guarantee:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "naledi_roll_number",
+   "label": "Roll number",
+   "scope": "header",
+   "pattern": "Roll number:[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "naledi_psi_valuation",
+    "naledi_psi_rate",
+    "naledi_psi_hdr_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "PSI (assessment rates) valuation @ rate = monthly amount",
+   "scope": "header",
+   "pattern": "PSI[ \\t]+(\\d{4,})[ \\t]+@[ \\t]+([\\d.]+)[ \\t]+([\\d,]+\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "naledi_age_30_r",
+    "naledi_current_r",
+    "naledi_hdr_total_due_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Aging row: 30-day / current charges incl VAT / total due",
+   "scope": "header",
+   "patterns": [
+    "^[ \\t]{8,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]{10,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+    "^[ \\t]{8,}()(-?[\\d,]*\\.\\d{2}-?)[ \\t]{10,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+    "^[ \\t]{40,}()()(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$"
+   ],
+   "required": false
+  },
+  {
+   "field": "total_due_r",
+   "label": "Total monthly (amount due)",
+   "scope": "document",
+   "pattern": "^\\*\\* Total monthly:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "naledi_balance_bf_r",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "^Balance brought forward:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "naledi_interest_r",
+   "label": "Interest / penalties",
+   "scope": "document",
+   "pattern": "^Interest/penalties:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "naledi_receipts_r",
+   "label": "Receipts (after balance brought forward)",
+   "scope": "document",
+   "patterns": [
+    "^Balance brought forward:[\\s\\S]*?^Receipts:[ \\t]+\\d+[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+    "^Receipts:[ \\t]+\\d+[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "naledi_transfers_r",
+   "label": "Transfers (after balance brought forward)",
+   "scope": "document",
+   "patterns": [
+    "^Balance brought forward:[\\s\\S]*?^Transfers:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+    "^Transfers:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meter / register numbers",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*[EK][ \\t]+(\\S+)[ \\t]+[\\d ]",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "end_reading_kwh",
+   "label": "kWh registers: New Reading (summed over OP/S/P)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*E[ \\t]+\\S+[ \\t]+(?:\\d+[ \\t]+)?(?<![\\d.])(\\d+)[ \\t]+(?:[\\d,]+\\.\\d+[ \\t]+)?(?=\\d{2}/\\d{2}-\\d{2}/\\d{2})",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "start_reading_kwh",
+   "label": "kWh registers: Previous reading (summed over OP/S/P)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*E[ \\t]+\\S+[ \\t]+(?<![\\d.])(\\d+)[ \\t]+\\d+[ \\t]+(?:[\\d,]+\\.\\d+[ \\t]+)?(?=\\d{2}/\\d{2}-\\d{2}/\\d{2})",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "naledi_kva_reading",
+   "label": "kVA register (Tp K) New Reading",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*K[ \\t]+\\S+[ \\t]+(?:\\d+[ \\t]+)?(?<![\\d.])(\\d+)[ \\t]+(?:[\\d,]+\\.\\d+[ \\t]+)?(?=\\d{2}/\\d{2}-\\d{2}/\\d{2})",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Reading period (standard register, DD/MM as printed)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*E[ \\t]+\\S*S[ \\t]+[^\\n]*?(?<![\\d/])(\\d{2}/\\d{2})-(\\d{2}/\\d{2})(?![\\d/])",
+    "^[ \\t]*E[ \\t]+\\S+[ \\t]+[^\\n]*?(?<![\\d/])(\\d{2}/\\d{2})-(\\d{2}/\\d{2})(?![\\d/])"
+   ],
+   "required": true
+  },
+  {
+   "field": "naledi_kva_period",
+   "label": "kVA register reading period",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*K[ \\t]+\\S+[ \\t]+[^\\n]*?((?<![\\d/])\\d{2}/\\d{2}-\\d{2}/\\d{2})(?![\\d/])",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "naledi_daily_avg_s",
+    "naledi_daily_avg_p"
+   ],
+   "types": [
+    "number",
+    "number"
+   ],
+   "label": "Daily average (standard / peak registers)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*E[ \\t]+\\S*S[ \\t]+[^\\n]*?\\d{2}/\\d{2}-\\d{2}/\\d{2}[ \\t]+([\\d,]+\\.?\\d*)[ \\t]*$[\\s\\S]*?^[ \\t]*E[ \\t]+\\S+[ \\t]+[^\\n]*?\\d{2}/\\d{2}-\\d{2}/\\d{2}[ \\t]+([\\d,]+\\.?\\d*)[ \\t]*$",
+   "required": false
+  },
+  {
+   "fields": [
+    "tariff_name",
+    "naledi_basic_units",
+    "basic_r",
+    "naledi_basic_inc_r"
+   ],
+   "types": [
+    "text",
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "ELECTRICITY Basic charge (tariff, units, ex VAT, incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^ELECTRICITY[ \\t]+Basic[ \\t]+(\\S+)[ \\t]+(\\d+)[ \\t]+(-?[\\d,]+\\.\\d{5}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)(?![\\d.])",
+   "required": true
+  },
+  {
+   "fields": [
+    "peak_kwh",
+    "peak_r",
+    "naledi_peak_inc_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "ELEC.TOU PEAK (kWh, ex VAT, incl VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^ELEC\\.TOU[ \\t]+PEAK[ \\t]+(?<![\\d.])([\\d,]+)[ \\t]+(-?[\\d,]+\\.\\d{5}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)(?![\\d.])",
+   "required": true
+  },
+  {
+   "fields": [
+    "standard_kwh",
+    "standard_r",
+    "naledi_std_inc_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "ELEC.TOU STANDARD (kWh, ex VAT, incl VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^ELEC\\.TOU[ \\t]+STANDARD[ \\t]+(?<![\\d.])([\\d,]+)[ \\t]+(-?[\\d,]+\\.\\d{5}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)(?![\\d.])",
+   "required": true
+  },
+  {
+   "fields": [
+    "offpeak_kwh",
+    "offpeak_r",
+    "naledi_offpeak_inc_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "ELEC.TOU OFF PEAK (kWh, ex VAT, incl VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^ELEC\\.TOU[ \\t]+OFF[ \\t]+PEAK[ \\t]+(?<![\\d.])([\\d,]+)[ \\t]+(-?[\\d,]+\\.\\d{5}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)(?![\\d.])",
+   "required": false
+  },
+  {
+   "fields": [
+    "demand_kva",
+    "demand_r",
+    "naledi_demand_inc_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "ELEC.TOU DEMAND/KVA (kVA, ex VAT, incl VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^ELEC\\.TOU[ \\t]+DEMAND/KVA[ \\t]+(?<![\\d.])([\\d,]+)[ \\t]+(-?[\\d,]+\\.\\d{5}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)(?![\\d.])",
+   "required": true
+  },
+  {
+   "fields": [
+    "water_basic_tariff",
+    "water_basic_ex_r",
+    "water_basic_inc_r"
+   ],
+   "types": [
+    "text",
+    "money",
+    "money"
+   ],
+   "label": "WATER Basic (tariff, ex VAT, incl VAT)",
+   "scope": "section:water",
+   "pattern": "^WATER[ \\t]+Basic[ \\t]+(\\S+)[ \\t]+(-?[\\d,]+\\.\\d{5}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)(?![\\d.])",
+   "required": true
+  },
+  {
+   "fields": [
+    "water_kl",
+    "water_cons_ex_r",
+    "water_cons_inc_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "WATER CONSUMPTION (kL, ex VAT, incl VAT)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^WATER[ \\t]+CONSUMPTION[ \\t]+\\S+[ \\t]+(?<![\\d.])([\\d,]+)[ \\t]+(-?[\\d,]+\\.\\d{5}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)(?![\\d.])",
+   "required": false
+  },
+  {
+   "fields": [
+    "water_meter",
+    "water_start_reading",
+    "water_end_reading"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number"
+   ],
+   "label": "Water meter row (Tp W)",
+   "scope": "section:water",
+   "patterns": [
+    "^[ \\t]*W[ \\t]+(\\S*)[ \\t]+(?<![\\d.])(\\d+)[ \\t]+(\\d+)[ \\t]+(?:[\\d,]+\\.\\d+[ \\t]+)?(?=\\d{2}/\\d{2}-\\d{2}/\\d{2})",
+    "^[ \\t]*W()[ \\t]+(?<![\\d.])(\\d+)[ \\t]+(\\d+)[ \\t]+(?:[\\d,]+\\.\\d+[ \\t]+)?(?=\\d{2}/\\d{2}-\\d{2}/\\d{2})"
+   ],
+   "required": false
+  },
+  {
+   "field": "water_period",
+   "label": "Water reading period",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*W[ \\t]+[^\\n]*?((?<![\\d/])\\d{2}/\\d{2}-\\d{2}/\\d{2})(?![\\d/])",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "sewer_inc_r",
+    "sewer_vat_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "SEWER (incl VAT, VAT as printed - right-truncated column)",
+   "scope": "section:sewerage",
+   "pattern": "^SEWER[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]+(-?[\\d,]+\\.\\d{1,2}-?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "refuse_tariff",
+    "refuse_units",
+    "refuse_ex_r",
+    "refuse_inc_r"
+   ],
+   "types": [
+    "text",
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "REFUSE REMOVAL (tariff, units, ex VAT, incl VAT)",
+   "scope": "section:refuse",
+   "pattern": "^REFUSE[ \\t]+REMOVAL[ \\t]+(\\S+)[ \\t]+(\\d+)[ \\t]+(-?[\\d,]+\\.\\d{5}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)(?![\\d.])",
+   "required": true
+  },
+  {
+   "field": "rates_r",
+   "label": "PSI assessment rates (ledger line, VAT exempt)",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]+PSI[ \\t]+(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "naledi_site_out",
+   "op": "concat",
+   "of": [
+    "naledi_build",
+    "naledi_street",
+    "naledi_street_no"
+   ]
+  },
+  {
+   "field": "naledi_erf_out",
+   "op": "concat",
+   "of": [
+    "naledi_erf",
+    "naledi_erf_2"
+   ]
+  },
+  {
+   "field": "naledi_total_kwh",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "peak_kwh",
+    "standard_kwh",
+    "offpeak_kwh"
+   ]
+  },
+  {
+   "field": "naledi_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "basic_r",
+    "peak_r",
+    "standard_r",
+    "offpeak_r",
+    "demand_r"
+   ]
+  },
+  {
+   "field": "naledi_elec_inc_r",
+   "op": "sum",
+   "of": [
+    "naledi_basic_inc_r",
+    "naledi_peak_inc_r",
+    "naledi_std_inc_r",
+    "naledi_offpeak_inc_r",
+    "naledi_demand_inc_r"
+   ]
+  },
+  {
+   "field": "naledi_elec_vat_r",
+   "op": "sub",
+   "of": [
+    "naledi_elec_inc_r",
+    "naledi_elec_ex_r"
+   ]
+  },
+  {
+   "field": "naledi_reading_diff_kwh",
+   "op": "sub",
+   "as": "number",
+   "of": [
+    "end_reading_kwh",
+    "start_reading_kwh"
+   ]
+  },
+  {
+   "field": "sewer_ex_r",
+   "op": "sub",
+   "of": [
+    "sewer_inc_r",
+    "sewer_vat_r"
+   ]
+  },
+  {
+   "field": "water_ex_r",
+   "op": "sum",
+   "of": [
+    "water_basic_ex_r",
+    "water_cons_ex_r"
+   ]
+  },
+  {
+   "field": "water_inc_r",
+   "op": "sum",
+   "of": [
+    "water_basic_inc_r",
+    "water_cons_inc_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "naledi_site_out",
+  "billing_date": [
+   "naledi_date_real",
+   "naledi_billing_period"
+  ],
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "naledi_total_kwh",
+  "peak_kwh": "peak_kwh",
+  "standard_kwh": "standard_kwh",
+  "offpeak_kwh": "offpeak_kwh",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "peak_r",
+  "standard_r": "standard_r",
+  "offpeak_r": "offpeak_r",
+  "demand_r": "demand_r",
+  "nmd_r": "_none",
+  "other_r": "basic_r",
+  "total_ex_vat_r": "naledi_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "guarantee_r",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "^Balance brought forward:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "^Balance brought forward:[\\s\\S]*?^Receipts:[ \\t]+\\d+[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "vat": "^VRYBURG MUNICIPALITY[ \\t]+\\d{5,}[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "current_incl": "^[ \\t]{8,}(?:-?[\\d,]*\\.\\d{2}-?[ \\t]{2,})?(-?[\\d,]*\\.\\d{2}-?)[ \\t]{10,}-?[\\d,]*\\.\\d{2}-?[ \\t]*$",
+  "total_due": "^\\*\\* Total monthly:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "due_date": "^[ \\t]{10,}(\\d{2}/\\d{2}/\\d{4})[ \\t]*$",
+  "guarantee": "Guarantee:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)",
+  "deposito": "Deposit:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)"
+ }
+}

@@ -1,0 +1,755 @@
+{
+ "profile_id": "umgungundlovu",
+ "profile_name": "uMgungundlovu District Municipality (Pietermaritzburg, KZN)",
+ "short_name": "uMgungundlovu",
+ "_doc": "uMgungundlovu DISTRICT Municipality (Pietermaritzburg, KZN) - Telkom /\nTFMC account [number removed] (old account [number removed]), Property Ref MPOF17441,\nMpofana_Book163_Seq30, Mooi River.  Municipal VAT reg 4000791642.\n\n*** THERE IS NO ELECTRICITY ON THESE BILLS. ***  This is a district\nmunicipality: it bills bulk WATER, SANITATION (sewer) and interest on\narrears only.  Across all 10 PDFs the strings \"electric\", \"kWh\" and \"kVA\"\noccur ZERO times.  The profile therefore has NO section:electricity rule and\nproduces NO electricity row - that is correct, not a miss.  Rows come out on\nwater / sewerage / sundry, and the \"canonical\" map (electricity only) is\nnever consulted.\n\nFINGERPRINT.  \"all\": the municipal VAT registration number 4000791642.\n\"any\": the masthead \"uMGUNGUNDLOVU DISTRICT MUNICIPALITY\", the remittance\nline \"uMgungundlovu District Municipality\" and the e-mail domain\numdm.gov.za.  NOTHING from the addressee block is used - not\n\"TFMC PTY LTD (Telkom)\", not \"PRIVATE BAG X137\", not \"CENTURION\", not\nTelkom's own VAT 4680101146 - and no CBRE/Excellerate address.  (Note\nuPhongolo's VAT 4000791873 shares a prefix with ours but is a different\nnumber; substring matching keeps them apart.)\n\nFILENAME vs BILL.  UMG_[number removed]_Accounts Receivable Statements\n[number removed].pdf has 7447 in its NAME but its text reads\n\"Account No. [number removed]\" - the same account.  The app reads the account\nnumber out of the bill text, never the filename, so it is handled as one\naccount.  It is the May-2026 statement (Period Ending 2026/05/31), and its\nreadings 9360 -> 9452 chain exactly between the April charges (in the\nMay shape-C bill) and the June charges (in the July shape-C bill).\n\nTHREE TEMPLATES (established from --raw before any pattern was written):\n\n  Shape A - 6 bills, \"Statement_<acct>_<date>.pdf\", Sep 2025 - Jan 2026\n    (2026-01-31 is present TWICE, byte-identical apart from the filename).\n    Ledger columns  Date | Description | Reference | Vat | Amount (Inc Vat) |\n    Balance.  Consumption line reads \"71 KL (Start:9023 End:9094)\" and is\n    followed by sub-lines \"Meter:KZ223_PM[number removed]  Reading Date: ...\n    Reading Type: Actual Reading\", \"Previous Reading: ... End Reading: ...\n    Consumption:71\", and a \"Band: 0 - 71 = 71 Kl @ R83.60 = R5 935.60\" line\n    that prints the ex-VAT amount INDEPENDENTLY.  Group headings Other /\n    Water Consumption / Water Basic / Sanitation are printed.\n    MONEY IS PERIOD-DECIMAL (\"6 825.94\" or \"4,326.30\") - safe to capture\n    whole.\n\n  Shape B - 1 bill, \"Accounts Receivable Statements [number removed].pdf\",\n    May 2026.  Same columns as shape A, but the descriptions are one-liners\n    (\"Water Consumption 92KL - [9360 to 9452]\", \"Sanitation Household 92KL -\n    [9360 to 945\" - truncated by the column width) and there are NO meter\n    sub-lines and NO Band lines.  Money is period-decimal.\n\n  Shape C - 3 bills, \"[number removed]*.pdf\", statements Mar / May / Jul 2026.\n    Different masthead (\"uMGUNGUNDLOVU DISTRICT MUNICIPALITY\" at the top),\n    ledger columns  Date | Description | DEBIT | VAT | Credit | Balance -\n    i.e. the inc-VAT amount comes BEFORE the VAT, the opposite order to\n    shapes A/B - and dates are dd/mm/yyyy.  Each charge is followed by a\n    meter table whose \"Exclusive\" column prints the ex-VAT amount\n    INDEPENDENTLY.  MONEY IS COMMA-DECIMAL / SPACE-THOUSANDS (\"5 864,54\").\n    Its \"Period Ending\" is the statement month while the ledger lines carry\n    the PREVIOUS month's charges.\n\nBECAUSE THE COLUMN ORDER FLIPS between shapes, the VAT/inc pairs cannot\nshare one rule with \"patterns\" fallbacks (rule: every alternative must\nexpose the same groups in the same order).  Each charge type therefore has\nTWO rules - *_ab (Vat then Amount) and *_c (Debit then VAT) - merged by\n'prefer' computes.\n\nMONEY IS VAT-INCLUSIVE on every shape, with the VAT printed in its own\ncolumn, so every ex-VAT figure is derived per line with a 'sub' compute and\nthen cross-checked against the independently printed Band (shape A) /\nExclusive (shape C) amount.  water_usage_r and sewer_r PREFER the printed\nfigure and fall back to inc-minus-VAT (shape B, which prints neither).\n\nCOMMA DECIMALS (shape C only).  _to_decimal() strips spaces AND commas, so a\nfull capture of \"5 864,54\" would arrive as 586454 - 100x too big.  Following\nthe Ditsobotla convention the shape-C money patterns capture the RAND PART\nONLY, so those 3 bills read up to R0.99 low per figure, and the exact\nprinted string is kept in umg_*_txt natives.  Shapes A/B (7 of 10 bills) are\ncent-exact.  The two-line engine fix is in reports/ditsobotla.md sec 2.\n\nSECTIONS.  Shape C prints NO group headings at all, and on the Dec-2025\nshape-A bill the \"Sanitation\" heading sits above the INTEREST line, above\nthe water rows.  So the only reliable boundary is the ledger header\n(\"Date  Description ...\"), which exists on all three shapes: water is the\nsingle boundary-forming section (ledger header -> end of document) and\nsewerage / sundry are overlays with \"end\": \"\\\\Z\".  Every rule anchors on its\nown description text, which is unique per service (\"Water Consumption\" /\n\"<n> KL (Start:\" / \"Water Basic\" / \"SEWER VARIABLE\" / \"Sanitation Household\"\n/ \"Interest Charge\"), so nothing can leak between services.  The two \"last\nBand / last Exclusive\" sewer rules use a greedy [\\\\s\\\\S]* prefix precisely\nbecause the overlay can begin above the water rows.\n\nPAYMENTS.  \"Direct Deposit - Water\" credits are reported in \"recon\"\n(incoming_payment), not as a charge row.  On shape C the credit sits in the\nCredit column (third money on the line), on shapes A/B it is a negative in\nthe Amount column.\n\nFIELD NAMES follow Data/views/general.view.json so the General view renders\nthem: water -> w_meter, w_reading_type, w_read_start, w_read_end,\nstart_reading_kl, end_reading_kl, total_kl, water_usage_r, water_levy_r,\nwater_charges_r; sewerage -> sewer_kl, sewer_r, ws_vat_r, ws_total_ex_r,\nws_total_r; sundry -> sundry_charges_r, sundry_vat_r, sundry_total_ex_r,\nsundry_total_r; plus site_name / statement_month / account_number.\n\nKNOWN LIMITS (see reports/umgungundlovu.md):\n  - shape C wraps the meter id over two lines (\"KZ223_PM14\" + \"[number removed]\"), so\n    w_meter reads \"KZ223_PM14 [number removed]\" there against \"KZ223_PM[number removed]\" on\n    shape A.  Nothing else can rejoin them - 'concat' inserts a space.\n  - shape A prints one Reading Date, not a reading period, so\n    w_read_start/w_read_end fill only on the 3 shape-C bills.\n  - the Nov-2025 shape-A bill prints no Band lines and no\n    Previous/End Reading values under Sanitation, so its water ex-VAT falls\n    back to inc-minus-VAT.\n  - no bill prints an independent water+sewer ex-VAT TOTAL, so\n    water_charges_r is the sum of its own parts; the genuine checks are the\n    printed Band/Exclusive figures and the printed per-line VAT.",
+ "fingerprint": {
+  "all": [
+   "4000791642"
+  ],
+  "any": [
+   "uMGUNGUNDLOVU DISTRICT MUNICIPALITY",
+   "uMgungundlovu District Municipality",
+   "umdm.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "water": {
+   "start": "^[ \\t]*Date[ \\t]{2,}Description[ \\t]{2,}",
+   "require": "Water (?:Consumption|Basic)|\\d+[ \\t]*KL[ \\t]*\\(Start"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*(?:Sanitation[ \\t]*$|\\d{2}/\\d{2}/\\d{4}[ \\t]+Sanitation Household)",
+   "overlay": true,
+   "end": "\\Z",
+   "require": "SEWER VARIABLE|Sanitation Household"
+  },
+  "sundry": {
+   "start": "^[ \\t]*(?:Interest on Arrears[ \\t]*$|(?:\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})[ \\t]+Interest Charge)",
+   "overlay": true,
+   "end": "\\Z",
+   "require": "Interest Charge"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]*Account(?:[ \\t]+No\\.?)?[ \\t]*:?[ \\t]+(\\d{10})(?![\\d])",
+    "Invoice No\\.?:[ \\t]*INV(\\d{10})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "umg_old_account",
+   "label": "Old account",
+   "scope": "document",
+   "pattern": "Old Account:[ \\t]*(\\d+)",
+   "type": "text"
+  },
+  {
+   "field": "umg_vat_reg",
+   "label": "Municipality VAT reg no",
+   "scope": "document",
+   "pattern": "VAT Number[ \\t]*:?[ \\t]*(\\d{10})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "umg_invoice_no",
+   "label": "Invoice No",
+   "scope": "document",
+   "pattern": "Invoice No\\.?:[ \\t]*(INV[\\d/]+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "statement_month",
+   "label": "Period Ending",
+   "scope": "document",
+   "pattern": "Period Ending[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2}|[A-Za-z]+ \\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "patterns": [
+    "Statement Date[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2})",
+    "Statement Date[ \\t]{2,}(\\d{1,2} [A-Za-z]+ \\d{4})"
+   ],
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Payment Due Date",
+   "scope": "document",
+   "pattern": "Payment Due Date[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2}|\\d{1,2} [A-Za-z]+ \\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "umg_kl_doc",
+   "label": "Consumption kL (document scope)",
+   "scope": "document",
+   "patterns": [
+    "(\\d+)[ \\t]*KL[ \\t]*\\(Start:",
+    "(?:Water Consumption|Sanitation Household)[ \\t]+(\\d+)[ \\t]*KL"
+   ],
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "umg_property_ref",
+   "label": "Property Ref",
+   "scope": "document",
+   "pattern": "Property Ref[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*([A-Z]{2,}\\d+)\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "umg_meter_book",
+   "label": "Meter Book No",
+   "scope": "document",
+   "pattern": "([A-Za-z]+_Book\\d+_Seq\\d+)",
+   "type": "text"
+  },
+  {
+   "field": "umg_phys_address",
+   "label": "Physical Address",
+   "scope": "document",
+   "pattern": "Physical Address[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "umg_property_usage",
+   "label": "Property Usage",
+   "scope": "document",
+   "pattern": "(BUSINESS/COMMERCIAL|DOMESTIC|RESIDENTIAL|GOVERNMENT)",
+   "type": "text"
+  },
+  {
+   "field": "umg_customer",
+   "label": "Addressee",
+   "scope": "document",
+   "pattern": "^[ \\t]*(?:M/S[ \\t]+)?(TFMC PTY LTD \\(Telkom\\))",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit[ \\t]{2,}(\\d+(?:\\.\\d{2})?)(?![\\d,])",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "umg_ageing_current_r",
+    "umg_ageing_due_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Ageing row: Current + Amount Due",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]*180 Days[^\\n]*Amount Due[ \\t]*$[\\s\\S]{0,120}?^[ \\t]*(?:(?:-?[\\d, ]{0,16}\\.\\d{2})[ \\t]+){6}(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)[ \\t]*$",
+    "^[ \\t]*180 Days[^\\n]*Amount Due[ \\t]*$[\\s\\S]{0,120}?^[ \\t]*(?:(?:-?[\\d ]{0,14},\\d{2})[ \\t]+){6}(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)[ \\t]*$"
+   ]
+  },
+  {
+   "field": "umg_amount_due_r",
+   "label": "AMOUNT DUE (foot)",
+   "scope": "document",
+   "patterns": [
+    "(?:TOTAL )?AMOUNT DUE[ \\t]+R[ \\t]*(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)",
+    "(?:TOTAL )?AMOUNT DUE[ \\t]+R[ \\t]*(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)",
+    "(?:TOTAL )?AMOUNT DUE[ \\t]+R[ \\t]*(-?[\\d ]*\\d)(?:[.,]\\d{2})?"
+   ],
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "umg_amount_due_txt",
+   "label": "AMOUNT DUE (as printed)",
+   "scope": "document",
+   "patterns": [
+    "(?:TOTAL )?AMOUNT DUE[ \\t]+R[ \\t]*(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)",
+    "(?:TOTAL )?AMOUNT DUE[ \\t]+R[ \\t]*(?<![\\d.,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?!\\d)",
+    "(?:TOTAL )?AMOUNT DUE[ \\t]+R[ \\t]*(-?[\\d ]*\\d(?:[.,]\\d{2})?)"
+   ],
+   "type": "text"
+  },
+  {
+   "fields": [
+    "umg_wc_kl_ab",
+    "umg_wc_vat_ab",
+    "umg_wc_inc_ab"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Water Consumption (shape A/B): kL, VAT, inc VAT",
+   "scope": "section:water",
+   "collect": "sum",
+   "patterns": [
+    "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(\\d+)[ \\t]*KL[ \\t]*\\(Start:[^\\n]*?[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)",
+    "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+Water Consumption[ \\t]+(\\d+)[ \\t]*KL[^\\n]*?[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)"
+   ]
+  },
+  {
+   "fields": [
+    "umg_wc_kl_c",
+    "umg_wc_inc_c",
+    "umg_wc_vat_c"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Water Consumption (shape C): kL, Debit inc VAT, VAT",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Water Consumption[ \\t]+(\\d+)[ \\t]*KL[^\\n]*?[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)"
+  },
+  {
+   "field": "umg_wc_inc_txt",
+   "label": "Water Consumption inc VAT (as printed)",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "type": "text",
+   "patterns": [
+    "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(?:\\d+[ \\t]*KL[ \\t]*\\(Start:|Water Consumption)[^\\n]*?[ \\t]+(?:-?[\\d, ]{0,16}\\.\\d{2})[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Water Consumption[^\\n]*?[ \\t]+(?<![\\d.,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?!\\d)"
+   ]
+  },
+  {
+   "fields": [
+    "start_reading_kl",
+    "end_reading_kl"
+   ],
+   "types": [
+    "number",
+    "number"
+   ],
+   "label": "Water meter readings",
+   "scope": "section:water",
+   "patterns": [
+    "\\(Start:[ \\t]*(\\d+)[ \\t]+End:[ \\t]*(\\d+)\\)",
+    "Water Consumption[ \\t]+\\d+[ \\t]*KL[ \\t]*-[ \\t]*\\[[ \\t]*(\\d+)[ \\t]+to[ \\t]+(\\d+)\\]",
+    "Previous Reading:[ \\t]*(\\d+)[ \\t]+End Reading:[ \\t]*(\\d+)"
+   ],
+   "required": true
+  },
+  {
+   "field": "umg_w_meter_a",
+   "label": "Water meter (shape A)",
+   "scope": "section:water",
+   "pattern": "Meter:[ \\t]*(\\S+)[ \\t]+Reading Date",
+   "type": "text"
+  },
+  {
+   "field": "umg_w_meter_c1",
+   "label": "Water meter part 1 (shape C)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*(KZ\\w+)[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}",
+   "type": "text"
+  },
+  {
+   "field": "umg_w_meter_c2",
+   "label": "Water meter part 2 (shape C wrap)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*KZ\\w+[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}[^\\n]*\\n[ \\t]*(\\d{5,})[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "w_reading_type",
+   "label": "Reading Type",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "Reading Type:[ \\t]+(Actual|Estimated)(?: Reading)?[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "umg_c_read_from",
+    "umg_c_read_to"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Water reading period (shape C meter table)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*KZ\\w+[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})"
+  },
+  {
+   "field": "umg_w_reading_date",
+   "label": "Reading Date (shape A)",
+   "scope": "section:water",
+   "pattern": "Reading Date:[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date"
+  },
+  {
+   "field": "umg_w_tariff_txt",
+   "label": "Water tariff R/kL (as printed)",
+   "scope": "section:water",
+   "patterns": [
+    "Kl @ R([\\d, ]*\\d\\.\\d{2})",
+    "^[ \\t]*KZ\\w+[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}[ \\t]{2,}(\\d{1,3},\\d{2})"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "umg_w_excl_r",
+   "label": "Water ex VAT as printed (Band / Exclusive col)",
+   "scope": "section:water",
+   "patterns": [
+    "Band:[^\\n]*?=[ \\t]*R[ \\t]*(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)",
+    "^[ \\t]*KZ\\w+[^\\n]*[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)[ \\t]*$"
+   ],
+   "type": "money"
+  },
+  {
+   "field": "umg_w_excl_txt",
+   "label": "Water ex VAT (as printed)",
+   "scope": "section:water",
+   "patterns": [
+    "Band:[^\\n]*?=[ \\t]*R[ \\t]*(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)",
+    "^[ \\t]*KZ\\w+[^\\n]*[ \\t]{2,}(?<![\\d.,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?!\\d)[ \\t]*$"
+   ],
+   "type": "text"
+  },
+  {
+   "fields": [
+    "umg_wb_vat_ab",
+    "umg_wb_inc_ab"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Water Basic (shape A/B): VAT, inc VAT",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+Water Basic[^\\n]*?[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)"
+  },
+  {
+   "fields": [
+    "umg_wb_inc_c",
+    "umg_wb_vat_c"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Water Basic (shape C): Debit inc VAT, VAT",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Water Basic[^\\n]*?[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)"
+  },
+  {
+   "field": "umg_wb_desc",
+   "label": "Water Basic description",
+   "scope": "section:water",
+   "pattern": "(Water Basic[ \\t]*-[^\\n]*?)[ \\t]{2,}",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "umg_s_kl",
+    "umg_s_vat_ab",
+    "umg_s_inc_ab"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Sanitation (shape A/B): kL, VAT, inc VAT",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "patterns": [
+    "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+Sanitation Household[ \\t]+(\\d+)[ \\t]*KL[^\\n]*?[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)",
+    "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+SEWER VARIABLE[^\\n]*?()[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)"
+   ]
+  },
+  {
+   "fields": [
+    "umg_s_kl_c",
+    "umg_s_inc_c",
+    "umg_s_vat_c"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Sanitation (shape C): kL, Debit inc VAT, VAT",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Sanitation Household[ \\t]+(\\d+)[ \\t]*KL[^\\n]*?[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)"
+  },
+  {
+   "field": "umg_s_inc_txt",
+   "label": "Sanitation inc VAT (as printed)",
+   "scope": "section:sewerage",
+   "collect": "join_unique",
+   "type": "text",
+   "patterns": [
+    "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(?:Sanitation Household|SEWER VARIABLE)[^\\n]*?[ \\t]+(?:-?[\\d, ]{0,16}\\.\\d{2})[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Sanitation Household[^\\n]*?[ \\t]+(?<![\\d.,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?!\\d)"
+   ]
+  },
+  {
+   "field": "umg_s_desc",
+   "label": "Sanitation description",
+   "scope": "section:sewerage",
+   "patterns": [
+    "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(SEWER VARIABLE\\S*)",
+    "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(Sanitation Household)",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(Sanitation Household)"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "umg_s_excl_r",
+   "label": "Sewer ex VAT as printed (Band / Exclusive)",
+   "scope": "section:sewerage",
+   "patterns": [
+    "[\\s\\S]*Band:[^\\n]*?=[ \\t]*R[ \\t]*(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)",
+    "[\\s\\S]*^[ \\t]*KZ\\w+[^\\n]*[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)[ \\t]*$"
+   ],
+   "type": "money"
+  },
+  {
+   "field": "umg_s_excl_txt",
+   "label": "Sewer ex VAT (as printed)",
+   "scope": "section:sewerage",
+   "patterns": [
+    "[\\s\\S]*Band:[^\\n]*?=[ \\t]*R[ \\t]*(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)",
+    "[\\s\\S]*^[ \\t]*KZ\\w+[^\\n]*[ \\t]{2,}(?<![\\d.,])((?:-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2})(?!\\d)[ \\t]*$"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "umg_s_tariff_txt",
+   "label": "Sewer tariff R/kL (as printed)",
+   "scope": "section:sewerage",
+   "patterns": [
+    "[\\s\\S]*Kl @ R([\\d, ]*\\d\\.\\d{2})",
+    "[\\s\\S]*^[ \\t]*KZ\\w+[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}[ \\t]{2,}(\\d{1,3},\\d{2})"
+   ],
+   "type": "text"
+  },
+  {
+   "fields": [
+    "umg_int_vat_ab",
+    "umg_int_inc_ab"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Interest Charge (shape A/B): VAT, inc VAT",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+Interest Charge[^\\n]*?[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)"
+  },
+  {
+   "fields": [
+    "umg_int_inc_c",
+    "umg_int_vat_c"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Interest Charge (shape C): Debit, VAT",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Interest Charge[^\\n]*?[ \\t]+(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)[ \\t]{2,}(?<![\\d.,])(-?\\d{1,3}(?:[ ]\\d{3})*),\\d{2}(?!\\d)"
+  },
+  {
+   "field": "umg_int_desc",
+   "label": "Interest description",
+   "scope": "section:sundry",
+   "patterns": [
+    "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(Interest Charge[^\\n]*?)[ \\t]{2,}",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(Interest Charge[^\\n]*?)[ \\t]{2,}"
+   ],
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "prefer",
+   "of": [
+    "umg_property_ref",
+    "umg_phys_address"
+   ]
+  },
+  {
+   "field": "umg_w_meter_c",
+   "op": "concat",
+   "of": [
+    "umg_w_meter_c1",
+    "umg_w_meter_c2"
+   ]
+  },
+  {
+   "field": "w_meter",
+   "op": "prefer",
+   "of": [
+    "umg_w_meter_a",
+    "umg_w_meter_c"
+   ]
+  },
+  {
+   "field": "w_read_start",
+   "op": "prefer",
+   "of": [
+    "umg_c_read_from"
+   ]
+  },
+  {
+   "field": "w_read_end",
+   "op": "prefer",
+   "of": [
+    "umg_c_read_to",
+    "umg_w_reading_date"
+   ]
+  },
+  {
+   "field": "total_kl",
+   "op": "prefer",
+   "as": "number",
+   "of": [
+    "umg_wc_kl_ab",
+    "umg_wc_kl_c",
+    "umg_kl_doc"
+   ]
+  },
+  {
+   "field": "umg_wc_vat_r",
+   "op": "prefer",
+   "of": [
+    "umg_wc_vat_ab",
+    "umg_wc_vat_c"
+   ]
+  },
+  {
+   "field": "umg_wc_inc_r",
+   "op": "prefer",
+   "of": [
+    "umg_wc_inc_ab",
+    "umg_wc_inc_c"
+   ]
+  },
+  {
+   "field": "umg_wc_ex_calc",
+   "op": "sub",
+   "of": [
+    "umg_wc_inc_r",
+    "umg_wc_vat_r"
+   ]
+  },
+  {
+   "field": "water_usage_r",
+   "op": "prefer",
+   "of": [
+    "umg_w_excl_r",
+    "umg_wc_ex_calc"
+   ]
+  },
+  {
+   "field": "umg_wb_vat_r",
+   "op": "prefer",
+   "of": [
+    "umg_wb_vat_ab",
+    "umg_wb_vat_c"
+   ]
+  },
+  {
+   "field": "umg_wb_inc_r",
+   "op": "prefer",
+   "of": [
+    "umg_wb_inc_ab",
+    "umg_wb_inc_c"
+   ]
+  },
+  {
+   "field": "water_levy_r",
+   "op": "sub",
+   "of": [
+    "umg_wb_inc_r",
+    "umg_wb_vat_r"
+   ]
+  },
+  {
+   "field": "water_vat_r",
+   "op": "sum",
+   "of": [
+    "umg_wc_vat_r",
+    "umg_wb_vat_r"
+   ]
+  },
+  {
+   "field": "water_charges_r",
+   "op": "sum",
+   "of": [
+    "water_usage_r",
+    "water_levy_r"
+   ]
+  },
+  {
+   "field": "water_total_inc_r",
+   "op": "sum",
+   "of": [
+    "umg_wc_inc_r",
+    "umg_wb_inc_r"
+   ]
+  },
+  {
+   "field": "sewer_kl",
+   "op": "prefer",
+   "as": "number",
+   "of": [
+    "umg_s_kl",
+    "umg_s_kl_c",
+    "umg_kl_doc"
+   ]
+  },
+  {
+   "field": "umg_s_vat_r",
+   "op": "prefer",
+   "of": [
+    "umg_s_vat_ab",
+    "umg_s_vat_c"
+   ]
+  },
+  {
+   "field": "umg_s_inc_r",
+   "op": "prefer",
+   "of": [
+    "umg_s_inc_ab",
+    "umg_s_inc_c"
+   ]
+  },
+  {
+   "field": "umg_s_ex_calc",
+   "op": "sub",
+   "of": [
+    "umg_s_inc_r",
+    "umg_s_vat_r"
+   ]
+  },
+  {
+   "field": "sewer_r",
+   "op": "prefer",
+   "of": [
+    "umg_s_excl_r",
+    "umg_s_ex_calc"
+   ]
+  },
+  {
+   "field": "ws_vat_r",
+   "op": "prefer",
+   "of": [
+    "umg_s_vat_r"
+   ]
+  },
+  {
+   "field": "ws_total_ex_r",
+   "op": "prefer",
+   "of": [
+    "sewer_r"
+   ]
+  },
+  {
+   "field": "ws_total_r",
+   "op": "prefer",
+   "of": [
+    "umg_s_inc_r"
+   ]
+  },
+  {
+   "field": "sundry_vat_r",
+   "op": "prefer",
+   "of": [
+    "umg_int_vat_ab",
+    "umg_int_vat_c"
+   ]
+  },
+  {
+   "field": "sundry_total_r",
+   "op": "prefer",
+   "of": [
+    "umg_int_inc_ab",
+    "umg_int_inc_c"
+   ]
+  },
+  {
+   "field": "sundry_total_ex_r",
+   "op": "sub",
+   "of": [
+    "sundry_total_r",
+    "sundry_vat_r"
+   ]
+  },
+  {
+   "field": "sundry_charges_r",
+   "op": "prefer",
+   "of": [
+    "sundry_total_ex_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "tariff_name": "_none",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "_none",
+  "total_ex_vat_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "deposit_r": "deposit_r"
+ },
+ "recon": {
+  "prev_balance": "(?i)Balance Brought Forward[ \\t]{2,}(?:(?:-?[\\d, ]{0,16}\\.\\d{2})[ \\t]{2,})?(?<![\\d.,])(-?\\d{1,3}(?:[, ]\\d{3})*\\.\\d{2})(?!\\d)",
+  "incoming_payment": "(?i)Direct Deposit[^\\n]*?[ \\t]+(?:(?:-?[\\d, ]{0,16}\\.\\d{2})|(?:-?[\\d ]{0,14},\\d{2}))[ \\t]{2,}(-?[\\d, ]*[\\d][.,]\\d{2})",
+  "current_incl": "(?i)^[ \\t]*(?:(?:(?:-?[\\d, ]{0,16}\\.\\d{2})|(?:-?[\\d ]{0,14},\\d{2}))[ \\t]+){6}(-?[\\d, ]*[\\d][.,]\\d{2})[ \\t]+(?:(?:-?[\\d, ]{0,16}\\.\\d{2})|(?:-?[\\d ]{0,14},\\d{2}))[ \\t]*$",
+  "total_due": "(?i)^[ \\t]*(?:(?:(?:-?[\\d, ]{0,16}\\.\\d{2})|(?:-?[\\d ]{0,14},\\d{2}))[ \\t]+){7}(-?[\\d, ]*[\\d][.,]\\d{2})[ \\t]*$",
+  "due_date": "(?i)Payment Due Date[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2}|\\d{1,2} [A-Za-z]+ \\d{4})"
+ }
+}

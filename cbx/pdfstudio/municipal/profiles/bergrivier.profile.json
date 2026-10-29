@@ -1,0 +1,234 @@
+{
+ "profile_id": "bergrivier",
+ "profile_name": "Bergrivier Municipality (Piketberg, Western Cape)",
+ "short_name": "Bergrivier",
+ "_doc": "Bergrivier Municipality (Piketberg) bilingual municipal account whose text layer is SCRAMBLED: the PDF's text comes out as long lines of words in mixed (partly reversed) order, so labels and values are not adjacent. The profile reads the stable cell sequences instead, over the whole text: the cells after VERSKULDIG (statement date, account number, then the customer VAT number), the single-spaced ledger amount run ending before VERSKULDIG ([payment-] [interest] Elektrisiteit x3, Water x2, Riool, Vullis - all VAT INCLUSIVE; the profile assumes this fixed 7-service tail), the VAT cells (two Elektrisiteit VATs, four water/sewer/refuse VATs, the large electricity VAT printed separately or in-run), HUIDIGE BEDRAG (current charges) after VORIGE, the HUIDIGE/VORIGE kWh register readings, the glued current/previous reading-date triples and the VERBRUIK kWh. Elektrisiteit lines: 1st = constant basic, 2nd = an unlabelled non-energy charge (both -> other_r), 3rd = energy (constant R/kWh vs VERBRUIK; -> standard band). Ex-VAT = incl - printed VAT per line. IDENTITY ber_identity_r = HUIDIGE BEDRAG - water/sewer/refuse - interest - electricity VAT: exact on 10/10. Readings chain bill to bill and VERBRUIK = current - previous on 10/10. No site, meter number, tariff or deposit can be tied to a label - left blank. Fingerprint: Bergrivier's VAT number + name. 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "4000846172"
+  ],
+  "any": [
+   "BERGRIVIER"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "\\A",
+   "require": "(?:\\d+\\.\\d{2}- )?(?:\\d+\\.\\d{2} )?(\\d+\\.\\d{2}) (\\d+\\.\\d{2}) (\\d+\\.\\d{2}) (\\d+\\.\\d{2}) (\\d+\\.\\d{2}) (\\d+\\.\\d{2}) (\\d+\\.\\d{2})[ \\t]{2,}VERSKULDIG"
+  }
+ },
+ "fields": [
+  {
+   "fields": [
+    "billing_date",
+    "account_number"
+   ],
+   "label": "STAATDATUM + REKENINGNOMMER (cells after VERSKULDIG; next cell is the customer's VAT no)",
+   "scope": "section:electricity",
+   "pattern": "VERSKULDIG[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]{2,}(\\d{6,})[ \\t]{2,}\\d{10}\\b",
+   "types": [
+    "date",
+    "text"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ber_e1_inc_r",
+    "ber_e2_inc_r",
+    "ber_e3_inc_r",
+    "ber_w1_inc_r",
+    "ber_w2_inc_r",
+    "ber_riool_inc_r",
+    "ber_vullis_inc_r"
+   ],
+   "label": "Ledger amount run (VAT incl): [payment-] [interest] Elektrisiteit x3, Water x2, Riool, Vullis",
+   "scope": "section:electricity",
+   "pattern": "(?:\\d+\\.\\d{2}- )?(?:\\d+\\.\\d{2} )?(\\d+\\.\\d{2}) (\\d+\\.\\d{2}) (\\d+\\.\\d{2}) (\\d+\\.\\d{2}) (\\d+\\.\\d{2}) (\\d+\\.\\d{2}) (\\d+\\.\\d{2})[ \\t]{2,}VERSKULDIG",
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ber_e1_vat_r",
+    "ber_e2_vat_r",
+    "ber_e3_vat_r"
+   ],
+   "label": "VAT cells of the three Elektrisiteit lines",
+   "scope": "section:electricity",
+   "patterns": [
+    "(?:\\d{3}-\\d{4}|BTW)[ \\t]{2,}(?:\\d+\\.\\d{2} )?(\\d+\\.\\d{2}) (\\d+\\.\\d{2})[ \\t]{2,}\\d+\\.\\d{2} \\d+\\.\\d{2} \\d+\\.\\d{2} \\d+\\.\\d{2}[ \\t]{2,}(\\d+\\.\\d{2})[ \\t]*$",
+    "(?:\\d{3}-\\d{4}|BTW)[ \\t]{2,}(\\d+\\.\\d{2}) (\\d+\\.\\d{2}) (\\d+\\.\\d{2}) \\d+\\.\\d{2} \\d+\\.\\d{2} \\d+\\.\\d{2} \\d+\\.\\d{2}(?![\\d.])"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "ber_rente_run_r",
+   "label": "Interest at the head of the ledger run (when present)",
+   "scope": "section:electricity",
+   "pattern": "(?:\\d+\\.\\d{2}- )?(\\d+\\.\\d{2}) (?=(?:\\d+\\.\\d{2}) (?:\\d+\\.\\d{2}) (?:\\d+\\.\\d{2}) (?:\\d+\\.\\d{2}) (?:\\d+\\.\\d{2}) (?:\\d+\\.\\d{2}) (?:\\d+\\.\\d{2})[ \\t]{2,}VERSKULDIG)",
+   "type": "money"
+  },
+  {
+   "field": "ber_rente_alt_r",
+   "label": "Interest printed in the third value cell of the phone row (when not in the ledger run)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{3}-\\d{4}[ \\t]{2,}\\d{3}-\\d{4}[ \\t]{2,}\\d{3}-\\d{4}[ \\t]{2,}\\d+\\.\\d{2}[ \\t]{2,}\\d+\\.\\d{2}[ \\t]{2,}(\\d+\\.\\d{2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "ber_current_inc_r",
+   "label": "HUIDIGE BEDRAG (current charges incl VAT, cell after VORIGE)",
+   "scope": "section:electricity",
+   "pattern": "VORIGE[^\\d\\n]*(\\d+\\.\\d{2})[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}\\d{2}/",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "read_end",
+   "label": "Current reading date (first of the glued HUIDIGE date triple)",
+   "scope": "section:electricity",
+   "pattern": "(\\d{2}/\\d{2}/\\d{4})\\d{2}/\\d{2}/\\d{4}\\d{2}/\\d{2}/\\d{4}",
+   "type": "date"
+  },
+  {
+   "field": "read_start",
+   "label": "Previous reading date (first of the second glued date triple)",
+   "scope": "section:electricity",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}\\d{2}/\\d{2}/\\d{4}\\d{2}/\\d{2}/\\d{4}[\\s\\S]*?(\\d{2}/\\d{2}/\\d{4})\\d{2}/\\d{2}/\\d{4}\\d{2}/\\d{2}/\\d{4}",
+   "type": "date"
+  },
+  {
+   "field": "ber_end_reading",
+   "label": "HUIDIGE meter reading (kWh register)",
+   "scope": "section:electricity",
+   "pattern": "HUIDIGE[ \\t]{2,}(\\d{6,})[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "field": "ber_start_reading",
+   "label": "VORIGE meter reading (kWh register)",
+   "scope": "section:electricity",
+   "pattern": "VORIGE[ \\t]{2,}(\\d{6,})[ \\t]{2,}Nr\\.",
+   "type": "number"
+  },
+  {
+   "field": "total_kwh",
+   "label": "VERBRUIK kWh (cell after the municipality's e-mail)",
+   "scope": "section:electricity",
+   "pattern": "@telkomsa\\.net[ \\t]{2,}(\\d{3,})[ \\t]{2,}",
+   "type": "number"
+  }
+ ],
+ "computes": [
+  {
+   "field": "ber_rente_r",
+   "op": "prefer",
+   "of": [
+    "ber_rente_run_r",
+    "ber_rente_alt_r"
+   ]
+  },
+  {
+   "field": "ber_basic_ex_r",
+   "label": "Elektrisiteit basic (1st line) ex VAT",
+   "op": "sub",
+   "of": [
+    "ber_e1_inc_r",
+    "ber_e1_vat_r"
+   ]
+  },
+  {
+   "field": "ber_e2_ex_r",
+   "label": "Elektrisiteit 2nd line ex VAT (unlabelled non-energy charge)",
+   "op": "sub",
+   "of": [
+    "ber_e2_inc_r",
+    "ber_e2_vat_r"
+   ]
+  },
+  {
+   "field": "ber_energy_ex_r",
+   "label": "Elektrisiteit energy (3rd line) ex VAT",
+   "op": "sub",
+   "of": [
+    "ber_e3_inc_r",
+    "ber_e3_vat_r"
+   ]
+  },
+  {
+   "field": "ber_other_ex_r",
+   "op": "sum",
+   "of": [
+    "ber_basic_ex_r",
+    "ber_e2_ex_r"
+   ]
+  },
+  {
+   "field": "ber_total_ex_r",
+   "op": "sum",
+   "of": [
+    "ber_other_ex_r",
+    "ber_energy_ex_r"
+   ]
+  },
+  {
+   "field": "ber_identity_r",
+   "label": "HUIDIGE BEDRAG - water/sewer/refuse - interest - electricity VAT",
+   "op": "sub",
+   "of": [
+    "ber_current_inc_r",
+    "ber_w1_inc_r",
+    "ber_w2_inc_r",
+    "ber_riool_inc_r",
+    "ber_vullis_inc_r",
+    "ber_rente_r",
+    "ber_e1_vat_r",
+    "ber_e2_vat_r",
+    "ber_e3_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "_none",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "ber_start_reading",
+  "end_reading_kwh": "ber_end_reading",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "ber_energy_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "ber_other_ex_r",
+  "total_ex_vat_r": "ber_total_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

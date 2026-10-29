@@ -1,0 +1,586 @@
+{
+  "profile_id": "coj",
+  "profile_name": "City of Johannesburg",
+  "short_name": "CoJ",
+  "_doc": "Extraction rulebook for CoJ statements. See the handbook at the top of pdf_harvester.py for rule format, scopes, collect modes and computes. Edit patterns here, press Reload in the app.",
+  "fingerprint": {
+    "all": [
+      "JOHANNESBURG"
+    ],
+    "any": [
+      "CITY OF JOHANNESBURG",
+      "CITY POWER",
+      "JOBURG",
+      "JOHANNESBURG WATER",
+      "PIKITUP"
+    ]
+  },
+  "sections": {
+    "electricity": {
+      "start": "^\\s*City Power\\b",
+      "require": "Meter|kWh|KWH|Energy [Cc]harge"
+    },
+    "water": {
+      "start": "^\\s*Johannesburg Water\\b",
+      "require": "Meter|Reading"
+    },
+    "sewerage": {
+      "start": "^\\s*(?:Category of Sewer\\b|Sewer monthly charge\\b)"
+    },
+    "rates": {
+      "start": "^\\s*Property Rates\\b"
+    },
+    "sundry": {
+      "start": "^\\s*Sundry\\b"
+    }
+  },
+  "canonical": {
+    "deposit_r": "coj_deposit_r",
+    "tariff_name": "tariff_name_out",
+    "reading_type": "reading_type",
+    "total_ex_vat_r": "elec_total_ex_r",
+    "other_r": "other_r",
+    "peak_r": "peak_r",
+    "standard_r": "std_r_out",
+    "offpeak_r": "offpeak_r",
+    "standard_kwh": "std_kwh_out",
+    "demand_r": "demand_r",
+    "demand_kva": "demand_kva",
+    "start_reading_kwh": "start_reading_kwh",
+    "end_reading_kwh": "end_reading_kwh"
+  },
+  "fields": [
+    {
+      "field": "coj_deposit_r",
+      "label": "Deposit",
+      "scope": "document",
+      "pattern": "Deposit:\\s*R\\s*(-?[\\d ,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "coj_site_l1",
+      "label": "Site Name (line 1)",
+      "scope": "header",
+      "patterns": [
+        "^\\s*(\\S[^\\n]*?)[ \\t]{2,}Date\\s+\\d{4}/",
+        "^\\s*(\\S[^\\n]*?)[ \\t]{2,}Statement [Ff]or\\b"
+      ],
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "coj_site_l2",
+      "label": "Site Name (wrapped line 2)",
+      "scope": "header",
+      "pattern": "^(?!\\s*(?:PRIVATE\\s+BAG|P\\.?\\s?O\\.?\\s?BOX|POSBUS|\\d))\\s*(\\S[^\\n]*?)[ \\t]{2,}Statement [Ff]or\\b",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "billing_date",
+      "label": "Billing Date",
+      "scope": "header",
+      "pattern": "\\bDate\\s+(\\d{4}/\\d{2}/\\d{2})",
+      "type": "date",
+      "required": true
+    },
+    {
+      "field": "statement_month",
+      "label": "Statement Month",
+      "scope": "header",
+      "pattern": "Statement [Ff]or\\s+([A-Z][a-z]+ \\d{4})",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "account_number",
+      "label": "Account Number",
+      "scope": "header",
+      "pattern": "Account Number\\s*:?\\s*(\\d+)",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "invoice_number",
+      "label": "Invoice Number",
+      "scope": "header",
+      "pattern": "Invoice Number:\\s*(\\d+)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "property_address",
+      "label": "Physical Address",
+      "scope": "header",
+      "pattern": "Physical Address\\s+(\\S.*?)(?:\\s{2,}|\\s*$)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "township",
+      "label": "Township",
+      "scope": "header",
+      "pattern": "Township\\s+([A-Z][A-Z0-9 \\-]*?)\\s*$",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "total_due",
+      "label": "Total Due",
+      "scope": "header",
+      "pattern": "Total Due\\s+(-?\\s*[\\d,\\. ]+\\.\\d{2}-?)",
+      "type": "money",
+      "required": true
+    },
+    {
+      "field": "due_date",
+      "label": "Due Date",
+      "scope": "header",
+      "pattern": "Due Date\\s+(\\d{4}/\\d{2}/\\d{2})",
+      "type": "date",
+      "required": true
+    },
+    {
+      "field": "current_charges_ex",
+      "label": "Current Charges Ex VAT",
+      "scope": "header",
+      "pattern": "Current Charges \\(Excl\\. VAT\\)\\s+((?:- ?)?[\\d,\\. ]+\\.\\d{2})",
+      "type": "money",
+      "required": true
+    },
+    {
+      "field": "vat_total",
+      "label": "VAT (statement)",
+      "scope": "header",
+      "pattern": "VAT @ [\\d\\.]+\\s*%\\s+([\\d,\\. ]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "previous_balance",
+      "label": "Previous Balance",
+      "scope": "header",
+      "pattern": "Previous Account Balance\\s+([\\d,\\. ]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "deposit",
+      "label": "Deposit",
+      "scope": "header",
+      "pattern": "Deposit:\\s*R\\s*([\\d,\\. ]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "current_charges_inc",
+      "label": "Current Charges Inc VAT",
+      "scope": "document",
+      "pattern": "Current Charges \\(Including VAT\\)\\s+([\\d,\\. ]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "read_start",
+        "read_end",
+        "days"
+      ],
+      "label": "Elec Reading Period",
+      "scope": "section:electricity",
+      "pattern": "\\(Reading period\\s*=\\s*(\\d{4}/\\d{2}/\\d{2})\\s*to\\s*(\\d{4}/\\d{2}/\\d{2})\\s*=\\s*(\\d+)\\s*days\\)",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "meter",
+      "label": "Elec Meter No",
+      "scope": "section:electricity",
+      "pattern": "Meter:\\s*#?(\\w+)\\.?;",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "reading_type",
+      "label": "Actual/Estimate",
+      "scope": "section:electricity",
+      "collect": "join_unique",
+      "pattern": "Type:\\s*(Actual|Estimated)\\s*Readings",
+      "type": "text",
+      "required": true
+    },
+    {
+      "fields": [
+        "start_reading_kwh",
+        "end_reading_kwh"
+      ],
+      "label": "Start/End Reading kWh (registers summed)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "Start reading:\\s*([\\d,\\.]+);\\s*\\n\\s*End reading:\\s*([\\d,\\.]+);[^\\n]*\\n\\s*Units:\\s*kWh",
+      "type": "number",
+      "required": true
+    },
+    {
+      "field": "total_kwh",
+      "label": "Total kWh",
+      "scope": "section:electricity",
+      "pattern": "Charges for\\s+([\\d,\\.]+)\\s*kWh\\b",
+      "type": "number",
+      "required": true
+    },
+    {
+      "field": "total_kvarh",
+      "label": "Total kVArh",
+      "scope": "section:electricity",
+      "pattern": "Charges for\\s+([\\d,\\.]+)\\s*kVArh\\b",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "peak_kwh",
+        "peak_r"
+      ],
+      "types": [
+        "number",
+        "money"
+      ],
+      "label": "Peak kWh/Rands",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^\\s*Peak charge\\s+([\\d,\\.]+)\\s*kWh\\s*@\\s*R\\s*[\\d\\.]+\\s+([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "standard_kwh",
+        "standard_r"
+      ],
+      "types": [
+        "number",
+        "money"
+      ],
+      "label": "Standard kWh/Rands",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^\\s*Standard charge\\s+([\\d,\\.]+)\\s*kWh\\s*@\\s*R\\s*[\\d\\.]+\\s+([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "offpeak_kwh",
+        "offpeak_r"
+      ],
+      "types": [
+        "number",
+        "money"
+      ],
+      "label": "Off Peak kWh/Rands",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^\\s*Off[ \\-]?peak charge\\s+([\\d,\\.]+)\\s*kWh\\s*@\\s*R\\s*[\\d\\.]+\\s+([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "coj_flat_kwh",
+        "coj_flat_r"
+      ],
+      "types": [
+        "number",
+        "money"
+      ],
+      "label": "Flat Energy kWh/Rands",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^\\s*Energy charge\\s+([\\d,\\.]+)\\s*kWh\\s*@\\s*R\\s*[\\d\\.]+[^\\n]*?([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "demand_kva",
+        "demand_r"
+      ],
+      "types": [
+        "number",
+        "money"
+      ],
+      "label": "Demand kVA/Rands",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "^\\s*Demand charge\\b[^\\n]*?([\\d,\\.]+)\\s*kVA\\s*@\\s*R\\s*[\\d\\.]+[^\\n]*?([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "number",
+      "required": true
+    },
+    {
+      "field": "service_r",
+      "label": "Service Charge R",
+      "scope": "section:electricity",
+      "pattern": "^\\s*Service charge\\b[^\\n]*?([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": true
+    },
+    {
+      "field": "network_r",
+      "label": "Network Surcharge R",
+      "scope": "section:electricity",
+      "pattern": "^\\s*Network Surcharge\\b[^\\n]*?([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": true
+    },
+    {
+      "field": "reactive_r",
+      "label": "Reactive Energy R",
+      "scope": "section:electricity",
+      "pattern": "^\\s*Reactive energy charge\\b[^\\n]*?([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "surcharge_tou_r",
+      "label": "Surcharge TOU R",
+      "scope": "section:electricity",
+      "pattern": "^\\s*Surcharge - TOU\\s+([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "elec_vat_r",
+        "elec_total_r"
+      ],
+      "label": "Elec VAT / Total inc VAT",
+      "scope": "section:electricity",
+      "pattern": "^\\s*VAT:\\s*[\\d\\.]+\\s*%(?:\\s*\\( Total Amount:[^)]*\\))?\\s+([\\d,\\. ]+\\.\\d{2})\\s+([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": true
+    },
+    {
+      "fields": [
+        "w_read_start",
+        "w_read_end",
+        "w_days"
+      ],
+      "label": "Water Reading Period",
+      "scope": "section:water",
+      "pattern": "\\(Reading period\\s*=\\s*(\\d{4}/\\d{2}/\\d{2})\\s*to\\s*(\\d{4}/\\d{2}/\\d{2})\\s*=\\s*(\\d+)\\s*days\\)",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "w_meter",
+      "label": "Water Meter No",
+      "scope": "section:water",
+      "pattern": "Meter:\\s*#?(\\w+)\\.?;",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "w_reading_type",
+      "label": "Water Actual/Estimate",
+      "scope": "section:water",
+      "collect": "join_unique",
+      "pattern": "Type:\\s*(Actual|Estimated)\\s*Readings",
+      "type": "text",
+      "required": false
+    },
+    {
+      "fields": [
+        "start_reading_kl",
+        "end_reading_kl"
+      ],
+      "label": "Start/End Reading KL",
+      "scope": "section:water",
+      "collect": "sum",
+      "pattern": "Start reading:\\s*([\\d,\\.]+);\\s*\\n\\s*End reading:\\s*([\\d,\\.]+);[^\\n]*\\n\\s*Units:\\s*KL",
+      "type": "number",
+      "required": true
+    },
+    {
+      "field": "total_kl",
+      "label": "Total KL",
+      "scope": "section:water",
+      "pattern": "Charges for\\s+([\\d,\\.]+)\\s*KL\\b",
+      "type": "number",
+      "required": true
+    },
+    {
+      "fields": [
+        "step_kl",
+        "water_usage_r"
+      ],
+      "types": [
+        "number",
+        "money"
+      ],
+      "label": "Water Steps KL/Rands",
+      "scope": "section:water",
+      "collect": "sum",
+      "pattern": "^\\s*Step\\s*\\d+\\s+([\\d,\\.]+)\\s*KL\\s*@[^\\n]*?(?<![\\d.,])(\\d[\\d, ]*\\.\\d{2})\\s*$",
+      "type": "number",
+      "required": false
+    },
+    {
+      "field": "water_levy_r",
+      "label": "Demand Management Levy R",
+      "scope": "section:water",
+      "pattern": "^\\s*Demand Management Levy\\b[^\\n]*?([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": true
+    },
+    {
+      "fields": [
+        "sewer_kl",
+        "sewer_r"
+      ],
+      "types": [
+        "number",
+        "money"
+      ],
+      "label": "Sewer Units/Rands",
+      "scope": "section:sewerage",
+      "collect": "sum",
+      "pattern": "^\\s*Sewer monthly charge based on Water\\s+([\\d,\\.]+)\\s*units[^\\n]*?([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "number",
+      "required": true
+    },
+    {
+      "fields": [
+        "ws_vat_r",
+        "ws_total_r"
+      ],
+      "label": "W&S VAT / Total inc VAT",
+      "scope": "section:sewerage",
+      "pattern": "^\\s*VAT:\\s*[\\d\\.]+\\s*%(?:\\s*\\( Total Amount:[^)]*\\))?\\s+([\\d,\\. ]+\\.\\d{2})\\s+([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": true
+    },
+    {
+      "fields": [
+        "rates_vat_r",
+        "rates_total_r"
+      ],
+      "label": "Rates VAT / Total",
+      "scope": "section:rates",
+      "pattern": "^\\s*VAT:\\s*[\\d\\.]+\\s*%(?:\\s*\\( Total Amount:[^)]*\\))?\\s+([\\d,\\. ]+\\.\\d{2})\\s+([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": true
+    },
+    {
+      "field": "sundry_charges_r",
+      "label": "Sundry Charges R (summed)",
+      "scope": "section:sundry",
+      "collect": "sum",
+      "pattern": "^\\s*Surcharge on business services\\b[^\\n]*?([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "sundry_vat_r",
+        "sundry_total_r"
+      ],
+      "label": "Sundry VAT / Total inc VAT",
+      "scope": "section:sundry",
+      "pattern": "^\\s*VAT:\\s*[\\d\\.]+\\s*%(?:\\s*\\( Total Amount:[^)]*\\))?\\s+([\\d,\\. ]+\\.\\d{2})\\s+([\\d,\\. ]+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    }
+  ],
+  "computes": [
+    {
+      "field": "tariff_name_out",
+      "op": "label_present",
+      "of": [
+        "offpeak_kwh",
+        "coj_flat_kwh"
+      ],
+      "labels": [
+        "Time of Use",
+        "Conventional"
+      ]
+    },
+    {
+      "field": "site_name",
+      "op": "concat",
+      "of": [
+        "coj_site_l1",
+        "coj_site_l2"
+      ]
+    },
+    {
+      "field": "elec_total_ex_r",
+      "op": "sub",
+      "of": [
+        "elec_total_r",
+        "elec_vat_r"
+      ]
+    },
+    {
+      "field": "std_kwh_out",
+      "op": "prefer",
+      "of": [
+        "standard_kwh",
+        "coj_flat_kwh"
+      ]
+    },
+    {
+      "field": "std_r_out",
+      "op": "prefer",
+      "of": [
+        "standard_r",
+        "coj_flat_r"
+      ]
+    },
+    {
+      "field": "other_r",
+      "op": "sub",
+      "of": [
+        "elec_total_ex_r",
+        "peak_r",
+        "std_r_out",
+        "offpeak_r",
+        "demand_r"
+      ]
+    },
+    {
+      "field": "water_charges_r",
+      "op": "sum",
+      "of": [
+        "water_usage_r",
+        "water_levy_r"
+      ]
+    },
+    {
+      "field": "ws_total_ex_r",
+      "op": "sub",
+      "of": [
+        "ws_total_r",
+        "ws_vat_r"
+      ]
+    },
+    {
+      "field": "sundry_total_ex_r",
+      "op": "sub",
+      "of": [
+        "sundry_total_r",
+        "sundry_vat_r"
+      ]
+    }
+  ],
+  "recon": {
+    "prev_balance": "Previous Account Balance\\s+(-?\\s?[\\d,]+\\.\\d{2})",
+    "incoming_payment": "Less: Incoming Payment[^\\n]*?(-?\\s?[\\d,]+\\.\\d{2})\\s*$",
+    "current_ex": "Current Charges \\(Excl\\. VAT\\)\\s+(-?\\s?[\\d,]+\\.\\d{2})",
+    "vat": "VAT @ 15%\\s+(-?\\s?[\\d,]+\\.\\d{2})",
+    "total_due": "Total Due\\s+(-?\\s?[\\d,]+\\.\\d{2})",
+    "deposit": "Deposit:\\s*R\\s*(-?\\s?[\\d,]+\\.\\d{2})",
+    "due_date": "Due Date\\s+(\\d{4}/\\d{2}/\\d{2})"
+  }
+}

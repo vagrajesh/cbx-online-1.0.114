@@ -1,0 +1,50 @@
+{
+  "kind": "table",
+  "title": "data.jobs.title",
+  "scope": "members",
+  "write": "managers",
+  "members": {
+    "table": "job_members",
+    "person": "person",
+    "link": "job",
+    "through": "id",
+    "only": {
+      "status": "Active"
+    }
+  },
+  "columns": [
+    {
+      "key": "title",
+      "label": "col.title",
+      "type": "text",
+      "required": true
+    },
+    {
+      "key": "purpose",
+      "label": "col.purpose",
+      "type": "text"
+    },
+    {
+      "key": "lead",
+      "label": "col.lead",
+      "type": "person",
+      "default": "me",
+      "required": true
+    },
+    {
+      "key": "due",
+      "label": "col.due",
+      "type": "date"
+    },
+    {
+      "key": "status",
+      "label": "col.status",
+      "type": "choice",
+      "options": [
+        "Active",
+        "Finished"
+      ],
+      "default": "Active"
+    }
+  ]
+}

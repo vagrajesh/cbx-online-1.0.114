@@ -1,0 +1,65 @@
+{
+  "kind": "table",
+  "title": "data.api.title",
+  "scope": "mine",
+  "write": "everyone",
+  "columns": [
+    {
+      "key": "kind",
+      "label": "col.api_kind",
+      "type": "choice",
+      "options": [
+        "Check",
+        "Download"
+      ],
+      "default": "Check"
+    },
+    {
+      "key": "month",
+      "label": "col.api_month",
+      "type": "text",
+      "hint": "hint.month"
+    },
+    {
+      "key": "to_month",
+      "label": "col.api_to",
+      "type": "text",
+      "hint": "hint.month"
+    },
+    {
+      "key": "status",
+      "label": "col.status",
+      "type": "choice",
+      "options": [
+        "Working",
+        "Done",
+        "Failed"
+      ],
+      "default": "Working"
+    },
+    {
+      "key": "ok",
+      "label": "col.api_ok",
+      "type": "text"
+    },
+    {
+      "key": "result",
+      "label": "col.api_result",
+      "type": "text"
+    },
+    {
+      "key": "download",
+      "label": "col.api_download",
+      "type": "file",
+      "accept": [
+        "zip"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "note",
+      "label": "col.note",
+      "type": "text"
+    }
+  ]
+}

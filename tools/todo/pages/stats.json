@@ -1,0 +1,180 @@
+{
+  "title": "page.stats.title",
+  "intro": "page.stats.intro",
+  "menu": true,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 4,
+            "widgets": [
+              {
+                "id": "w_week",
+                "type": "table",
+                "title": "w.w_week.title",
+                "show": "totals",
+                "source": {
+                  "data": "tasks"
+                },
+                "where": [
+                  {
+                    "field": "done_by",
+                    "op": "equals",
+                    "value": "{{person.id}}"
+                  },
+                  {
+                    "field": "finished",
+                    "op": "this_week"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "width": 4,
+            "widgets": [
+              {
+                "id": "w_month",
+                "type": "table",
+                "title": "w.w_month.title",
+                "show": "totals",
+                "source": {
+                  "data": "tasks"
+                },
+                "where": [
+                  {
+                    "field": "done_by",
+                    "op": "equals",
+                    "value": "{{person.id}}"
+                  },
+                  {
+                    "field": "finished",
+                    "op": "this_month"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "width": 4,
+            "widgets": [
+              {
+                "id": "w_opennow",
+                "type": "table",
+                "title": "w.w_opennow.title",
+                "show": "totals",
+                "source": {
+                  "data": "tasks"
+                },
+                "where": [
+                  {
+                    "field": "who",
+                    "op": "equals",
+                    "value": "{{person.id}}"
+                  },
+                  {
+                    "field": "status",
+                    "op": "not_equals",
+                    "value": "Done"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "columns": [
+          {
+            "width": 6,
+            "widgets": [
+              {
+                "id": "w_bysize",
+                "type": "chart",
+                "title": "w.w_bysize.title",
+                "source": {
+                  "data": "tasks"
+                },
+                "group": "size",
+                "where": [
+                  {
+                    "field": "done_by",
+                    "op": "equals",
+                    "value": "{{person.id}}"
+                  },
+                  {
+                    "field": "finished",
+                    "op": "this_month"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "width": 6,
+            "widgets": [
+              {
+                "id": "w_byperson",
+                "type": "chart",
+                "title": "w.w_byperson.title",
+                "source": {
+                  "data": "tasks"
+                },
+                "group": "done_by",
+                "where": [
+                  {
+                    "field": "kind",
+                    "op": "equals",
+                    "value": "Team"
+                  },
+                  {
+                    "field": "finished",
+                    "op": "this_month"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_openpp",
+                "type": "chart",
+                "title": "w.w_openpp.title",
+                "source": {
+                  "data": "tasks"
+                },
+                "group": "who",
+                "where": [
+                  {
+                    "field": "kind",
+                    "op": "equals",
+                    "value": "Team"
+                  },
+                  {
+                    "field": "status",
+                    "op": "not_equals",
+                    "value": "Done"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "order": 4
+}

@@ -1,0 +1,613 @@
+{
+ "profile_id": "mossel_bay",
+ "profile_name": "Mossel Bay Municipality / Mosselbaai Munisipaliteit",
+ "short_name": "Mossel Bay",
+ "_doc": "TRILINGUAL MASTHEAD LEDGER STATEMENT (MOSSEL BAY MUNICIPALITY / MOSSELBAAI MUNISIPALITEIT / UMASIPALA WASEMOSSELBAYI), 2 pages, always a real text layer (ocr never needed). FINGERPRINT: the municipality's OWN VAT number 4830118370 ('VAT No. / BTW Nr. 4830118370') plus the masthead string - 10/10 in this folder, 0/477 in the rest of the tree. The bill also prints 'VAT REG. NO. 4680101146', which is TELKOM's VAT (136 files across 17 folders here) - NEVER fingerprint on that. TEXT WRAPPER: page 1 and page 2 each begin with a print-stream mailer header like '<![number removed]||EMAIL|25|06|2024|1|3|1234|73543.00|1|F|E|nil|F|nil|nil|nil!>'. The account number inside that wrapper is NOT this account (it varies per page and per bill: [number removed], [number removed], [number removed]) - it is the mailer's own batch record. The account is read from 'ACCOUNT NUMBER:' in the bill body only. LAYOUT NOTE: the statement is set with rotated side-panel text (return address, contact details, payment notice), so PyMuPDF sort=True interleaves that text into the ledger lines. Every pattern is therefore written to tolerate arbitrary trailing junk on the line and never assumes a clean line end. SHAPES: page 1 is IDENTICAL on all 10 bills - ONE statement shape, no variants to handle. Page 2 has four variants and is the ONLY reason char count varies: (a) 5 bills (2026-02..2026-06) - page 2 holds nothing but the 106-char mailer wrapper; (b) 3 bills (2025-08, 2025-10, 2025-11) - 1,868 chars of stray rotated column captions (AMOUNT / VAT / TARIFF / VALUATION / DESCRIPTION) with no values; (c) 1 bill (2026-01) - 8,286 chars: the printed bilingual reverse side (Afrikaans/English terms of payment), total 20,457 chars, the biggest text in the folder; (d) 1 bill (2026-07) - 4,051 chars: a real RATES ADVICE block with rate-in-the-rand and financial year, the only bill where mos_rates_tariff_rate / mos_rates_year fill. File SIZE clusters (396KB x4 / 586KB x5 / 177KB x1) come from embedded artwork and are INVERSELY related to text volume - the 177KB file has the largest text (20.5k chars) and the 586KB files the smallest (12.1k) - so never infer shape from file size here. LEDGER SHAPE: '<dd/mm/yyyy> <code> <DESCRIPTION> [<period>]  <AMOUNT> *' where the trailing '*' means VAT applies and THE AMOUNT COLUMN IS VAT-INCLUSIVE. Electricity and water print their own 'VAT/BTW <amount>' sub-line, so ex-VAT for those is a genuine 'sub' compute. The statement foot prints \"VAT ON '*' ITEMS:\" = the total VAT on all starred lines. ELECTRICITY IS THREE LINES on one physical meter: [number removed] = kWh energy register (BASIC + energy rate line + VAT/BTW), [number removed]K = kVA maximum-demand register (rate line + VAT/BTW), and 'MIN MINIMUM' = the minimum-demand top-up. PROOF THAT MINIMUM IS AN ELECTRICITY CHARGE (it is unlabelled on the bill): MINIMUM ex-VAT / 488.513 (the printed kVA rate) + the billed kVA = exactly 100.0 kVA on every bill (18+82, 25+75, 26+74, ...), i.e. it tops the recorded demand up to a 100 kVA notified maximum demand. It is therefore mapped to nmd_r. CAVEAT, STATED PLAINLY: the MINIMUM line prints NO VAT of its own, so nmd_r carries the VAT-INCLUSIVE figure; ex-VAT is amount/1.15 (e.g. 41572.36 -> 36149.88) and the engine has no divide op. total_ex_vat_r is built the same way (inc-VAT amounts minus the printed VAT lines, MINIMUM at its printed inc-VAT value) so the reconcile is arithmetically consistent and NOT circular - MINIMUM cancels on both sides, and the check still genuinely tests the energy, basic and demand captures against the printed amount and VAT columns. nmd_kva (100) is NOT printed and is left blank. READINGS: '<prev> - <curr> (<units> <UNIT> <n> Days)' - PREVIOUS reading FIRST, current second, the OPPOSITE of Oudtshoorn's ledger. Not printed anywhere: reading type (Actual/Estimate), tariff name, TOU bands -> mapped '_none'. The '07/25' prefix on a rate line is the tariff EFFECTIVE month, not a tariff name. Money is plain dot-decimal with no thousands separator ('41572.36'); credits print a TRAILING minus ('95051.76-'), which the money cleaner handles. Dates are kept exactly as printed (dd/mm/yyyy). INDEPENDENT IDENTITY: \"VAT ON '*' ITEMS\" (printed) vs the derived per-line VAT (printed elec + kVA + water VAT lines, plus 15/115 of the unstarred-VAT lines MINIMUM/SEWERAGE/REFUSE) - max deviation R0.09 across the 10 bills (mean R0.06), all of it the bill's own per-line rounding of the 15/115 split. Second identity, exact to R0.00 on all 10: B/F BALANCE + RECEIPTS + every charge line + Balance Carried Forward = the printed AMOUNT DUE.",
+ "fingerprint": {
+  "all": [
+   "4830118370",
+   "MOSSEL BAY MUNICIPALITY"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "requires Adobe Reader"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+K?[ \\t]+ELECTRICITY[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]*-[ \\t]*\\d{2}/\\d{2}/\\d{4}"
+  },
+  "water": {
+   "start": "\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+WATER[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]*-[ \\t]*\\d{2}/\\d{2}/\\d{4}"
+  },
+  "sewerage": {
+   "start": "\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+SEWERAGE\\b"
+  },
+  "refuse": {
+   "start": "\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+REFUSE\\b"
+  },
+  "rates": {
+   "start": "\\d{2}/\\d{2}/\\d{4}[ \\t]+RATES INSTALLMENT\\b"
+  },
+  "sundry": {
+   "start": "\\d{2}/\\d{2}/\\d{4}[ \\t]+(?:DP-COST[ \\t]+ADMIN FEE|\\d+\\.\\d+%[ \\t]+INTEREST)\\b",
+   "overlay": true,
+   "end": "VAT ON '\\*'[^\\n]*"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "pattern": "ACCOUNT[ \\t]+NUMBER:[ \\t]+([\\d]{2}-[\\d]{4,8}-[\\d]{3}-[\\d])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mos_bank_ref",
+   "label": "Payment reference",
+   "scope": "document",
+   "pattern": "REF NO\\.[ \\t]+(\\d{8,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Date of account",
+   "scope": "document",
+   "pattern": "DATE OF ACCOUNT:[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "mos_last_receipt_date",
+   "label": "Last receipt date",
+   "scope": "document",
+   "pattern": "LAST RECEIPT DATE:[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Property street address",
+   "scope": "document",
+   "patterns": [
+    "Street[ \\t]+Address:[^\\n]*\\n[ \\t]*([0-9][A-Z0-9][^\\n]*?)(?:[ \\t]{2,}|[ \\t]*$)",
+    "^[ \\t]*(\\d+[A-Z]?[ \\t]+[A-Z][A-Z]+[ \\t]+[A-Z]+)(?:[ \\t]{2,}|[ \\t]*$)"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mos_customer",
+   "label": "Account name",
+   "scope": "document",
+   "pattern": "^[ \\t]*(TELKOM[ \\t]+[A-Z][A-Z ]*?)(?:[ \\t]{2,}|[ \\t]*$)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Service deposit held",
+   "scope": "document",
+   "pattern": "DEPOSIT:[ \\t]*(\\d[\\d ]*\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mos_erf",
+   "label": "Erf number",
+   "scope": "document",
+   "pattern": "NUMBER:[ \\t]+(\\d{5,})[ \\t]+VALUATION",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mos_valuation_r",
+   "label": "Total valuation",
+   "scope": "document",
+   "pattern": "VALUATION:[ \\t]+(\\d{4,})\\b",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "mos_ward",
+   "label": "Ward",
+   "scope": "document",
+   "pattern": "VALUATION:[ \\t]+\\d{4,}[ \\t]+No:[ \\t]+(\\d{1,3})\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mos_prev_balance_r",
+   "label": "B/F balance",
+   "scope": "document",
+   "pattern": "B/F BALANCE[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mos_receipts_r",
+   "label": "Receipts",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "\\bRECEIPTS[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mos_bcf_r",
+   "label": "Balance carried forward (rounding)",
+   "scope": "document",
+   "pattern": "Balance[ \\t]+Carried[ \\t]+Forward[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mos_vat_star_r",
+   "label": "VAT ON '*' ITEMS (whole statement)",
+   "scope": "document",
+   "pattern": "VAT ON '\\*'[ \\t]+ITEMS:[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mos_age_credit",
+    "mos_age_60",
+    "mos_age_30",
+    "mos_age_current",
+    "mos_age_total"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Aging strip: Credit / 60 days / 30 days / Current / Total",
+   "scope": "document",
+   "pattern": "^[ \\t]*(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)\\b",
+   "required": true
+  },
+  {
+   "fields": [
+    "due_date",
+    "mos_total_due_r"
+   ],
+   "types": [
+    "date",
+    "money"
+   ],
+   "label": "Due date + amount due",
+   "scope": "document",
+   "pattern": "ON OR BEFORE DUE DATE[\\s\\S]{0,240}?^[ \\t]*(\\d{2}/\\d{2}/\\d{4})[^\\n]*?[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "mos_meter_out",
+   "label": "Electricity meter / register(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+(\\d+K?)[ \\t]+ELECTRICITY[ \\t]+\\d{2}/\\d{2}/\\d{4}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mos_elec_meter",
+   "label": "Energy (kWh) meter",
+   "scope": "section:electricity",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+(\\d+)[ \\t]+ELECTRICITY[ \\t]+\\d{2}/\\d{2}/\\d{4}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mos_kva_meter",
+   "label": "Demand (kVA) register",
+   "scope": "section:electricity",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+(\\d+K)[ \\t]+ELECTRICITY[ \\t]+\\d{2}/\\d{2}/\\d{4}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Electricity consumption period (as printed)",
+   "scope": "section:electricity",
+   "pattern": "\\bELECTRICITY[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "required": true
+  },
+  {
+   "field": "mos_elec_incl_r",
+   "label": "Energy line: VAT-inclusive amount",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+ELECTRICITY[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]*-[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]*\\*",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mos_kva_incl_r",
+   "label": "Demand line: VAT-inclusive amount",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+K[ \\t]+ELECTRICITY[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]*-[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]*\\*",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mos_min_r",
+   "label": "MINIMUM (NMD top-up, VAT-INCLUSIVE - no VAT line printed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "\\bMIN[ \\t]+MINIMUM[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]*\\*",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mos_elec_vat_r",
+   "label": "Energy line: printed VAT",
+   "scope": "section:electricity",
+   "pattern": "\\(\\d+[ \\t]*KWH[ \\t]+\\d+[ \\t]*Days?\\)[\\s\\S]{0,2500}?VAT/BTW[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mos_kva_vat_r",
+   "label": "Demand line: printed VAT",
+   "scope": "section:electricity",
+   "pattern": "\\(\\d+[ \\t]*KVA[ \\t]+\\d+[ \\t]*Days?\\)[\\s\\S]{0,2500}?VAT/BTW[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "total_kwh",
+    "mos_elec_days"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "kWh register: previous / current / units / days",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d+)[ \\t]*-[ \\t]*(\\d+)[ \\t]*\\((\\d+)[ \\t]*KWH[ \\t]+(\\d+)[ \\t]*Days?\\)",
+   "required": true
+  },
+  {
+   "fields": [
+    "mos_kva_prev",
+    "mos_kva_curr",
+    "demand_kva",
+    "mos_kva_days"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "kVA register: previous / current / max demand / days",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d+)[ \\t]*-[ \\t]*(\\d+)[ \\t]*\\((\\d+)[ \\t]*KVA[ \\t]+(\\d+)[ \\t]*Days?\\)",
+   "required": true
+  },
+  {
+   "fields": [
+    "mos_kwh_billed",
+    "mos_energy_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Energy rate line: billed kWh + amount ex VAT",
+   "scope": "section:electricity",
+   "pattern": "\\(\\d+[ \\t]*KWH[ \\t]+\\d+[ \\t]*Days?\\)[\\s\\S]{0,2500}?^[ \\t]*\\d{2}/\\d{2}[ \\t]+(\\d[\\d ]*\\.\\d{2})[ \\t]*@[ \\t]*[\\d.]+[ \\t]*=[ \\t]*(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "required": true
+  },
+  {
+   "field": "mos_energy_rate",
+   "label": "Energy rate (R/kWh, as printed)",
+   "scope": "section:electricity",
+   "pattern": "\\(\\d+[ \\t]*KWH[ \\t]+\\d+[ \\t]*Days?\\)[\\s\\S]{0,2500}?^[ \\t]*\\d{2}/\\d{2}[ \\t]+\\d[\\d ]*\\.\\d{2}[ \\t]*@[ \\t]*([\\d.]+)[ \\t]*=",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "mos_kva_billed",
+    "mos_demand_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Demand rate line: billed kVA + amount ex VAT",
+   "scope": "section:electricity",
+   "pattern": "\\(\\d+[ \\t]*KVA[ \\t]+\\d+[ \\t]*Days?\\)[\\s\\S]{0,2500}?^[ \\t]*\\d{2}/\\d{2}[ \\t]+(\\d[\\d ]*\\.\\d{2})[ \\t]*@[ \\t]*[\\d.]+[ \\t]*=[ \\t]*(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "required": true
+  },
+  {
+   "field": "mos_demand_rate",
+   "label": "Demand rate (R/kVA, as printed)",
+   "scope": "section:electricity",
+   "pattern": "\\(\\d+[ \\t]*KVA[ \\t]+\\d+[ \\t]*Days?\\)[\\s\\S]{0,2500}?^[ \\t]*\\d{2}/\\d{2}[ \\t]+\\d[\\d ]*\\.\\d{2}[ \\t]*@[ \\t]*([\\d.]+)[ \\t]*=",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mos_basic_r",
+   "label": "Electricity BASIC charge (ex VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*BASIC[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mos_water_meter",
+   "label": "Water ledger code",
+   "scope": "section:water",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+(\\d+)[ \\t]+WATER[ \\t]+\\d{2}/\\d{2}/\\d{4}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "mos_water_from",
+    "mos_water_to"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Water consumption period (as printed)",
+   "scope": "section:water",
+   "pattern": "\\bWATER[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "required": true
+  },
+  {
+   "field": "mos_water_incl_r",
+   "label": "Water: VAT-inclusive amount",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+WATER[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]*-[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]*\\*",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mos_water_vat_r",
+   "label": "Water: printed VAT",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*VAT/BTW[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mos_water_prev",
+    "mos_water_curr",
+    "mos_water_kl",
+    "mos_water_days"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "Water register: previous / current / kl / days",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*(\\d+)[ \\t]*-[ \\t]*(\\d+)[ \\t]*\\((\\d+)[ \\t]*Kl[ \\t]+(\\d+)[ \\t]*Days?\\)",
+   "required": true
+  },
+  {
+   "fields": [
+    "mos_water_billed_kl",
+    "mos_water_usage_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Water rate line(s): kl + amount ex VAT",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+(\\d[\\d ]*\\.\\d{2})[ \\t]*@[ \\t]*[\\d.]+[ \\t]*=[ \\t]*(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "required": true
+  },
+  {
+   "field": "mos_water_basic_r",
+   "label": "Water BASIC charge (ex VAT)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*BASIC[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mos_sew_code",
+    "mos_sew_incl_r"
+   ],
+   "types": [
+    "text",
+    "money"
+   ],
+   "label": "Sewerage: ledger code + VAT-inclusive amount",
+   "scope": "section:sewerage",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+(\\d+)[ \\t]+SEWERAGE[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]*\\*",
+   "required": true
+  },
+  {
+   "fields": [
+    "mos_ref_code",
+    "mos_ref_incl_r"
+   ],
+   "types": [
+    "text",
+    "money"
+   ],
+   "label": "Refuse: ledger code + VAT-inclusive amount",
+   "scope": "section:refuse",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+(\\d+)[ \\t]+REFUSE[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]*\\*",
+   "required": true
+  },
+  {
+   "field": "mos_rates_r",
+   "label": "Rates instalment (no VAT)",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+RATES INSTALLMENT[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mos_rates_tariff_rate",
+    "mos_rates_year"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "Rates advice (page 2, when printed): rate in the rand + financial year",
+   "scope": "section:rates",
+   "pattern": "TARIFF[ \\t]+([\\d.]+)[ \\t]+(\\d{4}/\\d{4})",
+   "required": false
+  },
+  {
+   "field": "mos_admin_fee_r",
+   "label": "DP-COST ADMIN FEE (VAT-inclusive)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+DP-COST[ \\t]+ADMIN FEE[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mos_interest_r",
+   "label": "Interest on arrears (no VAT)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+\\.\\d+%[ \\t]+INTEREST[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mos_interest_rate",
+   "label": "Interest rate as printed",
+   "scope": "section:sundry",
+   "collect": "join_unique",
+   "pattern": "\\d{2}/\\d{2}/\\d{4}[ \\t]+(\\d+\\.\\d+%)[ \\t]+INTEREST",
+   "type": "text",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "mos_elec_ex_r",
+   "op": "sub",
+   "of": [
+    "mos_elec_incl_r",
+    "mos_elec_vat_r"
+   ]
+  },
+  {
+   "field": "mos_kva_ex_r",
+   "op": "sub",
+   "of": [
+    "mos_kva_incl_r",
+    "mos_kva_vat_r"
+   ]
+  },
+  {
+   "field": "mos_elec_total_ex_r",
+   "op": "sum",
+   "of": [
+    "mos_elec_ex_r",
+    "mos_kva_ex_r",
+    "mos_min_r"
+   ]
+  },
+  {
+   "field": "mos_elec_total_incl_r",
+   "op": "sum",
+   "of": [
+    "mos_elec_incl_r",
+    "mos_kva_incl_r",
+    "mos_min_r"
+   ]
+  },
+  {
+   "field": "mos_elec_total_vat_r",
+   "op": "sum",
+   "of": [
+    "mos_elec_vat_r",
+    "mos_kva_vat_r"
+   ]
+  },
+  {
+   "field": "mos_water_ex_r",
+   "op": "sub",
+   "of": [
+    "mos_water_incl_r",
+    "mos_water_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "tariff_name": "_none",
+  "meter": "mos_meter_out",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": [
+   "mos_kwh_billed",
+   "total_kwh"
+  ],
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "mos_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "mos_demand_r",
+  "nmd_r": "mos_min_r",
+  "other_r": "mos_basic_r",
+  "total_ex_vat_r": "mos_elec_total_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "B/F BALANCE[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+  "incoming_payment": "RECEIPTS[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+  "vat": "VAT ON '\\*'[ \\t]+ITEMS:[ \\t]+(-?\\d[\\d ]*\\.\\d{2}-?)",
+  "due_date": "ON OR BEFORE DUE DATE[\\s\\S]{0,240}?^[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+  "total_due": "ON OR BEFORE DUE DATE[\\s\\S]{0,240}?^[ \\t]*\\d{2}/\\d{2}/\\d{4}[^\\n]*?[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2}-?)[ \\t]*$",
+  "deposito": "DEPOSIT:[ \\t]*(\\d[\\d ]*\\.\\d{2})"
+ }
+}

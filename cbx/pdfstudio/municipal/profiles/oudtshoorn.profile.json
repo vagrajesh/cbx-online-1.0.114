@@ -1,0 +1,636 @@
+{
+ "profile_id": "oudtshoorn",
+ "profile_name": "Oudtshoorn Municipality (Western Cape)",
+ "short_name": "Oudtshoorn",
+ "_doc": "AFRIKAANS ONE-PAGE LEDGER STATEMENT, 1 page, ~2.6-3.0k chars, always a real text layer (ocr never needed). SAME print stream as Swartland / Matzikama / Knysna (all print BALANS OORGEBRING / TOTALE BTW / VERWYSING), so the identity had to come from something else. FINGERPRINT: the bill prints NO municipal name masthead and NO municipal VAT number - the only 4xxxxxxxxx on it is 4680101146 which is TELKOM's own VAT (136 files / 17 folders in this tree - fingerprinting on it would hijack the portfolio). Identity is carried by (a) the deposit reference at the foot, '11347' + the 12-digit zero-padded account => the literal '113470' for every 11-digit account (Knysna's is '11346'), and (b) the property town 'OUDTSHOORN' in the address block. Both are 10/10 in this folder and 0/477 everywhere else in the tree. LEDGER SHAPE: '<dd/mm/yy>  <meter|code>  <DESCRIPTION> (<period>)   <VAT>   <AMOUNT INCL VAT>' - the amount column is VAT-INCLUSIVE and the per-line VAT is printed in its own column just to its left. Ex-VAT per line is therefore a genuine 'sub' compute (incl - vat), independent of the rate lines. Under each charge line: '<curr> - <prev> = <units> <UNIT> <n> DAYS' (CURRENT reading FIRST, previous second - the opposite of Mossel Bay), then '<tariff-from-date>  <units> <UNIT> @ <rate>  = <amount ex VAT>', then 'TAR: <code>  BASIES: = <basic ex VAT>'. ELECTRICITY IS ALWAYS TWO LINES on one physical meter: meter [number removed] = KWH energy register, [number removed]K = KVA maximum-demand register. Their print ORDER FLIPS between months (202511 prints KVA first), so both rules discriminate on the KWH/KVA token on the readings line, never on order. BASIES appears on the KWH line only (electricity basic charge -> other_r). Not printed anywhere: reading type (Actual/Estimate), TOU bands, NMD, deposit -> mapped '_none'. Dates are kept exactly as printed (dd/mm/yy in the ledger date column, dd/mm/yyyy in the consumption period and due date). Money is space-thousands with a DOT decimal ('100 260.69') so the standard money cleaner is correct - there is no comma-decimal 100x trap on this layout. Other line types seen: KWITANSIE (receipt), RENTE (interest @ 11.25%, up to 4 lines/bill), TFR CR OORDRAG JRNL DEBIET/KREDIET (journal transfer pair), KONTANT RONDING (cash rounding, always negative), BELASTING PAAIEMENT (monthly rates instalment, NO VAT), and on the July bill an extra BELASTING KENNISGEWING valuation notice block. One file is named 'LAI_...duplicate-ACC-19-...' - its text is the SAME account's October-2025 statement (stmt ref [number removed]-10-25); there is no other October file, so it is the October bill re-issued, not a redundant copy, and it extracts identically. INDEPENDENT IDENTITY: 'TOTALE BTW:' equals the sum of the printed per-line VAT column (max deviation R0.00 across all 10 bills).",
+ "fingerprint": {
+  "all": [
+   "VERWYSING",
+   "TOTALE BTW"
+  ],
+  "any": [
+   "113470",
+   "OUDTSHOORN"
+  ],
+  "reject_if_text": [
+   "MOSSEL BAY MUNICIPALITY",
+   "requires Adobe Reader"
+  ]
+ },
+ "sections": {
+  "water": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+WATER VERBRUIK"
+  },
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\d+K?[ \\t]+ELEKTRISITEIT VERBRUIK"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+RIOOL"
+  },
+  "refuse": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+VULLIS VERWYDERING"
+  },
+  "rates": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\S+[ \\t]+BELASTING PAAIEMENT"
+  },
+  "sundry": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+(?:TFR CR|\\d+\\.\\d+%[ \\t]+RENTE|KONTANT RONDING)",
+   "overlay": true,
+   "end": "TOTALE BTW:[^\\n]*"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]+(\\d{2}-\\d{3}-\\d{3}-\\d{3})[ \\t]*$",
+    "VERWYSING:[ \\t]*([\\d-]{8,})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "oud_deposit_ref",
+   "label": "Deposit reference (biller code + account)",
+   "scope": "document",
+   "pattern": "^[ \\t]+(\\d{15,20})[ \\t]+VERWYSING",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "oud_stmt_ref",
+   "label": "Statement reference (account-mm-yy)",
+   "scope": "document",
+   "pattern": "^[ \\t]+(\\d{9,}-\\d{2}-\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "oud_valuation",
+    "oud_cust_code",
+    "oud_prev_stmt_date",
+    "billing_date"
+   ],
+   "types": [
+    "number",
+    "text",
+    "date",
+    "date"
+   ],
+   "label": "Header strip: valuation / customer code / previous + this statement date",
+   "scope": "document",
+   "pattern": "^[ \\t]{20,}(\\d{4,})[ \\t]{2,}(\\d{6,})[ \\t]{2,}(\\d{2}/\\d{2}/\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "oud_site_street",
+   "label": "Property street address",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]{20,}(\\d+[ \\t]+[A-Z0-9][A-Z0-9 ]*?)[ \\t]*\\n[ \\t]{1,6}[A-Z]",
+    "^[ \\t]{20,}(\\d+[ \\t]+[A-Z0-9][A-Z0-9 ]*?)[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "oud_addressee",
+    "oud_ward",
+    "oud_site_town"
+   ],
+   "types": [
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Addressee / ward / property town",
+   "scope": "document",
+   "pattern": "^[ \\t]{20,}\\d+[ \\t]+[A-Z0-9][A-Z0-9 ]*?[ \\t]*\\n[ \\t]*([^\\n]*?)[ \\t]{2,}(\\d{1,3})[ \\t]{2,}([A-Z][A-Z ]+?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "oud_prev_balance_r",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "BALANS OORGEBRING[ \\t]{2,}(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "oud_receipts_r",
+   "label": "Receipts (KWITANSIE)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "KWITANSIE[ \\t]{2,}(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "oud_total_vat_r",
+   "label": "TOTALE BTW (whole statement)",
+   "scope": "document",
+   "pattern": "TOTALE BTW:[ \\t]*(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "oud_age_90",
+    "oud_age_60",
+    "oud_age_30",
+    "oud_current_incl_r",
+    "due_date",
+    "oud_total_due_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "date",
+    "money"
+   ],
+   "label": "Aging strip / due date / total due",
+   "scope": "document",
+   "pattern": "^[ \\t]+(-?[\\d ]+\\.\\d{2})[ \\t]+(-?[\\d ]+\\.\\d{2})[ \\t]+(-?[\\d ]+\\.\\d{2})[ \\t]+(-?[\\d ]+\\.\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "oud_rates_valuation_r",
+   "label": "Rates notice: land valuation",
+   "scope": "document",
+   "pattern": "^[ \\t]*GROND[ \\t]{2,}([\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "oud_meter_out",
+   "label": "Electricity meter / register(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+(\\d+K?)[ \\t]+ELEKTRISITEIT VERBRUIK",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "oud_elec_meter",
+   "label": "Energy (kWh) meter",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+(\\d+)[ \\t]+ELEKTRISITEIT VERBRUIK[^\\n]*\\n[^\\n]*?\\bKWH\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "oud_kva_meter",
+   "label": "Demand (kVA) register",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+(\\d+K)[ \\t]+ELEKTRISITEIT VERBRUIK",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Electricity consumption period (as printed)",
+   "scope": "section:electricity",
+   "pattern": "ELEKTRISITEIT VERBRUIK[ \\t]*\\((\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})\\)",
+   "required": true
+  },
+  {
+   "fields": [
+    "oud_elec_vat_r",
+    "oud_elec_incl_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Energy line: printed VAT + VAT-inclusive amount",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+ELEKTRISITEIT VERBRUIK[^\\n]*?[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]*\\n[^\\n]*?\\bKWH\\b",
+   "required": true
+  },
+  {
+   "fields": [
+    "oud_kva_vat_r",
+    "oud_kva_incl_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Demand line: printed VAT + VAT-inclusive amount",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\d+K[ \\t]+ELEKTRISITEIT VERBRUIK[^\\n]*?[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]*\\n[^\\n]*?\\bKVA\\b",
+   "required": false
+  },
+  {
+   "fields": [
+    "end_reading_kwh",
+    "start_reading_kwh",
+    "total_kwh",
+    "oud_elec_days"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "kWh register: current / previous / units / days",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d+)[ \\t]*-[ \\t]*(\\d+)[ \\t]*=[ \\t]*(\\d+)[ \\t]+KWH[ \\t]+(\\d+)[ \\t]+DAYS",
+   "required": true
+  },
+  {
+   "fields": [
+    "oud_kva_curr",
+    "oud_kva_prev",
+    "demand_kva",
+    "oud_kva_days"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "kVA register: current / previous / max demand / days",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d+)[ \\t]*-[ \\t]*(\\d+)[ \\t]*=[ \\t]*(\\d+)[ \\t]+KVA[ \\t]+(\\d+)[ \\t]+DAYS",
+   "required": false
+  },
+  {
+   "fields": [
+    "oud_kwh_billed",
+    "oud_energy_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Energy rate line: billed kWh + amount ex VAT",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+([\\d ]+\\.\\d{2})[ \\t]+KWH[ \\t]+@[ \\t]+[\\d.]+[ \\t]+=[ \\t]+(-?[\\d ]+\\.\\d{2})",
+   "required": true
+  },
+  {
+   "field": "oud_energy_rate",
+   "label": "Energy rate (R/kWh, as printed)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+[\\d ]+\\.\\d{2}[ \\t]+KWH[ \\t]+@[ \\t]+([\\d.]+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "oud_kva_billed",
+    "oud_demand_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Demand rate line: billed kVA + amount ex VAT",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+([\\d ]+\\.\\d{2})[ \\t]+KVA[ \\t]+@[ \\t]+[\\d.]+[ \\t]+=[ \\t]+(-?[\\d ]+\\.\\d{2})",
+   "required": false
+  },
+  {
+   "field": "oud_demand_rate",
+   "label": "Demand rate (R/kVA, as printed)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+[\\d ]+\\.\\d{2}[ \\t]+KVA[ \\t]+@[ \\t]+([\\d.]+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "oud_basic_r",
+   "label": "Electricity BASIES (basic charge ex VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*TAR:[ \\t]+\\d+[ \\t]+BASIES:[ \\t]*=[ \\t]*(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "oud_elec_tariff",
+   "label": "Electricity tariff code(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*TAR:[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "oud_water_meter",
+   "label": "Water meter",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+(\\d+)[ \\t]+WATER VERBRUIK",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "oud_water_from",
+    "oud_water_to"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Water consumption period (as printed)",
+   "scope": "section:water",
+   "pattern": "WATER VERBRUIK[ \\t]*\\((\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})\\)",
+   "required": false
+  },
+  {
+   "fields": [
+    "oud_water_vat_r",
+    "oud_water_incl_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Water: printed VAT + VAT-inclusive amount (summed over lines)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "WATER VERBRUIK[^\\n]*?[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "oud_water_curr",
+    "oud_water_prev",
+    "oud_water_kl",
+    "oud_water_days"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "Water register: current / previous / kl / days",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*(\\d+)[ \\t]*-[ \\t]*(\\d+)[ \\t]*=[ \\t]*(\\d+)[ \\t]+Kl[ \\t]+(\\d+)[ \\t]+DAYS",
+   "required": false
+  },
+  {
+   "fields": [
+    "oud_water_billed_kl",
+    "oud_water_usage_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Water rate line(s): kl + amount ex VAT (summed)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+([\\d ]+\\.\\d{2})[ \\t]+Kl[ \\t]+@[ \\t]+[\\d.]+[ \\t]+=[ \\t]+(-?[\\d ]+\\.\\d{2})",
+   "required": false
+  },
+  {
+   "field": "oud_water_basic_r",
+   "label": "Water BASIES (ex VAT)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*TAR:[ \\t]+\\d+[ \\t]+BASIES:[ \\t]*=[ \\t]*(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "oud_sew_vat_r",
+    "oud_sew_incl_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Sewerage (RIOOL): printed VAT + VAT-inclusive amount",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+RIOOL[^\\n]*?[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "oud_sew_basic_r",
+   "label": "Sewerage BASIES (ex VAT)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*TAR:[ \\t]+\\d+[ \\t]+BASIES:[ \\t]*=[ \\t]*(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "oud_ref_vat_r",
+    "oud_ref_incl_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Refuse (VULLIS VERWYDERING): printed VAT + VAT-inclusive amount",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+VULLIS VERWYDERING[^\\n]*?[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "oud_ref_basic_r",
+   "label": "Refuse BASIES (ex VAT)",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "pattern": "^[ \\t]*TAR:[ \\t]+\\d+[ \\t]+BASIES:[ \\t]*=[ \\t]*(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "oud_rates_r",
+   "label": "Rates instalment (BELASTING PAAIEMENT, no VAT)",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "BELASTING PAAIEMENT[ \\t]{2,}(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "oud_interest_r",
+   "label": "Interest (RENTE)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\d+\\.\\d+%[ \\t]+RENTE[ \\t]{2,}(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "oud_interest_rate",
+   "label": "Interest rate as printed",
+   "scope": "section:sundry",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+(\\d+\\.\\d+%)[ \\t]+RENTE",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "oud_rounding_r",
+   "label": "Cash rounding (KONTANT RONDING)",
+   "scope": "section:sundry",
+   "pattern": "KONTANT RONDING[ \\t]{2,}(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "oud_jrnl_r",
+   "label": "Transfer journal amount(s) (OORDRAG JRNL, netted)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "OORDRAG JRNL - (?:DEBIET|KREDIET)[^\\n]*?[ \\t]{2,}(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "oud_jrnl_vat_r",
+   "label": "Transfer journal VAT (KREDIET line only)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "OORDRAG JRNL - (?:DEBIET|KREDIET)[ \\t]{2,}(-?[\\d ]+\\.\\d{2})[ \\t]{2,}-?[\\d ]+\\.\\d{2}[ \\t]*$",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "oud_site_street",
+    "oud_site_town"
+   ]
+  },
+  {
+   "field": "oud_elec_ex_r",
+   "op": "sub",
+   "of": [
+    "oud_elec_incl_r",
+    "oud_elec_vat_r"
+   ]
+  },
+  {
+   "field": "oud_kva_ex_r",
+   "op": "sub",
+   "of": [
+    "oud_kva_incl_r",
+    "oud_kva_vat_r"
+   ]
+  },
+  {
+   "field": "oud_elec_total_ex_r",
+   "op": "sum",
+   "of": [
+    "oud_elec_ex_r",
+    "oud_kva_ex_r"
+   ]
+  },
+  {
+   "field": "oud_elec_total_vat_r",
+   "op": "sum",
+   "of": [
+    "oud_elec_vat_r",
+    "oud_kva_vat_r"
+   ]
+  },
+  {
+   "field": "oud_elec_total_incl_r",
+   "op": "sum",
+   "of": [
+    "oud_elec_incl_r",
+    "oud_kva_incl_r"
+   ]
+  },
+  {
+   "field": "oud_water_ex_r",
+   "op": "sub",
+   "of": [
+    "oud_water_incl_r",
+    "oud_water_vat_r"
+   ]
+  },
+  {
+   "field": "oud_sew_ex_r",
+   "op": "sub",
+   "of": [
+    "oud_sew_incl_r",
+    "oud_sew_vat_r"
+   ]
+  },
+  {
+   "field": "oud_ref_ex_r",
+   "op": "sub",
+   "of": [
+    "oud_ref_incl_r",
+    "oud_ref_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "tariff_name": "oud_elec_tariff",
+  "meter": "oud_meter_out",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": [
+   "oud_kwh_billed",
+   "total_kwh"
+  ],
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "oud_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "oud_demand_r",
+  "nmd_r": "_none",
+  "other_r": "oud_basic_r",
+  "total_ex_vat_r": "oud_elec_total_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "BALANS OORGEBRING[ \\t]{2,}(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+  "incoming_payment": "KWITANSIE[ \\t]{2,}(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+  "current_incl": "^[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]+(-?[\\d ]+\\.\\d{2})[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]*$",
+  "vat": "TOTALE BTW:[ \\t]*(-?[\\d ]+\\.\\d{2})",
+  "total_due": "^[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+  "due_date": "^[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+-?[\\d ]+\\.\\d{2}[ \\t]*$"
+ }
+}

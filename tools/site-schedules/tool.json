@@ -1,0 +1,18 @@
+{
+  "slug": "site-schedules",
+  "title": "tool.title",
+  "icon": "tower",
+  "menu": {
+    "section": "My tools",
+    "order": 40,
+    "hidden": true
+  },
+  "access": {
+    "roles": [],
+    "tool": "site-schedules"
+  },
+  "home": "quotes",
+  "owner": "edwin.botha@cbreexcellerate.com",
+  "version": 3,
+  "note": "Site Schedules made in the Builder (1.0.56): a Swiftnet quotation in, the Site Schedule Agreement (Word) out. 1.0.88: CBX-Connect 2's reading and Word agreement (cbx/schedules/agreement.py). 1.0.89: the Site Schedules page (as CBX-Connect 2) replaces this folder in the menu; its rows were copied to the page once."
+}

@@ -1,0 +1,143 @@
+{
+ "profile_id": "hillandale_homeowners_association",
+ "profile_name": "Hillandale Homeowners Association NPC",
+ "short_name": "Hillandale HOA",
+ "_doc": "Hillandale Homeowners Association NPC (Xero-style) electricity recharge invoice: 'Standard' line (quantity 1, lump electricity usage excl VAT, no kWh/meter) + a metering 'Service fee' line (RMS or UMFA), Subtotal, TOTAL VAT, TOTAL ZAR. Both lines are electricity charges, summed into total ex VAT and other_r. Account = the Account Number printed for the customer; billing date = Invoice Date on the first line. One of the 10 files is a 'Statement - Activity' (no charge lines): it routes here but yields no electricity row by design. Fingerprint: the association's own VAT number as printed with spaces + HILLANDALE. Identity hil_total_less_vat_r = TOTAL ZAR - TOTAL VAT: 9/9 exact. Checked on 10 files, 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "463 022 2836",
+   "HILLANDALE"
+  ],
+  "any": [
+   "HOMEOWNERS",
+   "HILLANDALE HOMEOWNERS ASSOCIATION"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Description[ \\t]+Quantity[ \\t]+Unit Price[ \\t]+Amount",
+   "require": "^[ \\t]*Standard[ \\t]+\\d"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number (landlord's account for the customer)",
+   "scope": "header",
+   "pattern": "Account Number[ \\t]*\\n[^\\n]*?[ \\t]{2,}([A-Z]{2,}\\d{2,})[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice Date",
+   "scope": "header",
+   "pattern": "^[ \\t]*(\\d{1,2} [A-Za-z]{3} \\d{4})[ \\t]+HOMEOWNERS\\s*Tax Invoice",
+   "type": "date"
+  },
+  {
+   "field": "hil_invoice_no",
+   "label": "Invoice Number",
+   "scope": "header",
+   "pattern": "\\b(INV-\\d+)\\b",
+   "type": "text"
+  },
+  {
+   "field": "hil_reference",
+   "label": "Reference (month + 'Electricity usage')",
+   "scope": "header",
+   "pattern": "^[ \\t]+(\\S[^\\n]*?Electricity(?: usage)?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "hil_qty",
+    "hil_standard_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Standard (electricity usage, lump, excl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Standard[ \\t]+([\\d.]+)[ \\t]+\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "hil_fee_r",
+   "label": "Metering service fee (RMS / UMFA), excl VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\w+ Service fee[ \\t]+[\\d.]+[ \\t]+\\d{1,3}(?:,\\d{3})*\\.\\d{2}[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "field": "hil_subtotal_r",
+   "label": "Subtotal",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Subtotal[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "hil_vat_r",
+   "label": "TOTAL VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*TOTAL VAT[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "hil_total_r",
+   "label": "TOTAL ZAR",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*TOTAL ZAR[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "hil_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "hil_standard_r",
+    "hil_fee_r"
+   ]
+  },
+  {
+   "field": "hil_total_less_vat_r",
+   "op": "sub",
+   "of": [
+    "hil_total_r",
+    "hil_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "_none",
+  "total_ex_vat_r": "hil_elec_ex_r",
+  "other_r": "hil_elec_ex_r",
+  "tariff_name": "_none",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

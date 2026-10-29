@@ -1,0 +1,296 @@
+{
+ "profile_id": "saldanha_bay",
+ "profile_name": "Saldanha Bay Local Municipality (Vredenburg, Western Cape)",
+ "short_name": "Saldanha Bay",
+ "_doc": "Saldanha Bay LM (Vredenburg) 'TAX INVOICE/STATEMENT OF ACCOUNT' (emunsoft-style): labelled header (Account Number, Account Date, Street, Suburb, Deposit), METER READINGS table (ELECTRICITY and KVA rows: old/new reading, read date, type, consumption) and ACCOUNT DETAILS lines 'date code DESCRIPTION units @ tariff * value' with EX-VAT values and one VAT line. Electricity = ELEC: BULK KVA (demand_r), ELEC: BULK KWH (standard band, single-rate), ELEC: BULK KWH SERVICE CHARGE (other_r). Lines interleave with WATER: lines, so every section is an overlay ending at the VAT line. 'INTEREST ... ELECTRICITY-KVA LEVIES' is interest, kept as sundry, not electricity. Fingerprint: municipal VAT number + masthead name. IDENTITY: sb_elec_ex_by_rate_r = sum of units x tariff (mul) for the three ELEC lines vs total_ex_vat_r: R0.00 on 10/10. Checked on 10 bills (one file carries a BER_ prefix but is this account).",
+ "fingerprint": {
+  "all": [
+   "4100113150"
+  ],
+  "any": [
+   "SALDANHA BAY MUNICIPALITY"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+ELEC:",
+   "overlay": true,
+   "end": "^[ \\t]+\\d+[ \\t]+VAT[ \\t]{2,}"
+  },
+  "water": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+WATER:",
+   "overlay": true,
+   "end": "^[ \\t]+\\d+[ \\t]+VAT[ \\t]{2,}"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+SEWER:",
+   "overlay": true,
+   "end": "^[ \\t]+\\d+[ \\t]+VAT[ \\t]{2,}"
+  },
+  "refuse": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+REFUSE\\b",
+   "overlay": true,
+   "end": "^[ \\t]+\\d+[ \\t]+VAT[ \\t]{2,}"
+  },
+  "rates": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+RATES:",
+   "overlay": true,
+   "end": "^[ \\t]+\\d+[ \\t]+VAT[ \\t]{2,}"
+  },
+  "sundry": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+INTEREST\\b",
+   "overlay": true,
+   "end": "^[ \\t]+\\d+[ \\t]+VAT[ \\t]{2,}"
+  }
+ },
+ "fields": [
+  {
+   "label": "Account Number",
+   "scope": "header",
+   "field": "account_number",
+   "pattern": "^[ \\t]*Account Number:[ \\t]+(\\d{6,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "label": "Account Date",
+   "scope": "header",
+   "field": "billing_date",
+   "pattern": "Account Date:[ \\t]+(\\d{1,2} [A-Z]{3} \\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "label": "Deposit",
+   "scope": "header",
+   "field": "deposit_r",
+   "pattern": "\\bDeposit:[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "label": "Street",
+   "scope": "header",
+   "field": "sb_street",
+   "pattern": "\\bStreet:[ \\t]+(\\S+(?: \\S+)*)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "label": "Suburb",
+   "scope": "header",
+   "field": "sb_suburb",
+   "pattern": "\\bSuburb:[ \\t]+(\\S+(?: \\S+)*)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "label": "Meter readings: ELECTRICITY row",
+   "scope": "header",
+   "fields": [
+    "meter",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "read_end",
+    "sb_reading_type",
+    "total_kwh"
+   ],
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+ELECTRICITY[ \\t]+(\\d*\\.\\d+)[ \\t]+(\\d*\\.\\d+)[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+([A-Z])[ \\t]+(\\d*\\.\\d+)[ \\t]*$",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "date",
+    "text",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "label": "Meter readings: KVA row",
+   "scope": "header",
+   "field": "demand_kva",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+KVA[ \\t]+\\d*\\.\\d+[ \\t]+\\d*\\.\\d+[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+(\\d*\\.\\d+)[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "label": "Statement VAT",
+   "scope": "document",
+   "field": "sb_vat_total_r",
+   "pattern": "^[ \\t]+\\d+[ \\t]+VAT[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "label": "ELEC: BULK KVA (units @ tariff = value)",
+   "scope": "section:electricity",
+   "fields": [
+    "sb_kva_units",
+    "sb_kva_rate",
+    "demand_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+ELEC: BULK KVA[ \\t]+(\\d[\\d,]*\\.\\d+|\\.\\d+)[ \\t]*@[ \\t]*(\\d[\\d,]*\\.\\d+|\\.\\d+)[ \\t]+\\*?[ \\t]*(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "ELEC: BULK KWH",
+   "scope": "section:electricity",
+   "fields": [
+    "sb_kwh_units",
+    "sb_kwh_rate",
+    "sb_energy_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+ELEC: BULK KWH[ \\t]+(\\d[\\d,]*\\.\\d+|\\.\\d+)[ \\t]*@[ \\t]*(\\d[\\d,]*\\.\\d+|\\.\\d+)[ \\t]+\\*?[ \\t]*(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "ELEC: BULK KWH SERVICE CHARGE",
+   "scope": "section:electricity",
+   "fields": [
+    "sb_svc_units",
+    "sb_svc_rate",
+    "sb_service_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+ELEC: BULK KWH SERVICE CHARGE[ \\t]+(\\d[\\d,]*\\.\\d+|\\.\\d+)[ \\t]*@[ \\t]*(\\d[\\d,]*\\.\\d+|\\.\\d+)[ \\t]+\\*?[ \\t]*(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "Any other ELEC: line (none seen)",
+   "scope": "section:electricity",
+   "field": "sb_other_elec_r",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+ELEC:(?! BULK KVA[ \\t]| BULK KWH[ \\t]| BULK KWH SERVICE CHARGE[ \\t])[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "label": "Interest (electricity levies) - not electricity",
+   "scope": "section:sundry",
+   "field": "sb_interest_r",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+INTEREST[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "label": "Water lines",
+   "scope": "section:water",
+   "field": "sb_water_r",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+WATER:[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "label": "Sewer lines",
+   "scope": "section:sewerage",
+   "field": "sb_sewer_r",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+SEWER:[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "label": "Refuse lines",
+   "scope": "section:refuse",
+   "field": "sb_refuse_r",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+REFUSE[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "label": "Rates lines (net of rebate)",
+   "scope": "section:rates",
+   "field": "sb_rates_r",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+RATES:[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  }
+ ],
+ "computes": [
+  {
+   "field": "sb_site",
+   "op": "concat",
+   "of": [
+    "sb_street",
+    "sb_suburb"
+   ]
+  },
+  {
+   "field": "sb_other_r",
+   "op": "sum",
+   "of": [
+    "sb_service_r",
+    "sb_other_elec_r"
+   ]
+  },
+  {
+   "field": "sb_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "demand_r",
+    "sb_energy_r",
+    "sb_service_r",
+    "sb_other_elec_r"
+   ]
+  },
+  {
+   "field": "sb_kva_calc",
+   "op": "mul",
+   "of": [
+    "sb_kva_units",
+    "sb_kva_rate"
+   ]
+  },
+  {
+   "field": "sb_kwh_calc",
+   "op": "mul",
+   "of": [
+    "sb_kwh_units",
+    "sb_kwh_rate"
+   ]
+  },
+  {
+   "field": "sb_svc_calc",
+   "op": "mul",
+   "of": [
+    "sb_svc_units",
+    "sb_svc_rate"
+   ]
+  },
+  {
+   "field": "sb_elec_ex_by_rate_r",
+   "op": "sum",
+   "of": [
+    "sb_kva_calc",
+    "sb_kwh_calc",
+    "sb_svc_calc"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "sb_site",
+  "tariff_name": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "sb_energy_r",
+  "offpeak_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "sb_other_r",
+  "total_ex_vat_r": "sb_elec_ex_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

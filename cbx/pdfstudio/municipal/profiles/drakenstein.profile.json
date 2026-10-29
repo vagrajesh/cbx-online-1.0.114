@@ -1,0 +1,397 @@
+{
+ "profile_id": "drakenstein",
+ "profile_name": "Drakenstein Municipality (Paarl, Western Cape)",
+ "short_name": "Drakenstein",
+ "_doc": "DRAKENSTEIN MUNICIPALITY (Paarl, WC) - Telkom account [number removed], stand 100/007/[number removed]/00000/0000/0000, LOCATION HOOFSTRAAT 145.\n\nPAGE STRUCTURE (all 9 bills identical): exactly 2 PDF pages, ONE '\\f' break. Page 1 = masthead + ACCOUNT SUMMARY + payment boilerplate (~6.0k chars). Page 2 = ACCOUNT DETAILS: the per-service charge table (~1.0k chars). Total raw text 7.0-7.1k chars. There is NO reverse-side terms-and-conditions page and NO newsletter insert, so the Breede Valley whitespace-soup problem does NOT occur here (BV page 2 alone was ~176k chars). PDF byte size (0.92MB - 4.22MB) is entirely embedded raster artwork (masthead logo, QR code, 'Pay Now' button) and varies with image compression only - it has no relation to text volume. No page is a scanned image: every page has a real text layer, read_pdf reports ocr:False scanned:False on all 9, so no OCR is used and no row is OCR-flagged.\n\nEvery bill opens with a mailer/route wrapper line: '<![number removed]|[address removed]|true|24|07|2026|1|2|...!>' repeated at the top of each page. That is the e-delivery envelope, NOT bill data, and the CBRE/Excellerate recipient address in it appears on 13 different municipalities' folders in this tree - it is deliberately NOT part of the fingerprint (that mistake is what makes shipped 'mangaung' hijack other municipalities).\n\nFINGERPRINT: '4500109717' is DRAKENSTEIN'S OWN VAT registration, printed 'VAT REG NO: 4500109717' in the masthead. Scanned over all 219 PDFs in /mnt/user-data/uploads/Telkom: present in the 9 Drakenstein bills and nowhere else. '4680101146' printed two lines lower is labelled 'CUSTOMER VAT REG NUMBER' - it is TELKOM's (the customer's) VAT number and appears in 16 different folders; it must never be fingerprinted on. The 'any' markers (DRAKENSTEIN, drakenstein.gov.za, Drakenstein.cabedocs.com, 'Bank approved beneficiary: Drakenstein Billing') were each verified unique to this folder too.\n\nSECTIONS: 'rates' is a RULES-FREE BOUNDARY at '^ ASSESSMENT RATES$'. Drakenstein prints that heading with only a STAND line under it and no charge line at all on these accounts, so it must produce no row; as the first section start it also pins header = page 1 + the page-2 ACCOUNT DETAILS strapline, which is where all the account-level meta lives. 'electricity' starts at 'ELECTRICITY (PERIOD ...)' and runs to end of text - only ~250 chars of totals follow, all of it wanted (SERVICE TOTAL PAYABLE, CURRENT MONTH ACCOUNT TOTAL, VAT AMOUNT). No rule uses 'document' scope. Water / sewerage / refuse / assessment-rates charge lines never appear on these bills; if a future Drakenstein bill grows them they will land in their own sections and cannot reach an electricity column, because every electricity pattern is line-anchored inside section:electricity.\n\nCHARGE TABLE (one line, one meter, on every bill):\n  TARIFF  METER NO   PREVIOUS  CURRENT  (A)ctual/(I)nterim  FACTOR  TYPE  UNITS  AMOUNT  BASIC  PAYABLE\n  ECS20   [number removed]   8959.000  9467.000  A                  1.00000 ME01  508.000 R 2 406.03 R 0.00 R 2 406.03\nTariff ECS20 / meter type ME01 is a FLAT single-rate energy tariff - no TOU bands, no demand, no NMD. Following the CoJ-flat / Ekurhuleni / Breede Valley convention the single band routes to STANDARD; peak/off-peak/demand/NMD are '_none'. Money uses SPACE thousands separators and a leading '-R' for credits ('-R 13 870.40'); _to_decimal handles both.\n\nVAT BASIS - the important trap. Every Rand figure in the charge table and in the ACCOUNT SUMMARY is VAT-INCLUSIVE. The bill prints '*VAT AMOUNT @15% INCLUSIVE  R 313.83' and 2406.03 x 15/115 = 313.83 exactly (verified on all 9 bills; the VAT-exclusive reading 2406.03 x 0.15 = 360.90 matches none of them). So the ex-VAT canonical Rand columns are DERIVED by subtracting the printed VAT: standard_r = AMOUNT - VAT, total_ex_vat_r = CURRENT MONTH ACCOUNT TOTAL - VAT. Those are two DIFFERENT printed figures on two different lines, so reconcile here is not the usual circular sum-of-own-parts: it tests AMOUNT + BASIC == CURRENT MONTH ACCOUNT TOTAL (the VAT term cancels), and a silently-missed AMOUNT capture makes it fail by the whole bill instead of hiding in Other. CAVEAT stated plainly: BASIC is R 0.00 on all 9 bills, so other_r carries the basic charge as printed (0.00, where inc-VAT and ex-VAT are the same number). If Drakenstein ever bills a non-zero BASIC, other_r would be inc-VAT and standard_r would absorb the basic's VAT share; recalibrate then.\n\nREADING TYPE: the flag column is '(A)ctual/(I)nterim', not Actual/Estimated. All 9 bills print 'A'. reading_type is set by label_present from two mutually exclusive flag rules so an 'I' bill yields 'Interim' - the bill's own word - rather than relying on TRANSLATE (which knows 'a'->Actual and 'e'->Estimated but has no entry for 'i').\n\nMISNAMED FILE: 'OUD_[number removed]_[number removed]-[number removed]-49665.pdf' carries the Oudtshoorn 'OUD_' filename prefix but is a Drakenstein bill - its text has PO BOX 12 / PAARL / 7622, [address removed], VAT REG NO 4500109717, account [number removed], and its meter readings (4572.000 -> 5020.000) slot exactly between the Oct-2025 and Jan-2026 bills in the single unbroken [number removed] reading chain. The genuine Oudtshoorn bill in this tree is account [number removed] with a completely different layout (PRIVATE BAG X137, no VAT REG NO line). Filename is a filing error; the fingerprint was not bent to accommodate it.\n\nNEVER PRINTED by Drakenstein: TOU bands, demand kVA, notified maximum demand, a tariff NAME (only the code ECS20), a suburb/town for the site, any ex-VAT charge figure, cash/guarantee securities. HANDOVER AMOUNT, RECEIPT/JOURNAL CORRECTIONS and REFUNDS print a bare '-' on all 9 bills (zero), so their money rules correctly miss and stay blank.",
+ "fingerprint": {
+  "all": [
+   "4500109717"
+  ],
+  "any": [
+   "DRAKENSTEIN",
+   "customercare@drakenstein.gov.za",
+   "Drakenstein.cabedocs.com",
+   "Bank approved beneficiary: Drakenstein Billing"
+  ],
+  "reject_if_text": [
+   "requires Adobe Reader 8 or higher",
+   "Please wait... If this message is not eventually replaced",
+   "Prepayment Account Update",
+   "PREPAID ELECTRICITY PURCHASE SLIP"
+  ]
+ },
+ "sections": {
+  "rates": {
+   "start": "^[ \\t]*ASSESSMENT RATES[ \\t]*$"
+  },
+  "electricity": {
+   "start": "^[ \\t]*ELECTRICITY[ \\t]*\\(PERIOD[ \\t]",
+   "require": "^[ \\t]*ELECTRICITY - SERVICE TOTAL PAYABLE[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number (masthead)",
+   "scope": "header",
+   "pattern": "^[ \\t]*ACCOUNT NUMBER[ \\t]{2,}(\\d{9,})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Billing date (ACCOUNT SUMMARY AS ON)",
+   "scope": "header",
+   "patterns": [
+    "^[ \\t]*ACCOUNT SUMMARY AS ON[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+    "^[ \\t]*ACCOUNT DETAILS AS ON[ \\t]+(\\d{4}/\\d{2}/\\d{2})"
+   ],
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "dra_site_location",
+   "label": "Site (LOCATION)",
+   "scope": "header",
+   "pattern": "^[ \\t]*LOCATION[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "dra_stand_no",
+   "label": "Stand number",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bSTAND NUMBER[ \\t]{2,}(\\S+)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "dra_tax_invoice_no",
+   "label": "Tax invoice number",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bTAX INVOICE NO[ \\t]{2,}(\\S+)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "dra_munic_vat_no",
+   "label": "Drakenstein VAT registration (fingerprint anchor)",
+   "scope": "header",
+   "pattern": "^[ \\t]*VAT REG NO:[ \\t]+(\\d{9,})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "dra_customer_vat_no",
+   "label": "CUSTOMER VAT reg number (Telkom's, NOT the municipality's)",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bCUSTOMER VAT REG NUMBER[ \\t]{2,}(\\d{9,})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "header",
+   "pattern": "^[ \\t]*DUE DATE[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "dra_payment_date",
+   "label": "Payment date",
+   "scope": "header",
+   "pattern": "^[ \\t]*ACCOUNT SUMMARY AS ON[ \\t]+\\d{4}/\\d{2}/\\d{2}[ \\t]{2,}PAYMENT DATE[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "dra_deposit_r",
+   "label": "Deposit held",
+   "scope": "header",
+   "pattern": "^[ \\t]*DEPOSIT[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "dra_prev_balance_r",
+   "label": "Balance on previous account",
+   "scope": "header",
+   "pattern": "^[ \\t]*BALANCE ON PREVIOUS ACCOUNT[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "dra_payment_r",
+   "label": "Less payments (blank when the bill prints a bare '-')",
+   "scope": "header",
+   "pattern": "^[ \\t]*LESS PAYMENTS[ \\t]*\\([\\d/]+\\)[ \\t]{2,}THANK YOU[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "dra_payment_date_posted",
+   "label": "Date payments were posted",
+   "scope": "header",
+   "pattern": "^[ \\t]*LESS PAYMENTS[ \\t]*\\((\\d{4}/\\d{2}/\\d{2})\\)",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "dra_subtotal_prev_r",
+   "label": "Subtotal previous account",
+   "scope": "header",
+   "pattern": "^[ \\t]*SUBTOTAL PREVIOUS ACCOUNT[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "dra_interest_r",
+   "label": "Interest (blank when '-')",
+   "scope": "header",
+   "pattern": "^[ \\t]*INTEREST[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "dra_handover_r",
+   "label": "Handover amount (blank when '-')",
+   "scope": "header",
+   "pattern": "^[ \\t]*HANDOVER AMOUNT[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "dra_current_month",
+    "dra_current_account_inc_r"
+   ],
+   "label": "Current account month + amount (VAT INCLUSIVE)",
+   "scope": "header",
+   "pattern": "^[ \\t]*CURRENT ACCOUNT[ \\t]{2,}([A-Z]+[ \\t]+\\d{4})[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "text",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "dra_rounded_r",
+   "label": "Due-date rounded amount",
+   "scope": "header",
+   "pattern": "^[ \\t]*DUE DATE[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}[ \\t]*\\([^)]*\\)[ \\t]{2,}ROUNDED[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "dra_amount_due_r",
+   "label": "Amount due",
+   "scope": "header",
+   "pattern": "^[ \\t]*AMOUNT DUE[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end",
+    "dra_days"
+   ],
+   "label": "Electricity reading period + days",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*ELECTRICITY[ \\t]*\\(PERIOD[ \\t]+(\\d{4}/\\d{2}/\\d{2})[ \\t]*-[ \\t]*(\\d{4}/\\d{2}/\\d{2})[ \\t]*-[ \\t]*(\\d+)[ \\t]*DAYS\\)",
+   "types": [
+    "date",
+    "date",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "tariff_name",
+    "meter",
+    "dra_meter_type"
+   ],
+   "label": "Tariff code / meter no / meter type (own rule - no collect, text)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*([A-Z][A-Z0-9]{2,9})[ \\t]{2,}(\\d{6,})[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}[AI][ \\t]{2,}[\\d.]+[ \\t]{2,}([A-Z][A-Z0-9]{2,7})[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}-?R[ \\t]*[\\d ]+\\.\\d{2}[ \\t]{2,}-?R[ \\t]*[\\d ]+\\.\\d{2}[ \\t]{2,}-?R[ \\t]*[\\d ]+\\.\\d{2}[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "dra_start_reading",
+    "dra_end_reading"
+   ],
+   "label": "Previous / current meter reading (kWh)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[A-Z][A-Z0-9]{2,9}[ \\t]{2,}\\d{6,}[ \\t]{2,}(\\d[\\d.]*)[ \\t]{2,}(\\d[\\d.]*)[ \\t]{2,}[AI][ \\t]{2,}[\\d.]+[ \\t]{2,}[A-Z][A-Z0-9]{2,7}[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}-?R[ \\t]*[\\d ]+\\.\\d{2}[ \\t]{2,}-?R[ \\t]*[\\d ]+\\.\\d{2}[ \\t]{2,}-?R[ \\t]*[\\d ]+\\.\\d{2}[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "total_kwh",
+    "dra_amount_inc_r",
+    "dra_basic_inc_r",
+    "dra_payable_inc_r"
+   ],
+   "label": "UNITS kWh / AMOUNT / BASIC / PAYABLE (all VAT INCLUSIVE, summed if the tariff changes mid-period)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[A-Z][A-Z0-9]{2,9}[ \\t]{2,}\\d{6,}[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}[AI][ \\t]{2,}[\\d.]+[ \\t]{2,}[A-Z][A-Z0-9]{2,7}[ \\t]{2,}(\\d[\\d.]*)[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "dra_flag_actual",
+   "label": "(A)ctual flag on the charge line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[A-Z][A-Z0-9]{2,9}[ \\t]{2,}\\d{6,}[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}(A)[ \\t]{2,}[\\d.]+[ \\t]{2,}[A-Z][A-Z0-9]{2,7}[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}-?R",
+   "type": "text"
+  },
+  {
+   "field": "dra_flag_interim",
+   "label": "(I)nterim flag on the charge line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[A-Z][A-Z0-9]{2,9}[ \\t]{2,}\\d{6,}[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}(I)[ \\t]{2,}[\\d.]+[ \\t]{2,}[A-Z][A-Z0-9]{2,7}[ \\t]{2,}\\d[\\d.]*[ \\t]{2,}-?R",
+   "type": "text"
+  },
+  {
+   "field": "dra_elec_service_total_inc_r",
+   "label": "ELECTRICITY - SERVICE TOTAL PAYABLE (inc VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*ELECTRICITY - SERVICE TOTAL PAYABLE[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "dra_month_total_inc_r",
+   "label": "CURRENT MONTH ACCOUNT TOTAL (inc VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*CURRENT MONTH[ \\t]*\\([A-Z]+[ \\t]+\\d{4}\\)[ \\t]*ACCOUNT TOTAL[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "dra_vat_r",
+   "label": "VAT AMOUNT @15% INCLUSIVE",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\*?VAT AMOUNT @15% INCLUSIVE[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "reading_type",
+   "label": "Actual/Interim from the (A)/(I) flag column",
+   "op": "label_present",
+   "of": [
+    "dra_flag_actual",
+    "dra_flag_interim"
+   ],
+   "labels": [
+    "Actual",
+    "Interim"
+   ]
+  },
+  {
+   "field": "dra_kwh_from_readings",
+   "label": "Current reading - previous reading (independent kWh check)",
+   "op": "diff",
+   "of": [
+    "dra_end_reading",
+    "dra_start_reading"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "dra_energy_ex_r",
+   "label": "Energy charge EX VAT = printed AMOUNT (inc VAT) - printed VAT",
+   "op": "sub",
+   "of": [
+    "dra_amount_inc_r",
+    "dra_vat_r"
+   ]
+  },
+  {
+   "field": "dra_total_ex_r",
+   "label": "Electricity EX VAT = printed CURRENT MONTH ACCOUNT TOTAL - printed VAT",
+   "op": "sub",
+   "of": [
+    "dra_month_total_inc_r",
+    "dra_vat_r"
+   ]
+  },
+  {
+   "field": "dra_payable_check_r",
+   "label": "AMOUNT + BASIC (must equal the printed PAYABLE column)",
+   "op": "sum",
+   "of": [
+    "dra_amount_inc_r",
+    "dra_basic_inc_r"
+   ]
+  },
+  {
+   "field": "dra_service_vs_month_gap_r",
+   "label": "SERVICE TOTAL PAYABLE - CURRENT MONTH ACCOUNT TOTAL (0.00 while electricity is the only service billed)",
+   "op": "sub",
+   "of": [
+    "dra_elec_service_total_inc_r",
+    "dra_month_total_inc_r"
+   ]
+  },
+  {
+   "field": "dra_summary_vs_detail_gap_r",
+   "label": "Page-1 CURRENT ACCOUNT - page-2 CURRENT MONTH ACCOUNT TOTAL (cross-page check, 0.00)",
+   "op": "sub",
+   "of": [
+    "dra_current_account_inc_r",
+    "dra_month_total_inc_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "dra_site_location",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "dra_start_reading",
+  "end_reading_kwh": "dra_end_reading",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "dra_energy_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "dra_basic_inc_r",
+  "total_ex_vat_r": "dra_total_ex_r",
+  "deposit_r": "dra_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "^[ \\t]*BALANCE ON PREVIOUS ACCOUNT[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+  "incoming_payment": "^[ \\t]*LESS PAYMENTS[ \\t]*\\([\\d/]+\\)[ \\t]{2,}THANK YOU[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+  "subtotal": "^[ \\t]*SUBTOTAL PREVIOUS ACCOUNT[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+  "current_incl": "^[ \\t]*CURRENT ACCOUNT[ \\t]{2,}[A-Z]+[ \\t]+\\d{4}[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+  "vat": "^[ \\t]*\\*?VAT AMOUNT @15% INCLUSIVE[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+  "total_due": "^[ \\t]*AMOUNT DUE[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$",
+  "due_date": "^[ \\t]*DUE DATE[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2})",
+  "deposito": "^[ \\t]*DEPOSIT[ \\t]{2,}(-?R[ \\t]*[\\d ]+\\.\\d{2})[ \\t]*$"
+ }
+}

@@ -1,0 +1,436 @@
+{
+ "profile_id": "joe_gqabi",
+ "profile_name": "Joe Gqabi District Municipality (Aliwal North, Eastern Cape)",
+ "short_name": "Joe Gqabi",
+ "_doc": "Joe Gqabi DISTRICT municipality, Eastern Cape. 15 bills, one account ([number removed], site 00015 Oak, Hilton, Maletswai), March 2025 - August 2026, one page each, one bill per month.\n\nNO ELECTRICITY. Joe Gqabi is a district municipality: it bills WATER ONLY. There is no electricity, sewerage, refuse, rates or sundry heading on any of the 15 bills - the single service sub-heading is 'Water', on every file, and the only recurring charge line is 'Water Basic Commercial Walter Sisulu'. This profile therefore has no electricity section and produces WATER rows only. That is correct, not a miss.\n\nSame print vendor as Tokologo / Nama Khoi / Ubuntu / two George bills (40 files in the tree carry 'Municipality VAT Nr:' + 'Computer Generated Tax Invoice'). Fingerprint is therefore the municipal VAT registration 4280128101 plus the masthead 'Joe Gqabi Municipality' and the billing mailbox jgdm.gov.za - each of those three strings occurs on exactly these 15 files and nowhere else in the 487-PDF tree. Never fingerprint on the vendor boilerplate, on the TELKOM SA / PRIVATE BAG X137 / CENTURION addressee block, or on Telkom's VAT 4680101146.\n\nLAYOUT (from --raw only)\n  Masthead: 'Tel: 045 [number removed]' / 'Joe Gqabi Municipality' / 'Fax: 045 [number removed]' / 'E-Mail: [address removed]' / 'Municipality VAT Nr: 4280128101'.\n  'Computer Generated Tax Invoice For : <Month> - <YYYY>' = the billing month.\n  Meta grid is LABEL LINE, BLANK LINE, VALUE LINE (three pairs):\n    'Property Physical Address / Cash / Guarantee / Statement Date'\n    'Sectional Title/Farm/PSI / SS Unit Nr / Market Value / Due Date'\n    'SG Number / Yearly Rates / Stand Size / Invoice Number'\n  so every value rule is written as label-line, \\n, blank \\n, value-line.\n  'Cash Until' on 14 bills; the Jan-2026 bill (JOE_..._[number removed]_103_...) calls the same field 'Receipts Until Date' - handled as an alternation, not a fallback pattern.\n  Ledger columns: Date | Details | Charge (Excluding VAT) | VAT | Charge (Including VAT). The amount column IS ex VAT and is printed with PERIOD decimals ('R 265.14'), so no per-line VAT derivation is needed.\n  'Opening Balance' and 'Advance' print accountant negatives '(R 13 266.51)' - captured WITH the parens so money() sees the minus.\n\nMETERED WATER: 14 of 15 bills are basic-charge only (no meter, no reading, no kL). ONE bill (JOE_18779_[number removed]_100_18779_151135.pdf, Oct-2025) prints a full metered block inside the Water section:\n    'Reading dates: Cur 31/10/2025 Prev 01/09/2025 (60 days)'\n    'Cur 3838.000 Prev 3812.000 Cons 26.000 KL'\n    'Meter CPKB 4877*01*M01825*10 (Estimate)'\n    'Factor: 1.000000' / 'Dwelling Units: 1'\n    '11.827515 x 16.210000 = 191.72' / '14.172485 x 22.060000 = 312.65'\n    'Meter Connection Size: 1 - 1' / 'Tariff: Water Commercial-Schools Walter Sisulu'\n  with the amount triple on a BARE line of its own (no date, no description) below the block. Both the dated charge line and the bare triple are picked up by one collect:'sum' rule. The step lines self-check: 11.827515 + 14.172485 = 26.000 kL = printed Cons, and 191.72 + 312.65 = 504.37 = the printed line amount.\n\nSECTION SCOPING: 'water' is an OVERLAY section ending at its own 'Sub Total' line. It has to be - a plain boundary section would run to end-of-document and swallow the aging row's 'Amount Due / VAT Due / Total Amount Due' value line, which is three R-amounts on one line and would be summed into the water charges. The overlay end includes the Sub Total line itself, which is the bill's own independently printed section ex-VAT total.\n\nCOMMA-DECIMAL TRAP: exactly ONE figure per bill prints South African style with a comma decimal - the ex-VAT cell of 'Total Levies for the Month' ('265,14', '745,41'). _to_decimal strips the comma as a thousands separator and would return 26514.00, i.e. 100x too big. Per the proven convention only the RAND part is captured, '(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}', so jg_levies_ex_r reads up to R0.99 LOW, and the exact printed string is kept in jg_levies_ex_txt. This costs nothing that matters here because the SAME ex-VAT total is printed a line above with a period decimal on 'Sub Total' (R 265.14) - that period-decimal figure is what water_total_ex_printed_r, the recon current_ex column and every check use. jg_levies_ex_r is a cross-check only. Every other money figure on the bill uses period decimals and is cent-exact.\n\nRULE ZERO: water_total_ex_printed_r comes from the bill's own 'Sub Total' line and is NOT constructed from the parts. w_charge_ex_r is the independent sum of the charge lines. water_ex_diff_r = |sum of parts - printed Sub Total| and is 0.00 on all 15 bills. A second, fully independent identity is per-line ex + VAT = incl, checked via w_incl_minus_vat_r.\n\nNo electricity means no canonical electricity row is produced (to_canonical only runs for service=='electricity'). The canonical map below is documentation: every electricity column is '_none' because this bill genuinely never prints it.",
+ "fingerprint": {
+  "all": [
+   "Municipality VAT Nr: 4280128101"
+  ],
+  "any": [
+   "Joe Gqabi Municipality",
+   "jgdm.gov.za"
+  ],
+  "reject_if_text": [
+   "Please wait...",
+   "If this message is not eventually replaced"
+  ]
+ },
+ "sections": {
+  "water": {
+   "start": "^[ \\t]*Water[ \\t]*$",
+   "overlay": true,
+   "end": "^[ \\t]*Sub Total[^\\n]*$",
+   "require": "Water Basic|Sub Total"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account Number[ \\t]+(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "account_name",
+   "label": "Account Name",
+   "scope": "document",
+   "pattern": "^[ \\t]*Name[ \\t]{2,}(\\S[^\\n]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_month",
+   "label": "Invoice month",
+   "scope": "document",
+   "pattern": "Computer Generated Tax Invoice For[ \\t]*:[ \\t]*([A-Za-z]+[ \\t]*-[ \\t]*\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Property Physical Address",
+   "scope": "document",
+   "pattern": "^[ \\t]*Property Physical Address[^\\n]*\\n[ \\t]*\\n[ \\t]*(\\S[^\\n]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "pattern": "^[ \\t]*Property Physical Address[^\\n]*\\n[ \\t]*\\n[^\\n]*?(\\d{2}-\\d{2}-\\d{4})[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due Date",
+   "scope": "document",
+   "pattern": "^[ \\t]*Sectional Title/Farm/PSI[^\\n]*\\n[ \\t]*\\n[^\\n]*?(\\d{2}-\\d{2}-\\d{4})[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "cash_until",
+   "label": "Cash / Receipts Until Date",
+   "scope": "document",
+   "pattern": "(?:Cash Until|Receipts Until Date)[ \\t]+(\\d{2}-\\d{2}-\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "election_ward",
+   "label": "Election Ward",
+   "scope": "document",
+   "pattern": "Election Ward[ \\t]{2,}(\\S+-Election Ward[ \\t]*\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "market_value_r",
+   "label": "Market Value",
+   "scope": "document",
+   "pattern": "^[ \\t]*Sectional Title/Farm/PSI[^\\n]*\\n[ \\t]*\\n[^\\n]*?R[ ]?(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "ss_unit_nr",
+   "label": "SS Unit Nr",
+   "scope": "document",
+   "pattern": "^[ \\t]*Sectional Title/Farm/PSI[^\\n]*\\n[ \\t]*\\n[ \\t]*(\\d+)[ \\t]{2,}R",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "sg_number",
+   "label": "SG Number",
+   "scope": "document",
+   "pattern": "^[ \\t]*SG Number[^\\n]*\\n[ \\t]*\\n[ \\t]*(\\S+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "invoice_number",
+   "label": "Invoice Number",
+   "scope": "document",
+   "pattern": "^[ \\t]*SG Number[^\\n]*\\n[ \\t]*\\n[^\\n]*?(\\d{6}/\\d{6,})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "stand_size_m2",
+    "stand_size_ha"
+   ],
+   "types": [
+    "number",
+    "number"
+   ],
+   "label": "Stand Size (m2 / ha)",
+   "scope": "document",
+   "pattern": "(?<![\\d.])([\\d.]+)m²[ \\t]+([\\d.]+)ha",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "opening_balance_r",
+   "label": "Opening Balance (ex VAT)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Opening Balance[ \\t]+(\\(?R[ ]?-?[\\d ]+\\.\\d{2}\\)?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "advance_r",
+   "label": "Advance",
+   "scope": "document",
+   "pattern": "^[ \\t]*Advance[ \\t]+(\\(?R[ ]?-?[\\d ]+\\.\\d{2}\\)?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "jg_levies_ex_r",
+    "jg_levies_vat_r",
+    "jg_levies_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Total Levies for the Month (ex-VAT cell is comma-decimal: RAND PART ONLY)",
+   "scope": "document",
+   "pattern": "Total Levies for the Month[ \\t]+(?<![\\d.,])(-?\\d{0,3}(?:[ ]\\d{3})*),\\d{2}[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "jg_levies_ex_txt",
+   "label": "Total Levies ex VAT - exact printed string (comma decimal)",
+   "scope": "document",
+   "pattern": "Total Levies for the Month[ \\t]+(-?[\\d ]+,\\d{2})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "amount_due_r",
+    "vat_due_r",
+    "total_amount_due_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Amount Due / VAT Due / Total Amount Due",
+   "scope": "document",
+   "pattern": "Amount Due[ \\t]+VAT Due[ \\t]+Total Amount Due[ \\t]*\\n[ \\t]*\\n[ \\t]*R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "current_r",
+   "label": "Aging: Current",
+   "scope": "document",
+   "pattern": "^[ \\t]*180\\+ Days[^\\n]*\\n[ \\t]*\\n[^\\n]*?R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "amount_payable_r",
+   "label": "Remittance Amount Payable",
+   "scope": "document",
+   "pattern": "Final Date for Payment[^\\n]*\\n[ \\t]*\\n[^\\n]*?R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "w_charge_ex_r",
+    "w_charge_vat_r",
+    "w_charge_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Water charge lines (ex / VAT / incl), summed",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^(?![ \\t]*Sub Total)[^\\n]*?R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "water_total_ex_printed_r",
+    "water_vat_printed_r",
+    "water_total_incl_printed_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Water Sub Total as printed by the bill (period decimals)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Sub Total[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "w_charge_date",
+   "label": "Water charge date",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*(\\d{2}-\\d{2}-\\d{4})[ \\t]+Water Basic",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "w_charge_desc",
+   "label": "Water charge description",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{4}[ \\t]+(Water Basic[^\\n]*?)[ \\t]{2,}R",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "w_tariff",
+   "label": "Water tariff (metered block only)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Tariff:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "w_read_end",
+    "w_read_start",
+    "w_days"
+   ],
+   "types": [
+    "date",
+    "date",
+    "number"
+   ],
+   "label": "Reading dates Cur / Prev / days",
+   "scope": "section:water",
+   "pattern": "Reading dates:[ \\t]*Cur[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]+Prev[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*\\((\\d+)[ \\t]*days\\)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "w_end_reading",
+    "w_start_reading",
+    "w_kl"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "Cur / Prev / Cons kL readings",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Cur[ \\t]+([\\d.]+)[ \\t]+Prev[ \\t]+([\\d.]+)[ \\t]+Cons[ \\t]+([\\d.]+)[ \\t]*KL",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "w_meter",
+    "w_reading_type"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "Water meter + reading type",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Meter[ \\t]+(\\S[^\\n]*?)[ \\t]*\\(([A-Za-z]+)\\)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "w_factor",
+   "label": "Meter factor",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Factor:[ \\t]*([\\d.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "w_dwelling_units",
+   "label": "Dwelling Units",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Dwelling Units:[ \\t]*(\\d+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "w_connection_size",
+   "label": "Meter Connection Size",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Meter Connection Size:[ \\t]*(\\S+[ \\t]*-[ \\t]*\\S+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "w_step_kl",
+    "w_step_rate_sum",
+    "w_step_amount_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "Sliding-scale step lines (kL x rate = amount), summed",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*([\\d.]+)[ \\t]*x[ \\t]*([\\d.]+)[ \\t]*=[ \\t]*([\\d.]+)[ \\t]*$",
+   "type": "number",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "w_incl_minus_vat_r",
+   "op": "sub",
+   "of": [
+    "w_charge_incl_r",
+    "w_charge_vat_r"
+   ]
+  },
+  {
+   "field": "water_ex_diff_r",
+   "op": "diff",
+   "of": [
+    "w_charge_ex_r",
+    "water_total_ex_printed_r"
+   ]
+  },
+  {
+   "field": "water_vat_diff_r",
+   "op": "diff",
+   "of": [
+    "w_charge_vat_r",
+    "water_vat_printed_r"
+   ]
+  },
+  {
+   "field": "w_kl_out",
+   "op": "prefer",
+   "as": "number",
+   "of": [
+    "w_kl",
+    "w_step_kl"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "tariff_name": "_none",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "_none",
+  "total_ex_vat_r": "_none",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?i)^[ \\t]*Opening Balance[ \\t]+\\(?R[ ]?(-?[\\d ]+\\.\\d{2})\\)?",
+  "subtotal": "(?i)^[ \\t]*Sub Total[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+  "current_ex": "(?i)^[ \\t]*Sub Total[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+  "vat": "(?i)^[ \\t]*Sub Total[ \\t]+R[ ]?-?[\\d ]+\\.\\d{2}[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+  "total_due": "(?i)Final Date for Payment[^\\n]*\\n[ \\t]*\\n[^\\n]*?R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+  "due_date": "(?i)^[ \\t]*Sectional Title/Farm/PSI[^\\n]*\\n[ \\t]*\\n[^\\n]*?(\\d{2}-\\d{2}-\\d{4})[ \\t]*$"
+ }
+}

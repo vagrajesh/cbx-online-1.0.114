@@ -1,0 +1,308 @@
+{
+ "profile_id": "bitou",
+ "profile_name": "Bitou Local Municipality (Plettenberg Bay, Western Cape)",
+ "short_name": "Bitou",
+ "fingerprint": {
+  "all": [
+   "4270102405"
+  ],
+  "any": [
+   "BITOU"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "water": {
+   "start": "Water:BUSS"
+  },
+  "electricity": {
+   "start": "^[^\\n]*?\\bElectricity[ \\t]",
+   "require": "KVALS|Cons@"
+  },
+  "sundry": {
+   "start": "\\*\\*[ \\t]*Total monthly:"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "ACCOUNT NUMBER (after the town code)",
+   "scope": "document",
+   "pattern": "ACCOUNT NUMBER[ \\t]+[A-Z]+[ \\t]+(\\d{6,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "DATE OF ACCOUNT",
+   "scope": "document",
+   "pattern": "DATE OF ACCOUNT[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "bit_tax_invoice",
+   "label": "Tax Invoice",
+   "scope": "document",
+   "pattern": "Tax Invoice:[ \\t]*(\\d{5,})",
+   "type": "text"
+  },
+  {
+   "field": "site_name",
+   "label": "SITE",
+   "scope": "document",
+   "pattern": "\\bSITE[ \\t]+([A-Z][A-Z0-9 ]*?[A-Z0-9])(?:[ \\t]{2,}|[ \\t]*$)",
+   "type": "text"
+  },
+  {
+   "field": "bit_total_vat_r",
+   "label": "TOTAL VAT (account summary)",
+   "scope": "document",
+   "pattern": "TOTAL VAT[ \\t]+DUE DATE[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(-?\\d*\\.\\d{2})[ \\t]+\\d{2}/\\d{2}/\\d{4}",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "meter",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "bit_meter_kwh",
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number",
+    "date",
+    "date"
+   ],
+   "label": "E meter row",
+   "scope": "document",
+   "pattern": "^[ \\t]*E[ \\t]+(\\S+)[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+([\\d.]+)[ \\t]+(\\d{2}/\\d{2})-(\\d{2}/\\d{2})\\b",
+   "required": true
+  },
+  {
+   "field": "bit_kva_reg",
+   "label": "K (demand) meter row consumption",
+   "scope": "document",
+   "pattern": "^[ \\t]*K[ \\t]+\\S+[ \\t]+[\\d.]+[ \\t]+([\\d.]+)[ \\t]+\\d{2}/\\d{2}-\\d{2}/\\d{2}",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "bit_wvat_a",
+    "bit_wamt_a"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Water charge pairs (VAT, AMOUNT) - lines carrying Water:BUSS",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[^\\n]*Water:BUSS[^\\n]*?(?<![\\d.])(\\d*\\.\\d{2})[ \\t]{2,}(\\d*\\.\\d{2})(?![\\d.])"
+  },
+  {
+   "fields": [
+    "bit_wvat_b",
+    "bit_wvat_c",
+    "bit_wamt_b",
+    "bit_wamt_c"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Water overprinted pairs",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[^\\n]*Water:BUSS[^\\n]*?(?<![\\d.])(\\d*\\.\\d{2})(\\d*\\.\\d{2})[ \\t]{2,}(\\d*\\.\\d{2})(\\d*\\.\\d{2})(?![\\d.])"
+  },
+  {
+   "fields": [
+    "bit_evat_a",
+    "bit_eamt_a"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Electricity charge pairs (VAT, AMOUNT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?<![\\d.])(\\d*\\.\\d{2})[ \\t]{2,}(\\d*\\.\\d{2})(?![\\d.])",
+   "required": true
+  },
+  {
+   "fields": [
+    "bit_evat_b",
+    "bit_evat_c",
+    "bit_eamt_b",
+    "bit_eamt_c"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity overprinted pairs (two lines printed on one)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?<![\\d.])(\\d*\\.\\d{2})(\\d*\\.\\d{2})[ \\t]{2,}(\\d*\\.\\d{2})(\\d*\\.\\d{2})(?![\\d.])"
+  },
+  {
+   "fields": [
+    "bit_cons_vat_r",
+    "bit_cons_amt_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Energy (Cons@...) line",
+   "scope": "section:electricity",
+   "patterns": [
+    "Cons@[^\\n]*?[ \\t]\\d+[ \\t]{2,}(\\d*\\.\\d{2})[ \\t]{2,}(\\d*\\.\\d{2})(?![\\d.])",
+    "Cons@\\S*KVA Demand[ \\t]+KVALS[ \\t]+\\d+[ \\t]+\\d*\\.\\d{5}[ \\t]+(\\d*\\.\\d{2})\\d*\\.\\d{2}[ \\t]{2,}(\\d*\\.\\d{2})\\d*\\.\\d{2}(?![\\d.])"
+   ]
+  },
+  {
+   "field": "bit_basic_ex_r",
+   "label": "KVA basic (units 1; the 5-decimal column is the ex-VAT amount)",
+   "scope": "section:electricity",
+   "pattern": "KVALS[ \\t]+(?:1|\\d*1)[ \\t]+(\\d*\\.\\d{5})(?=[ \\t]+\\d*\\.\\d{2}(?:\\d*\\.\\d{2})?[ \\t])",
+   "type": "money"
+  },
+  {
+   "field": "bit_nmd_ex_r",
+   "label": "NMD (last 5-decimal ex amount in the section)",
+   "scope": "section:electricity",
+   "pattern": "\\A[\\s\\S]*(?:(?<=\\.\\d{5})|(?<![\\d.]))(\\d+\\.\\d{5})(?!\\d)",
+   "type": "money"
+  },
+  {
+   "field": "bit_nmd_kva",
+   "label": "NMD kVA (only when its line is not overprinted)",
+   "scope": "section:electricity",
+   "pattern": "KVALS[ \\t]+(\\d{2,})[ \\t]+\\d+\\.\\d{5}[ \\t]+\\d*\\.\\d{2}[ \\t]+\\d*\\.\\d{2}(?![\\d.])(?![\\s\\S]*\\d\\.\\d{5})",
+   "type": "number"
+  },
+  {
+   "field": "bit_tariff",
+   "label": "Demand tariff code",
+   "scope": "section:electricity",
+   "pattern": "KVA Demand[ \\t]+(KVALS)\\b",
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "bit_water_vat_r",
+   "op": "sum",
+   "of": [
+    "bit_wvat_a",
+    "bit_wvat_b",
+    "bit_wvat_c"
+   ]
+  },
+  {
+   "field": "bit_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "bit_evat_a",
+    "bit_evat_b",
+    "bit_evat_c"
+   ]
+  },
+  {
+   "field": "bit_elec_amt_r",
+   "op": "sum",
+   "of": [
+    "bit_eamt_a",
+    "bit_eamt_b",
+    "bit_eamt_c"
+   ]
+  },
+  {
+   "field": "bit_elec_ex_r",
+   "label": "Electricity ex VAT = AMOUNT - VAT over all electricity lines",
+   "op": "sub",
+   "of": [
+    "bit_elec_amt_r",
+    "bit_elec_vat_r"
+   ]
+  },
+  {
+   "field": "bit_energy_ex_r",
+   "op": "sub",
+   "of": [
+    "bit_cons_amt_r",
+    "bit_cons_vat_r"
+   ]
+  },
+  {
+   "field": "bit_demand_ex_r",
+   "label": "Demand = total - energy - basic - NMD",
+   "op": "sub",
+   "of": [
+    "bit_elec_ex_r",
+    "bit_energy_ex_r",
+    "bit_basic_ex_r",
+    "bit_nmd_ex_r"
+   ]
+  },
+  {
+   "field": "bit_elec_vat_from_total_r",
+   "op": "sub",
+   "of": [
+    "bit_total_vat_r",
+    "bit_water_vat_r"
+   ]
+  },
+  {
+   "field": "bit_vat_ex_r",
+   "label": "IDENTITY: electricity AMOUNT - (printed TOTAL VAT - water VAT)",
+   "op": "sub",
+   "of": [
+    "bit_elec_amt_r",
+    "bit_elec_vat_from_total_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "bit_tariff",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "bit_meter_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "bit_meter_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "bit_kva_reg",
+  "nmd_kva": "bit_nmd_kva",
+  "peak_r": "_none",
+  "standard_r": "bit_energy_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "bit_demand_ex_r",
+  "nmd_r": "bit_nmd_ex_r",
+  "other_r": "bit_basic_ex_r",
+  "total_ex_vat_r": "bit_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "_doc": "Bitou 'TAX INVOICE / BELASTINGFAKTUUR' (same 'Balance brought forward ... ** Total monthly' family as Breede Valley / Blue Crane, own rules). Header: ACCOUNT NUMBER after the town code, DATE OF ACCOUNT, Tax Invoice, the municipality's 'VAT No. / BTW Nommer', SITE; account summary 'TOTAL VAT | DUE DATE | ARREARS | CURRENT | AMOUNT DUE'; meter table W / E (kWh: prev, new, consumption, dd/mm-dd/mm) / K (demand kVA). THE PDF TEXT OVERPRINTS NEIGHBOURING CHARGE LINES: two lines often land on one text line with their digits fused ('aaaa.aabbbb.bb   cccc.ccdddd.dd' = VAT a + b, AMOUNT c + d). Every rule therefore reads both the clean 'VAT  AMOUNT' pair and the fused 'VAT1VAT2  AMT1AMT2' form (money always has exactly 2 decimals, so the split is unambiguous); fused kWh/kVA unit counts are NOT split - kWh comes from the E meter row, demand kVA from the K row, NMD kVA only when its line is clean. AMOUNT is VAT-inclusive. Electricity lines: Cons@ (energy -> standard_r, ex = AMOUNT - VAT), 'KVA Demand KVALS' x3 in fixed order: basic (units 1 -> other_r), demand (-> demand_r), NMD (-> nmd_r); on KVALS lines the 5-decimal column is the ex-VAT amount. total_ex_vat_r = sum(AMOUNT) - sum(VAT) over all electricity pairs; basic and NMD read from their 5-decimal amounts, demand_r = total - energy - basic - NMD (it equals the printed 5-decimal demand amount on 10/10, so the split is verified, but CHARGE=SUM is by construction). IDENTITY bit_vat_ex_r = electricity AMOUNT - (printed TOTAL VAT - the VAT of the Water:BUSS lines): exact on 10/10. 10/10 routed, 0 checks. Fingerprint: municipality VAT number + BITOU."
+}

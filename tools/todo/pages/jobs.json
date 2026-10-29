@@ -1,0 +1,132 @@
+{
+  "title": "page.jobs.title",
+  "intro": "page.jobs.intro",
+  "menu": true,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_jobs",
+                "type": "table",
+                "title": "w.w_jobs.title",
+                "source": {
+                  "data": "jobs"
+                },
+                "columns": [
+                  {
+                    "key": "title",
+                    "label": "col.title"
+                  },
+                  {
+                    "key": "lead",
+                    "label": "col.lead"
+                  },
+                  {
+                    "key": "due",
+                    "label": "col.due"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  }
+                ],
+                "filters": [
+                  "status"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "columns": [
+          {
+            "width": 6,
+            "widgets": [
+              {
+                "id": "w_members",
+                "type": "table",
+                "title": "w.w_members.title",
+                "source": {
+                  "data": "job_members"
+                },
+                "columns": [
+                  {
+                    "key": "job",
+                    "label": "col.job"
+                  },
+                  {
+                    "key": "person",
+                    "label": "col.person"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  }
+                ],
+                "filters": [
+                  "job",
+                  "status"
+                ],
+                "search": false
+              }
+            ]
+          },
+          {
+            "width": 6,
+            "widgets": [
+              {
+                "id": "w_jtasks",
+                "type": "table",
+                "title": "w.w_jtasks.title",
+                "source": {
+                  "data": "job_tasks"
+                },
+                "columns": [
+                  {
+                    "key": "job",
+                    "label": "col.job"
+                  },
+                  {
+                    "key": "title",
+                    "label": "col.title"
+                  },
+                  {
+                    "key": "who",
+                    "label": "col.who"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  },
+                  {
+                    "key": "steps",
+                    "label": "col.steps"
+                  },
+                  {
+                    "key": "due",
+                    "label": "col.due"
+                  }
+                ],
+                "filters": [
+                  "job",
+                  "status"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "order": 3
+}

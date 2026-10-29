@@ -1,0 +1,90 @@
+{
+  "title": "page.ledger.title",
+  "intro": "page.ledger.intro",
+  "menu": true,
+  "order": 2,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 4,
+            "widgets": [
+              {
+                "id": "w_check",
+                "type": "form",
+                "title": "w.w_check.title",
+                "source": {
+                  "data": "ledger"
+                },
+                "fields": [
+                  {
+                    "key": "ledger"
+                  },
+                  {
+                    "key": "as_at"
+                  },
+                  {
+                    "key": "months_back"
+                  }
+                ],
+                "submit": "w.w_check.submit"
+              },
+              {
+                "id": "w_lhow",
+                "type": "text",
+                "text": "w.w_lhow.text",
+                "tone": "muted"
+              }
+            ]
+          },
+          {
+            "width": 8,
+            "widgets": [
+              {
+                "id": "w_checks",
+                "type": "table",
+                "title": "w.w_checks.title",
+                "source": {
+                  "data": "ledger"
+                },
+                "add": false,
+                "search": false,
+                "columns": [
+                  {
+                    "key": "as_at",
+                    "label": "col.as_at"
+                  },
+                  {
+                    "key": "months_back",
+                    "label": "col.months_back"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  },
+                  {
+                    "key": "report",
+                    "label": "col.report"
+                  },
+                  {
+                    "key": "overview",
+                    "label": "col.overview"
+                  },
+                  {
+                    "key": "note",
+                    "label": "col.note"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "title": "page.months.title",
+  "intro": "page.months.intro",
+  "menu": true,
+  "order": 1,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 4,
+            "widgets": [
+              {
+                "id": "w_upload",
+                "type": "form",
+                "title": "w.w_upload.title",
+                "source": {
+                  "data": "uploads"
+                },
+                "fields": [
+                  {
+                    "key": "la"
+                  },
+                  {
+                    "key": "movements"
+                  },
+                  {
+                    "key": "sequentra"
+                  },
+                  {
+                    "key": "steps"
+                  },
+                  {
+                    "key": "assets"
+                  },
+                  {
+                    "key": "ciw_master"
+                  }
+                ],
+                "submit": "w.w_upload.submit"
+              },
+              {
+                "id": "w_how",
+                "type": "text",
+                "text": "w.w_how.text",
+                "tone": "muted"
+              }
+            ]
+          },
+          {
+            "width": 8,
+            "widgets": [
+              {
+                "id": "w_uploads",
+                "type": "table",
+                "title": "w.w_uploads.title",
+                "source": {
+                  "data": "uploads"
+                },
+                "add": false,
+                "search": false,
+                "columns": [
+                  {
+                    "key": "summary",
+                    "label": "col.summary"
+                  },
+                  {
+                    "key": "months",
+                    "label": "col.months"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  },
+                  {
+                    "key": "note",
+                    "label": "col.note"
+                  }
+                ],
+                "actions": [
+                  {
+                    "label": "w.w_uploads.a0",
+                    "flow": "month",
+                    "ask": [
+                      {
+                        "key": "answer",
+                        "type": "month",
+                        "label": "w.w_uploads.q0"
+                      },
+                      {
+                        "key": "source",
+                        "type": "choice",
+                        "label": "w.w_uploads.q1",
+                        "options": [
+                          {
+                            "value": "Files",
+                            "label": "opt.source.files"
+                          },
+                          {
+                            "value": "Sequentra API",
+                            "label": "opt.source.api"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "w_months",
+                "type": "table",
+                "title": "w.w_months.title",
+                "source": {
+                  "data": "months"
+                },
+                "add": false,
+                "columns": [
+                  {
+                    "key": "month",
+                    "label": "col.month"
+                  },
+                  {
+                    "key": "source",
+                    "label": "col.source"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  },
+                  {
+                    "key": "imports",
+                    "label": "col.imports"
+                  },
+                  {
+                    "key": "workbooks",
+                    "label": "col.workbooks"
+                  },
+                  {
+                    "key": "report",
+                    "label": "col.report"
+                  },
+                  {
+                    "key": "papers",
+                    "label": "col.papers"
+                  },
+                  {
+                    "key": "note",
+                    "label": "col.note"
+                  }
+                ],
+                "filters": [
+                  "status"
+                ],
+                "sort": {
+                  "key": "month",
+                  "desc": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

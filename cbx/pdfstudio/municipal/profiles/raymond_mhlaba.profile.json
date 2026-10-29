@@ -1,0 +1,198 @@
+{
+ "profile_id": "raymond_mhlaba",
+ "profile_name": "Raymond Mhlaba Local Municipality (Fort Beaufort, Eastern Cape)",
+ "short_name": "Raymond Mhlaba",
+ "_doc": "Raymond Mhlaba LM (Fort Beaufort). Two layouts: (a) 'TAX INVOICE' with COMMA-decimal money ('1 188,09'), ledger 'Date Description VAT Debit Credit Balance' under headings Electricity / Electricity Basic / Electricity Consumption, and per-meter detail rows (factor, dates from/to, band, rate, units, 'Exclusive') + meter number; (b) 'TAX INVOICE / STATEMENT' with period decimals and no meter detail. Electricity = 'Basic Electricity - nn Amp ...' (other_r) + one 'Electricity Cons KWH <n>KWH - [..]' line per meter (two meters on most bills: kWh summed, meters joined with '/', start/end readings left blank). Debit is VAT-inclusive; ex = Debit - VAT. 'Bank Payment - Electricity ...' lines are excluded by the date anchor. Fingerprint: masthead name + municipal VAT/town. IDENTITY: rm_elec_ex_by_detail_r = basic ex + sum of the meter-detail 'Exclusive' column vs total_ex_vat_r: R0.00 on 5, <=R0.02 on 2 (layout a); layout b has no Exclusive column (2 bills, circular only); side check: VAT cells = printed VAT Total on 9/9. One file is a scan (OCR) whose dates are unreadable: it routes but its money stays blank on purpose (OCR misread the amounts). One file carries an OUD_ prefix but is this account. Checked on 10 bills.",
+ "fingerprint": {
+  "all": [
+   "RAYMOND MHLABA LOCAL MUNICIPALITY"
+  ],
+  "any": [
+   "4320276928",
+   "Fort Beaufort",
+   "Fort Beauford"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity(?: Basic| Consumption)?[ \\t]*$",
+   "overlay": true,
+   "end": "^[ \\t]*\\d+ Days[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "label": "Account",
+   "scope": "document",
+   "field": "account_number",
+   "patterns": [
+    "\\bAccount[ \\t]{2,}(\\d{6,10})[ \\t]*$",
+    "Account No :[^\\n]*\\n(?:[^\\n]*\\n){0,3}?[ \\t]*VAT REG\\. No\\.[ \\t]+\\d+[ \\t]{2,}(\\d{6,10})[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "label": "Statement Date",
+   "scope": "document",
+   "field": "billing_date",
+   "pattern": "Statement Date:?[ \\t]+(\\d{1,2} [A-Za-z]+ \\d{4})\\b",
+   "type": "date",
+   "required": true
+  },
+  {
+   "label": "Deposit (when printed)",
+   "scope": "document",
+   "field": "deposit_r",
+   "pattern": "^[ \\t]*Deposit[ \\t]+R[ \\t]?(\\d[\\d ,]*(?:[.,]\\d{2})?)[ \\t]{2,}",
+   "type": "money"
+  },
+  {
+   "label": "Site (addressee line: site code + name)",
+   "scope": "document",
+   "field": "site_name",
+   "pattern": "^[ \\t]*(N\\d{6,8} [A-Z][A-Z ]*[A-Z])",
+   "type": "text"
+  },
+  {
+   "label": "VAT Total",
+   "scope": "document",
+   "field": "rm_vat_total_r",
+   "patterns": [
+    "VAT Total[ \\t]+R(\\d{1,3}(?: \\d{3})*,\\d{2})",
+    "VAT TOTAL[ \\t]+(\\d{1,3}(?:,\\d{3})*\\.\\d{2})"
+   ],
+   "type": "money"
+  },
+  {
+   "label": "Meter detail: Date From / Date To (first meter)",
+   "scope": "section:electricity",
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "pattern": "^[ \\t]*\\d+[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]+",
+   "types": [
+    "date",
+    "date"
+   ]
+  },
+  {
+   "label": "Meter numbers (meter detail)",
+   "scope": "section:electricity",
+   "field": "meter",
+   "pattern": "^[ \\t]*(\\d{6,8})[ \\t]{2,}\\d[\\d ]*,\\d{2}\\b",
+   "type": "text",
+   "collect": "join_unique"
+  },
+  {
+   "label": "Basic Electricity (VAT, Debit incl.)",
+   "scope": "section:electricity",
+   "fields": [
+    "rm_basic_vat_r",
+    "rm_basic_incl_r"
+   ],
+   "patterns": [
+    "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}|\\d{4}/\\d{2}/\\d{2})[ \\t]+Basic Electricity[^\\n]*?[ \\t]{2,}(\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]{2,}(\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]{2,}",
+    "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}|\\d{4}/\\d{2}/\\d{2})[ \\t]+Basic Electricity[^\\n]*?[ \\t]{2,}(\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]{2,}(\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]{2,}"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "label": "Electricity Cons KWH lines (kWh, VAT, Debit incl.) summed over meters",
+   "scope": "section:electricity",
+   "fields": [
+    "total_kwh",
+    "rm_cons_vat_r",
+    "rm_cons_incl_r"
+   ],
+   "patterns": [
+    "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}|\\d{4}/\\d{2}/\\d{2})[ \\t]+Electricity Cons KWH[ \\t]+(\\d+)K[WV]H\\b[^\\n]*?[ \\t]{2,}(\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]{2,}(\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]{2,}",
+    "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}|\\d{4}/\\d{2}/\\d{2})[ \\t]+Electricity Cons KWH[ \\t]+(\\d+)K[WV]H\\b[^\\n]*?[ \\t]{2,}(\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]{2,}(\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]{2,}"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "label": "Meter detail 'Exclusive' column (comma layout only)",
+   "scope": "section:electricity",
+   "field": "rm_cons_excl_r",
+   "pattern": "KWH - \\[[^\\n]*?[ \\t]{2,}[A-Za-z]+[ \\t]{2,}(\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  }
+ ],
+ "computes": [
+  {
+   "field": "rm_basic_ex_r",
+   "op": "sub",
+   "of": [
+    "rm_basic_incl_r",
+    "rm_basic_vat_r"
+   ]
+  },
+  {
+   "field": "rm_cons_ex_r",
+   "op": "sub",
+   "of": [
+    "rm_cons_incl_r",
+    "rm_cons_vat_r"
+   ]
+  },
+  {
+   "field": "rm_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "rm_basic_ex_r",
+    "rm_cons_ex_r"
+   ]
+  },
+  {
+   "field": "rm_basic_neg_r",
+   "op": "sub",
+   "of": [
+    "rm_basic_vat_r",
+    "rm_basic_incl_r"
+   ]
+  },
+  {
+   "field": "rm_elec_ex_by_detail_r",
+   "op": "sub",
+   "of": [
+    "rm_cons_excl_r",
+    "rm_basic_neg_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "tariff_name": "_none",
+  "reading_type": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "rm_cons_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "rm_basic_ex_r",
+  "total_ex_vat_r": "rm_elec_ex_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

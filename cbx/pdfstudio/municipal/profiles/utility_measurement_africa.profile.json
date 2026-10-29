@@ -1,0 +1,241 @@
+{
+ "profile_id": "utility_measurement_africa",
+ "profile_name": "Utility Measurement Africa (sub-metering, Southdale) - electricity recharge",
+ "short_name": "UMA",
+ "_doc": "Utility Measurement Africa (UMA, Southdale) sub-metering Tax Invoice / statement to Telkom: masthead with UMA's own VAT Reg No., Statement Date, site block (TOWNSHIP, Meter No., connection size, Deposit), ACCOUNT NUMBER glued to Amount Due, a ledger (Balance Brought Forward, payment, 'INV... Account for: <month>' with the invoice total incl VAT), then a charges table: 'Electricity Consumption <prev date> <prev reading> <curr date> <curr reading> <kWh> <amount>', Network Surcharge, COJ - Service Charge, COJ - Network Charge, 'Actual Reading' fee line, VAT. City Power-supplied site re-billed at COJ tariffs. Energy -> standard band; surcharge + service + network + reading fee -> other_r; reading_type from the Actual/Estimated Reading line; site = TOWNSHIP; no tariff name printed. IDENTITY uma_identity_r = printed 'Account for' invoice total - printed VAT: 0.00 on 4/10 and within 1c on 6/10 (the bill computes VAT on unrounded line amounts). Fingerprint: UMA VAT number + 'Utility Measurement Africa'. 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "4690193612"
+  ],
+  "any": [
+   "Utility Measurement Africa"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Description[ \\t]+Previous Reading[ \\t]+Current Reading",
+   "require": "Electricity Consumption"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "ACCOUNT NUMBER",
+   "scope": "header",
+   "pattern": "ACCOUNT NUMBER[ \\t]+(\\d{5,}[A-Z]*)\\b",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "header",
+   "pattern": "Statement Date[ \\t]+(\\d{1,2}-[A-Za-z]{3}-\\d{2,4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "meter",
+   "label": "Meter No.",
+   "scope": "header",
+   "pattern": "Meter No\\.[ \\t]*:[ \\t]*(\\d{5,})",
+   "required": true
+  },
+  {
+   "field": "uma_township",
+   "label": "TOWNSHIP (site)",
+   "scope": "header",
+   "pattern": "\\bTOWNSHIP[ \\t]+(\\S.*?)[ \\t]{2,}Meter No"
+  },
+  {
+   "field": "uma_deposit_r",
+   "label": "Deposit",
+   "scope": "header",
+   "pattern": "\\bDeposit[ \\t]+(-?\\d[\\d,]*\\.\\d{1,2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "uma_month",
+    "uma_invoice_inc_r"
+   ],
+   "label": "'Account for: <month>' ledger line (invoice total incl VAT)",
+   "scope": "header",
+   "pattern": "^\\d{4}/\\d{2}/\\d{2}[ \\t]+INV\\d+[ \\t]+Account for:[ \\t]*(\\S.*?)[ \\t]{2,}(-?\\d[\\d,]*\\.\\d{1,2})[ \\t]{2,}(-?\\d[\\d,]*\\.\\d{1,2})[ \\t]*$",
+   "types": [
+    "text",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "uma_start",
+    "read_end",
+    "uma_end",
+    "total_kwh",
+    "uma_energy_r"
+   ],
+   "label": "Electricity Consumption line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity Consumption[ \\t]+(\\d{4}/\\d{2}/\\d{2})[ \\t]+(\\d+(?:\\.\\d+)?)[ \\t]+(\\d{4}/\\d{2}/\\d{2})[ \\t]+(\\d+(?:\\.\\d+)?)[ \\t]{2,}(\\d[\\d,]*(?:\\.\\d+)?)[ \\t]{2,}(-?\\d[\\d,]*\\.\\d{1,2})[ \\t]*$",
+   "types": [
+    "date",
+    "number",
+    "date",
+    "number",
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "uma_surcharge_r_qty",
+    "uma_surcharge_r"
+   ],
+   "label": "Network Surcharge",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Network Surcharge[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d,]*\\.\\d{1,2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "uma_service_r_qty",
+    "uma_service_r"
+   ],
+   "label": "COJ - Service Charge",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*COJ - Service Charge[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d,]*\\.\\d{1,2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "uma_network_r_qty",
+    "uma_network_r"
+   ],
+   "label": "COJ - Network Charge",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*COJ - Network Charge[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d,]*\\.\\d{1,2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "uma_reading_fee_r_qty",
+    "uma_reading_fee_r"
+   ],
+   "label": "(?:Actual|Estimated?) Reading",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Actual|Estimated?) Reading[^\\n]*?[ \\t]{2,}(\\d[\\d,]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d,]*\\.\\d{1,2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "field": "uma_flag_actual",
+   "label": "Actual Reading line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(Actual) Reading[ \\t]"
+  },
+  {
+   "field": "uma_flag_est",
+   "label": "Estimated Reading line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(Estimated?) Reading[ \\t]"
+  },
+  {
+   "field": "uma_vat_r",
+   "label": "VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+VAT[ \\t]+(-?\\d[\\d,]*\\.\\d{1,2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "reading_type",
+   "op": "label_present",
+   "of": [
+    "uma_flag_actual",
+    "uma_flag_est"
+   ],
+   "labels": [
+    "Actual",
+    "Estimated"
+   ]
+  },
+  {
+   "field": "uma_other_r",
+   "label": "network surcharge + service + network + reading fee",
+   "op": "sum",
+   "of": [
+    "uma_surcharge_r",
+    "uma_service_r",
+    "uma_network_r",
+    "uma_reading_fee_r"
+   ]
+  },
+  {
+   "field": "uma_total_ex_r",
+   "label": "energy + other (ex VAT)",
+   "op": "sum",
+   "of": [
+    "uma_energy_r",
+    "uma_other_r"
+   ]
+  },
+  {
+   "field": "uma_identity_r",
+   "label": "printed invoice total (Account for) - printed VAT",
+   "op": "sub",
+   "of": [
+    "uma_invoice_inc_r",
+    "uma_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "uma_township",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "uma_start",
+  "end_reading_kwh": "uma_end",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "uma_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "uma_other_r",
+  "total_ex_vat_r": "uma_total_ex_r",
+  "deposit_r": "uma_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

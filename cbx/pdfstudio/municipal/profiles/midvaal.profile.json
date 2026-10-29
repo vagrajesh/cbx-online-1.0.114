@@ -1,0 +1,708 @@
+{
+ "profile_id": "midvaal",
+ "profile_name": "Midvaal Local Municipality (Meyerton, Gauteng)",
+ "short_name": "Midvaal",
+ "_doc": "SAP/Solar mSCOA print stream (same stream as Matjhabeng and Metsimaholo) with a third, completely different page layout. Single page, ~6.2-6.8 kB of text, account [number removed], stand [number removed] / 1317 KRUGERSTRAAT / MEYERTON.\n\nFINGERPRINT - AND WHY IT IS NOT THE VAT NUMBER ALONE. 'VAT Reg No.  4700193503' is printed on only 6 of the 10 bills; the four oldest prints (Oct 2025 - Jan 2026) carry NO municipal VAT number at all, so it CANNOT go in 'all'. Instead the fingerprint uses two Midvaal-specific strings that are on all 10 and on nothing else in the 487-PDF Telkom tree: the masthead 'MIDVAAL LOCAL MUNICIPALITY' (10/487) and the municipality's own banking line 'Nedbank Bank Account No: 12-2479-7469' (10/487). Both are municipality-identifying, neither is account-specific, and neither is a CBRE/Excellerate recipient address. The VAT number is still captured as mid_vat_number (6/10) and is in reject_if_text terms mutually exclusive with the other two profiles on this stream.\n  DELIBERATELY NOT FINGERPRINTED: '[address removed]' / '[address removed]' (the top line of every bill, and which of the two appears varies by print run) - these are CBRE/Excellerate/Gyro recipient mailboxes shared across many municipalities, and are exactly what makes the shipped 'mangaung' profile (fingerprint '[address removed]') hijack Dihlabeng, Breede Valley, Sol Plaatje, Stellenbosch and Swellendam. 'YOUR V.A.T. No.  4680101146' is TELKOM's VAT number, captured as mid_cust_vat_number, never fingerprinted.\n\nONE LAYOUT, TWO PRINT RUNS, no rule differences needed.\n  Six files named ..._j_usr1SAGprintsolar-mscoa-prodBO080_<n>_<user>_1_hold.pdf (Oct 2025 - Mar 2026) and four named 'Midvaal-Statement (Duplicate) - [number removed]*.pdf' (Apr - Jul 2026). '(Duplicate)' is a DOCUMENT TYPE (re-issued duplicate statement), not a duplicate month - see the duplicate finding below. Column x-positions drift between runs (the July print is noticeably wider) so every rule is label-anchored, never column-position-anchored.\n\nLAYOUT\n  A. Header: gyro/CBRE mailbox, 'TAX INVOICE', STAND NO. [number removed] + STAND SIZE 7655 + ZONING (blank), STREET ADDRESS 1317 KRUGERSTRAAT, TOWNSHIP MEYERTON, Vendor No. [number removed], VAT Reg No. (6/10), then one row carrying PAYMENT TO date + MONTH name + READING DATE PREVIOUS + READING DATE CURRENT + the four-part STAND CODE (510 000 [number removed] 00000, captured as mid_sc_township / mid_sc_extension / mid_sc_stand / mid_sc_portion). Then the addressee (TELKOM SA BPK (MEYE 01008) / TELKOM SA TFMC / REF: 1117U02 / PRIVATE BAG X137 CENTURION), PROPERTY VALUATION [number removed] and DEPOSIT 100.00 (the GUARANTEE column is printed but always empty), 'Invoice No. [number removed]<YYYYMM>', ACCOUNT NO., DUE DATE, YOUR V.A.T. No.\n  B. Ledger under 'METER No. / METER READING (CURRENT | PREVIOUS) / DETAILS / CONSUMPTION / TARIFF / AMOUNT / DATE'. NOTE THE READING COLUMN ORDER: CURRENT is printed BEFORE PREVIOUS (verified from the PDF word x-positions: header CURRENT at x=303, PREVIOUS at x=346; values 2292 then 2264, and 2292-2264 = the printed consumption 28). Getting that backwards would invert every water reading.\n  C. Footer: an ageing/total row of exactly seven figures - 30 DAYS, 60 DAYS, 90 DAYS, 90+ DAYS, TOTAL CHARGE (excl vat), TOTAL VAT, TOTAL CHARGE (incl vat) - then 'THIS ACCOUNT IS PAYABLE ON OR BEFORE <date>  AMOUNT PAYABLE <amount>', the remittance advice, the barcode '>>>>>> 9 1250 4002 2462 2' and the Nedbank banking block.\n\nMONEY: dot decimal with COMMA thousands ('427,110.16') in the ledger and NO separator in the footer total row ('217089.38'). Credits are LEADING minus ('-189,324.33'). 'money' handles all three. No comma-decimal anywhere, so the ditsobotla rand-part-only workaround is not needed here.\n\nELECTRICITY IS A BULK RECHARGE WITH NO METERING DATA WHATSOEVER - MEASURED, NOT ASSUMED. Every month prints two ledger lines (the Nov-2025 statement, invoice ...202511, prints three) whose DETAILS is a truncated 25-character electricity billing description, with an AMOUNT and NOTHING ELSE - no meter number, no readings, no kWh, no kVA, no tariff, no bands, no dates other than the ledger posting date. The METER No. column is empty on every line of every bill. The wording is inconsistent month to month and includes an obvious municipal typo:\n  'SEPTEMBER 2025 - ELEC BIL' (x2) | 'ELEC BILLING - OCTOBER 20' (x3) | 'NOVEMBEER 2025 - ELEC BIL' (x2, sic) | 'DECEMBER 2025-ELECTRICITY' (x2) | 'JANUARY 2026 - ELEC BILLI' (x2) | 'FEB 2026 - ELECTRICITY BI' (x2) | 'MARCH 2026 ELECTRICITY BI' (x2) | 'APRIL 2026-ELECTRICITY BI' (x2) | 'MAY 2026 - ELECTRICITY BI' (x2) | 'JUNE 2026-ELECTRICITY BIL' (x2).\n  The rule therefore matches any dated ledger line containing 'ELEC' and sums it. A negative lookahead excludes 'INTEREST' so an arrears-interest line can never be counted as energy - today's 'INTEREST IN ARREARS - ELE' is truncated one character before the 'C', but that is luck, not design.\n  CONSEQUENCE FOR THE CANONICAL COLUMNS: total_kwh, peak/standard/offpeak kWh and Rands, demand_kva, nmd_kva, demand_r, nmd_r, start/end reading kWh, meter, tariff_name and reading_type are ALL '_none' - the bill genuinely prints none of them. The electricity money lands in other_r (Other Charges), NOT in standard_r: there is no energy quantity and no band, so calling it Standard Rands would imply an energy band the bill never states. A reader seeing Total Charge Ex VAT == Other Charges with every kWh column blank can see at a glance that this account is billed as an opaque bulk recharge. The individual line amounts are preserved in mid_elec_lines_r and the raw descriptions in mid_elec_desc so nothing is lost.\n  PROOF THAT THE kWh IS NOT THERE TO BE HAD (this is why total_kwh and every other consumption column is '_none' and not a missed regex). The ledger's quantity columns are real and are used by other services on the same page: on the Oct-2025 statement the CONSUMPTION header sits at x=388.7-431.2 and TARIFF at x=447.6-470.0, and the WATER CONS BUSS line puts 18 at x=425.2 and 56.0600 at x=452.6, i.e. inside those columns, while the AMOUNT column is x=503.2-530.9. Every one of the 21 electricity ledger lines across all 10 bills was checked word by word against its own page's header positions: ZERO words fall in the CONSUMPTION+TARIFF band on any of them. The lines carry exactly three things - the posting date, a 25-character truncated description, and an AMOUNT. No meter number (the METER No. column is empty on every line of every bill - the print stream puts the posting date there instead), no CURRENT/PREVIOUS reading, no kWh, no kVA, no tariff, no band, no period. Read the raw dump of any bill in this folder and the electricity lines are three tokens wide.\n  Metsimaholo, the sibling profile on this same SAP/Solar mSCOA stream, DOES print 'E 0 0 54400 100.000 4.210000 ... ELECTRICITY' - kWh, meter factor and tariff - so the stream is perfectly capable of printing consumption. Midvaal simply does not bill this account that way: [number removed] is a bulk recharge, invoiced as one or two Rand amounts a month with the quantity kept off the statement.\n  WHAT WOULD CHANGE THIS: only Midvaal supplying the sub-bill or a metered statement for this stand. There is no arrangement of regex that can recover a number the PDF does not contain.\n  Two lines every month, in the R51k-R63k and R99k-R118k bands, almost certainly an energy charge and a demand/capacity charge (or two supply points). The bill does not say which, so they are NOT split. Flagged for Edwin: if Midvaal supplies the sub-bill, the split can be done later from the same two amounts.\n\nMONEY IS EX-VAT PER LINE, WITH ONE AGGREGATE 'VAT' LEDGER LINE (like Metsimaholo, unlike Matjhabeng). Proof on the Oct-2025 bill: vatable lines 175.40+57400.20+113918.87+175.40+1344.24+1303.44+1009.08 = 175326.63, x15% = 26298.99 vs the printed VAT 26,299.00. So no ex-VAT computes are needed.\n  VAT-EXEMPT lines: 'BUSINESS AND COMMERCIAL P' (property rates), 'BUSINESS AND COMMERCIAL N' (interest on arrear rates), 'INTEREST', 'INTEREST IN ARREARS - ELE', 'INTEREST ON ARREARS - SEW'. Everything else is vatable.\n\nOTHER SERVICES (all label-anchored)\n  water    'WATER CONS BUSS' with CURRENT/PREVIOUS readings, kL and a R/kL tariff (2264/2246 -> 18 kL x 56.06 = 1009.08, exact); and in Jul 2026 'WATER INTERIM' with an ESTIMATED kL and no readings (22 x 61.67 = 1356.74, exact). reading_type for water is derived from which of the two appears.\n  sewerage 'AVAILABILITY SEWER-BUS.' + 'ADD SEWERAGE BUS/IND', both on a printed 'SL-SCALE' (sliding-scale) tariff, no sewer meter and no kL.\n  refuse   'SKIP BIN REMOVAL MARCH' - appears on ONE bill only (May 2026, R1,719.13). No standing refuse charge on this account, so the refuse section is legitimately absent on 9 of 10 bills.\n  rates    'BUSINESS AND COMMERCIAL P' with the cent-in-rand rate (00.02030 -> 00.02162) - VAT exempt.\n  sundry   'WARNING NOTICES (DISCONNE' (0-2 per month, plus a 'WARNING FEE REVERSE' credit in Dec 2025), 'ADMIN FEES ARREAR ACCOUNT', 'INTEREST', 'INTEREST IN ARREARS - ELE', 'INTEREST ON ARREARS - SEW', 'BUSINESS AND COMMERCIAL N'.\n  ledger movements 'BALANCE B/FWD', '000018 RECEIPT <n>' (0-2 per month), 'VAT', 'TOTAL MONTHLY DEBIT', 'AMOUNT ROUNDED UP'.\n\n'TOTAL MONTHLY DEBIT' IS A PRINTED SUBTOTAL AND MUST BE EXCLUDED FROM EVERY SUM. It sits in the AMOUNT column two lines below VAT (confirmed from the PDF word coordinates - a real figure in the AMOUNT column, not a mis-sort), so a naive 'sum every ledger amount' picks it up. Proof that it is a subtotal and not a charge: including it broke the AMOUNT PAYABLE identity by exactly its own value on all 10 bills (e.g. ledger 218,702.57 vs payable 204,376.00, difference 14,326.57 = TOTAL MONTHLY DEBIT); excluding it gives 0.00 on all 10. Both leak-guard patterns therefore carry a negative lookahead for it. WHAT the figure means I could not derive - on the Oct-2025 and Nov-2025 statements it equals the non-electricity current charges plus their VAT to within a cent, but that recipe fails on the Dec-2025 statement by R201.72, so I am not going to claim to know. It is captured verbatim as mid_total_monthly_debit and takes part in no identity. Needs a word from Midvaal.\n\nLEAK GUARD / GENUINE IDENTITY (Rule Zero). There is NO independently printed ex-VAT electricity total, so total_ex_vat_r == other_r by construction and the engine's reconcile check CANNOT fail here - stated plainly. The real, non-circular checks are built into the profile:\n  mid_ledger_all_r sums EVERY end-of-line amount in the ledger (which is bounded by the 'smart_meter' boundary section below, so the footer totals are excluded) and mid_ledger_leak_r is the absolute difference against the bill's own printed 'AMOUNT PAYABLE'. 0.00 on all 10 bills.\n  mid_ex_vat_leak_r checks that sum(all ledger amounts except the VAT line) + AMOUNT ROUNDED UP equals the printed 'TOTAL CHARGE (excl vat)' in the footer row - a figure printed in a different box that this profile does not construct. 0.00 on all 10 bills.\n  mid_footer_leak_r checks the footer row's own arithmetic: TOTAL CHARGE (excl vat) + TOTAL VAT - TOTAL CHARGE (incl vat) == 0.\n  mid_elec_leak_r compares a generic 'every ledger line containing ELEC' sum against the labelled electricity bucket, so a renamed or new electricity line shows up there instead of vanishing.\n\nBILLING DATE. The bill prints the month as a bare NAME ('OCTOBER') and the year only inside 'Invoice No. [number removed]'. billing_date is a 'concat' compute of the printed MONTH name and the 4-digit year taken out of that invoice number -> 'OCTOBER 2025'. Every part is printed on the bill; nothing is inferred. mid_invoice_no, mid_month and mid_bill_run_date (the ledger date on the VAT line, e.g. 25-10-15) are all kept as natives.\n  DUE DATES ON REPRINTS ARE NOT MONTH-SPECIFIC. The three Nov-2025/Dec-2025/Jan-2026 files all print DUE DATE 2026-02-07 and PAYMENT TO 2026-02-09, and all four Apr-Jul 2026 files print DUE DATE 2026-08-07 - they were re-run in batches long after the fact. due_date is captured as printed; do not read it as the original due date of that month's invoice.\n\nDATE FORMATS ARE KEPT AS PRINTED (type:'date' does not reformat): read_start/read_end are YY-MM-DD ('25-08-25'), due_date and mid_payment_to are YYYY-MM-DD.\n\nDUPLICATE FINDING: all 10 md5s are distinct - there are NO byte-identical files - and all 10 Invoice Nos are distinct and consecutive: [number removed], ...511, ...512, ...601, ...602, ...603, ...604, ...605, ...606, ...607. That is Oct 2025, Nov 2025, Dec 2025, Jan 2026, Feb 2026, Mar 2026, Apr 2026, May 2026, Jun 2026, Jul 2026 - ten different months, no month billed twice. The four 'Midvaal-Statement (Duplicate)' files are Apr, May, Jun and Jul 2026, i.e. the only copies of those four months; '(Duplicate)' means the municipality re-issued a duplicate statement, not that the file duplicates another file.\n\nONE VAT ANOMALY, WORTH KNOWING. Identity C (printed VAT == 15% x the vatable lines) holds to 1 cent on 9 of the 10 bills. On the Nov-2025 statement it is out by R342.71, which is exactly 15% of the THIRD electricity line that month ('ELEC BILLING - OCTOBER 20', R2,284.83): 15% x 169,730.34 = 25,459.55 vs the printed 25,116.84, while 15% x (169,730.34 - 2,284.83) = 25,116.83. So that one R2,284.83 electricity line is zero-rated or VAT-exempt on Midvaal's books. It changes nothing in the extraction - the line is still an ex-VAT electricity charge and is still summed into mid_elec_r - but it is the reason the VAT identity is not 0.01 on all ten, and it is a real feature of the bill rather than a parsing error.\n\nWATER/SEWERAGE/REFUSE/RATES ROW COLUMN NAMES. The water readings, reading dates, reading type and usage Rand were already extracted under mid_* names, which the general view's Water table does not read. They are now also exposed under the view's own names via 'prefer' computes: w_read_start, w_read_end, w_reading_type, start_reading_kl, end_reading_kl, water_usage_r (plus the existing total_kl and water_charges_r), and statement_month for every non-electricity row. water_levy_r stays blank - Midvaal bills no separate water availability/levy line on this account. sewer_kl stays blank because both sewer lines are on a printed SL-SCALE sliding scale with no kL.\n\nWATER LEAK GUARD / PROOF OF THE READING ORDER. mid_w_kl_calc is (the reading printed FIRST) minus (the reading printed SECOND) and mid_w_kl_leak is its difference against the printed CONSUMPTION: 0 on all 9 metered bills, which is what settles that the first column is CURRENT and the second PREVIOUS. The readings also chain across the pack with no gaps - 2246->2264->2292->2595->3178->3567->4047->4558->5025->5554 over Oct 2025 to Jun 2026 - so each month's start equals the previous month's end. Jul 2026 is a WATER INTERIM (estimated) line with no readings at all.",
+ "fingerprint": {
+  "all": [
+   "MIDVAAL LOCAL MUNICIPALITY",
+   "Nedbank Bank Account No: 12-2479-7469"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "METSIMAHOLO MUNICIPALITY",
+   "Vat Number: 4860188612",
+   "requires Adobe Reader"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER No\\.",
+   "require": "\\bELEC"
+  },
+  "water": {
+   "start": "^[ \\t]*METER No\\.",
+   "overlay": true,
+   "end": "^[ \\t]*30 DAYS[ \\t]+60 DAYS",
+   "require": "WATER[ \\t]+CONS|WATER[ \\t]+INTERIM"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*METER No\\.",
+   "overlay": true,
+   "end": "^[ \\t]*30 DAYS[ \\t]+60 DAYS",
+   "require": "AVAILABILITY[ \\t]+SEWER|ADD[ \\t]+SEWERAGE"
+  },
+  "refuse": {
+   "start": "^[ \\t]*METER No\\.",
+   "overlay": true,
+   "end": "^[ \\t]*30 DAYS[ \\t]+60 DAYS",
+   "require": "SKIP[ \\t]+BIN"
+  },
+  "rates": {
+   "start": "^[ \\t]*METER No\\.",
+   "overlay": true,
+   "end": "^[ \\t]*30 DAYS[ \\t]+60 DAYS",
+   "require": "BUSINESS[ \\t]+AND[ \\t]+COMMERCIAL[ \\t]+P\\b"
+  },
+  "sundry": {
+   "start": "^[ \\t]*METER No\\.",
+   "overlay": true,
+   "end": "^[ \\t]*30 DAYS[ \\t]+60 DAYS",
+   "require": "WARNING[ \\t]+NOTICES|WARNING[ \\t]+FEE|ADMIN[ \\t]+FEES|[ \\t]INTEREST\\b|BUSINESS[ \\t]+AND[ \\t]+COMMERCIAL[ \\t]+N\\b"
+  },
+  "smart_meter": {
+   "start": "^[ \\t]*30 DAYS[ \\t]+60 DAYS",
+   "_note": "BOUNDARY ONLY - there are deliberately NO section:smart_meter field rules, so extract() skips this service ('if not svc_rules: continue') and no Smart Meter row is ever produced. Its only job is to be a second NON-overlay section start so the electricity section stops at the ageing/total row instead of running to the end of the page. That is what makes the generic leak guard mid_ledger_all_r safe: it sums every end-of-line amount in the ledger only, and would otherwise also swallow the footer total row and AMOUNT PAYABLE."
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number (from the bill text, never the filename)",
+   "scope": "document",
+   "pattern": "ACCOUNT NO\\.[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mid_accounts_in_file",
+   "label": "BUNDLE DETECTOR: every ACCOUNT NO. printed in the file (one value = a normal single-account statement; more than one = a multi-account file the app's one-bill-one-account record shape cannot represent)",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "ACCOUNT No\\.[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mid_invoice_no",
+   "label": "Invoice No (account number + YYYYMM billing period)",
+   "scope": "document",
+   "pattern": "Invoice No\\.[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mid_invoice_year",
+   "label": "Billing year, taken from the Invoice No suffix",
+   "scope": "document",
+   "pattern": "Invoice No\\.[ \\t]+\\d{8}(\\d{4})\\d{2}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mid_vat_number",
+   "label": "Midvaal VAT registration number (printed on 6 of 10 bills)",
+   "scope": "document",
+   "pattern": "VAT Reg No\\.[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mid_cust_vat_number",
+   "label": "Customer (Telkom) VAT number - NOT the municipality's",
+   "scope": "document",
+   "pattern": "YOUR V\\.A\\.T\\. No\\.[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mid_vendor_no",
+   "label": "Vendor number",
+   "scope": "document",
+   "pattern": "Vendor No\\.[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "DUE DATE as printed (batch re-runs share a due date - see _doc)",
+   "scope": "document",
+   "pattern": "DUE DATE[ \\t]+(\\d{4}-\\d{2}-\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "mid_payable_on_before",
+   "label": "THIS ACCOUNT IS PAYABLE ON OR BEFORE",
+   "scope": "document",
+   "pattern": "THIS ACCOUNT IS PAYABLE ON OR BEFORE[ \\t]+(\\d{4}-\\d{2}-\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "mid_payment_to",
+    "mid_month",
+    "read_start",
+    "read_end",
+    "mid_sc_township",
+    "mid_sc_extension",
+    "mid_sc_stand",
+    "mid_sc_portion"
+   ],
+   "types": [
+    "date",
+    "text",
+    "date",
+    "date",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "PAYMENT TO date + MONTH + READING DATE PREVIOUS/CURRENT + the four-part STAND CODE (township / extension / stand no / portion)",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{4}-\\d{2}-\\d{2})[ \\t]+([A-Z]+)[ \\t]+(\\d{2}-\\d{2}-\\d{2})[ \\t]+(\\d{2}-\\d{2}-\\d{2})[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Township (the value printed under the TOWNSHIP header)",
+   "scope": "document",
+   "pattern": "TOWNSHIP[^\\n]*\\n[^\\n]*?([A-Z]{4,})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mid_street",
+   "label": "Street address",
+   "scope": "document",
+   "pattern": "(?<![\\d-])(\\d{1,5}[ \\t]+[A-Z]{5,})(?=[ \\t]{2,}|[ \\t]*$)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "mid_stand_no",
+    "mid_stand_size"
+   ],
+   "types": [
+    "text",
+    "number"
+   ],
+   "label": "STAND NO. + STAND SIZE",
+   "scope": "document",
+   "pattern": "(\\d{8})[ \\t]{2,}(\\d+)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "mid_property_valuation",
+    "mid_deposit"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "PROPERTY VALUATION + DEPOSIT (the GUARANTEE column is printed but always empty)",
+   "scope": "document",
+   "patterns": [
+    "CENTURION[ \\t]+(\\d+)[ \\t]+((?<![\\d.])\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+    "^[ \\t]*(\\d{5,})[ \\t]{2,}((?<![\\d.])\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$"
+   ],
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "mid_bill_run_date",
+   "label": "Ledger date on the VAT line (the month's billing run date)",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{2}-\\d{2}-\\d{2})[ \\t]+VAT[ \\t]+",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "mid_prev_balance_r",
+   "label": "BALANCE B/FWD",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+BALANCE B/FWD[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mid_receipts_r",
+   "label": "Receipts in period (summed; credits print a leading minus)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+\\d{6}[ \\t]+RECEIPT[ \\t]+\\d+[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mid_receipt_refs",
+   "label": "Receipt reference number(s)",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "RECEIPT[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mid_vat_r",
+   "label": "Aggregate VAT ledger line",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+VAT[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mid_total_monthly_debit",
+   "label": "TOTAL MONTHLY DEBIT (printed; meaning unknown - see _doc, used in no identity)",
+   "scope": "document",
+   "pattern": "TOTAL MONTHLY DEBIT[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mid_rounding_r",
+   "label": "AMOUNT ROUNDED UP",
+   "scope": "document",
+   "pattern": "AMOUNT ROUNDED UP[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mid_age_30",
+    "mid_age_60",
+    "mid_age_90",
+    "mid_age_90plus",
+    "mid_total_charge_ex_vat",
+    "mid_total_vat",
+    "mid_total_charge_inc_vat"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Footer row: 30/60/90/90+ DAYS, TOTAL CHARGE (excl vat), TOTAL VAT, TOTAL CHARGE (incl vat)",
+   "scope": "document",
+   "pattern": "^[ \\t]*((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]+(-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]+(-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]+(-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]+(-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]+(-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]+(-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mid_amount_payable",
+   "label": "AMOUNT PAYABLE (independent identity target)",
+   "scope": "document",
+   "pattern": "AMOUNT PAYABLE[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mid_elec_r",
+   "label": "Electricity: every dated ledger line containing ELEC*, summed (ex VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}(?![ \\t]*INTEREST)[ \\t]+[^\\n]*?\\bELEC[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mid_elec_lines_r",
+   "label": "Electricity amounts per printed line",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}(?![ \\t]*INTEREST)[ \\t]+[^\\n]*?\\bELEC[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mid_elec_desc",
+   "label": "Electricity line description(s) as printed (truncated by the print stream)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+([^\\n]*?\\bELEC[^\\n]*?)[ \\t]{2,}(?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mid_elec_all_r",
+   "label": "LEAK GUARD: every ledger line containing ELEC (interest lines included), summed",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+[^\\n]*?\\bELEC[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mid_ledger_all_r",
+   "label": "LEAK GUARD: every end-of-line ledger amount except the TOTAL MONTHLY DEBIT subtotal line, summed (must equal AMOUNT PAYABLE)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}(?![ \\t]*TOTAL[ \\t]+MONTHLY[ \\t]+DEBIT)[ \\t]+[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mid_ledger_ex_vat_r",
+   "label": "LEAK GUARD: every ledger amount except the VAT line and the TOTAL MONTHLY DEBIT subtotal (must equal printed TOTAL CHARGE (excl vat))",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}(?![ \\t]*(?:VAT[ \\t]|TOTAL[ \\t]+MONTHLY[ \\t]+DEBIT))[ \\t]+[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "total_kl",
+    "mid_water_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Water: kL consumed + ex-VAT amount (WATER CONS BUSS or WATER INTERIM)",
+   "scope": "section:water",
+   "collect": "sum",
+   "patterns": [
+    "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+WATER[ \\t]+CONS[ \\t]+BUSS[ \\t]+\\d+[ \\t]+\\d+[ \\t]+(\\d+)[ \\t]+\\d+\\.\\d+[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+    "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+WATER[ \\t]+INTERIM[ \\t]+(\\d+)[ \\t]+\\d+\\.\\d+[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$"
+   ],
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "mid_w_curr_reading",
+    "mid_w_prev_reading"
+   ],
+   "types": [
+    "number",
+    "number"
+   ],
+   "label": "Water readings - CURRENT is printed FIRST, then PREVIOUS (see _doc)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+WATER[ \\t]+CONS[ \\t]+BUSS[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+\\d+[ \\t]+\\d+\\.\\d+[ \\t]+(?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "mid_water_rate",
+   "label": "Water tariff (R/kL) as printed",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "patterns": [
+    "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+WATER[ \\t]+CONS[ \\t]+BUSS[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+(\\d+\\.\\d+)[ \\t]+(?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+    "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+WATER[ \\t]+INTERIM[ \\t]+\\d+[ \\t]+(\\d+\\.\\d+)[ \\t]+(?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2}[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mid_w_flag_actual",
+   "label": "WATER CONS BUSS present (metered read)",
+   "scope": "section:water",
+   "pattern": "(WATER[ \\t]+CONS[ \\t]+BUSS)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mid_w_flag_interim",
+   "label": "WATER INTERIM present (estimated)",
+   "scope": "section:water",
+   "pattern": "(WATER[ \\t]+INTERIM)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mid_sewer_avail_r",
+   "label": "AVAILABILITY SEWER-BUS. (SL-SCALE tariff)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+AVAILABILITY[ \\t]+SEWER-BUS\\.[ \\t]+SL-SCALE[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mid_sewer_add_r",
+   "label": "ADD SEWERAGE BUS/IND (SL-SCALE tariff)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+ADD[ \\t]+SEWERAGE[ \\t]+BUS/IND[ \\t]+SL-SCALE[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mid_refuse_desc",
+    "refuse_charges_r"
+   ],
+   "types": [
+    "text",
+    "money"
+   ],
+   "label": "SKIP BIN REMOVAL (ad hoc; on 1 of 10 bills)",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+(SKIP[ \\t]+BIN[^\\n]*?)[ \\t]{2,}((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mid_rates_cent_in_rand",
+    "rates_total_r"
+   ],
+   "types": [
+    "text",
+    "money"
+   ],
+   "label": "BUSINESS AND COMMERCIAL P (property rates, VAT exempt): cent-in-rand + amount",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+BUSINESS[ \\t]+AND[ \\t]+COMMERCIAL[ \\t]+P[ \\t]+(\\d+\\.\\d+)[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mid_rates_rate_txt",
+   "label": "Rates cent-in-rand as printed",
+   "scope": "section:rates",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+BUSINESS[ \\t]+AND[ \\t]+COMMERCIAL[ \\t]+P[ \\t]+(\\d+\\.\\d+)[ \\t]+(?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2}[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mid_warning_r",
+   "label": "WARNING NOTICES / WARNING FEE REVERSE, summed",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+WARNING[ \\t]+(?:NOTICES|FEE)[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mid_admin_fees_r",
+   "label": "ADMIN FEES ARREAR ACCOUNT",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+ADMIN[ \\t]+FEES[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mid_interest_r",
+   "label": "INTEREST / INTEREST IN|ON ARREARS lines, summed (VAT exempt)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+INTEREST[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mid_rates_interest_r",
+   "label": "BUSINESS AND COMMERCIAL N (interest on arrear rates, VAT exempt)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+BUSINESS[ \\t]+AND[ \\t]+COMMERCIAL[ \\t]+N[ \\t]+\\d+\\.\\d+[ \\t]+((?<![\\d.])-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "billing_date",
+   "op": "concat",
+   "of": [
+    "mid_month",
+    "mid_invoice_year"
+   ]
+  },
+  {
+   "field": "reading_type",
+   "op": "label_present",
+   "of": [
+    "mid_w_flag_actual",
+    "mid_w_flag_interim"
+   ],
+   "labels": [
+    "Actual",
+    "Estimated"
+   ]
+  },
+  {
+   "field": "sewer_r",
+   "op": "sum",
+   "of": [
+    "mid_sewer_avail_r",
+    "mid_sewer_add_r"
+   ]
+  },
+  {
+   "field": "water_charges_r",
+   "op": "prefer",
+   "of": [
+    "mid_water_r"
+   ]
+  },
+  {
+   "field": "sundry_charges_r",
+   "op": "sum",
+   "of": [
+    "mid_warning_r",
+    "mid_admin_fees_r",
+    "mid_interest_r",
+    "mid_rates_interest_r"
+   ]
+  },
+  {
+   "field": "sundry_total_r",
+   "op": "prefer",
+   "of": [
+    "sundry_charges_r"
+   ]
+  },
+  {
+   "field": "mid_ledger_leak_r",
+   "op": "diff",
+   "of": [
+    "mid_ledger_all_r",
+    "mid_amount_payable"
+   ]
+  },
+  {
+   "field": "mid_ex_vat_leak_r",
+   "op": "diff",
+   "of": [
+    "mid_ledger_ex_vat_r",
+    "mid_total_charge_ex_vat"
+   ]
+  },
+  {
+   "field": "mid_footer_inc_r",
+   "op": "sum",
+   "of": [
+    "mid_total_charge_ex_vat",
+    "mid_total_vat"
+   ]
+  },
+  {
+   "field": "mid_footer_leak_r",
+   "op": "diff",
+   "of": [
+    "mid_footer_inc_r",
+    "mid_total_charge_inc_vat"
+   ]
+  },
+  {
+   "field": "mid_elec_leak_r",
+   "op": "diff",
+   "of": [
+    "mid_elec_all_r",
+    "mid_elec_r"
+   ]
+  },
+  {
+   "field": "statement_month",
+   "op": "prefer",
+   "of": [
+    "billing_date"
+   ]
+  },
+  {
+   "field": "w_read_start",
+   "op": "prefer",
+   "of": [
+    "read_start"
+   ]
+  },
+  {
+   "field": "w_read_end",
+   "op": "prefer",
+   "of": [
+    "read_end"
+   ]
+  },
+  {
+   "field": "w_reading_type",
+   "op": "prefer",
+   "of": [
+    "reading_type"
+   ]
+  },
+  {
+   "field": "start_reading_kl",
+   "op": "prefer",
+   "of": [
+    "mid_w_prev_reading"
+   ]
+  },
+  {
+   "field": "end_reading_kl",
+   "op": "prefer",
+   "of": [
+    "mid_w_curr_reading"
+   ]
+  },
+  {
+   "field": "water_usage_r",
+   "op": "prefer",
+   "of": [
+    "mid_water_r"
+   ]
+  },
+  {
+   "field": "mid_w_kl_calc",
+   "op": "sub",
+   "of": [
+    "mid_w_curr_reading",
+    "mid_w_prev_reading"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "mid_w_kl_leak",
+   "op": "diff",
+   "of": [
+    "mid_w_kl_calc",
+    "total_kl"
+   ],
+   "as": "number"
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "mid_elec_r",
+  "total_ex_vat_r": "mid_elec_r",
+  "deposit_r": "mid_deposit",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?i)^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+BALANCE B/FWD[ \\t]+(-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+  "incoming_payment": "(?i)^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+\\d{6}[ \\t]+RECEIPT[ \\t]+\\d+[ \\t]+(-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+  "vat": "(?i)^[ \\t]*\\d{2}-\\d{2}-\\d{2}[ \\t]+VAT[ \\t]+(-?\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+  "total_due": "(?i)AMOUNT PAYABLE[ \\t]+(-?\\d+(?:,\\d{3})*\\.\\d{2})",
+  "due_date": "(?i)DUE DATE[ \\t]+(\\d{4}-\\d{2}-\\d{2})",
+  "deposito": "(?i)CENTURION[ \\t]+\\d+[ \\t]+(\\d+(?:,\\d{3})*\\.\\d{2})[ \\t]*$"
+ }
+}

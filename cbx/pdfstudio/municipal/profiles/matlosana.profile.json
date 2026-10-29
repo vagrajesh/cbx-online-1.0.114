@@ -1,0 +1,605 @@
+{
+ "profile_id": "matlosana",
+ "profile_name": "City of Matlosana (Klerksdorp)",
+ "short_name": "Matlosana",
+ "_doc": "CITY OF MATLOSANA (Klerksdorp, North West) - acct [number removed],\nTelkom site KERK (NT 9) / KLERKSDORP.  11 PDFs = 11 consecutive months\nJul 2025 - Jul 2026 (Dec 2025 and May 2026 are not in the pack).\n\nNUMBER FORMAT - NO COMMA-DECIMAL TRAP HERE.  Unlike its sibling\nDitsobotla shape B, Matlosana prints PERIOD decimals:\n  shape A (10 files) SPACE thousands + period decimal   '277 810.86'\n  shape B (1 file)   COMMA thousands + period decimal   '296,105.12'\n                     and some values with no separator  '483178.27'\n_to_decimal() deletes spaces and commas, so BOTH forms parse EXACTLY.\nEvery Rand figure in this profile is cent-exact; there is no rand-part\nworkaround and no cent-exact variant is needed.  The money token used\nthroughout is  (?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])\n- optional separator (space OR comma OR none) and an optional integer\npart so a bare ',00'-style '.00' still reads 0.00.\n\nTHE AMOUNT COLUMN IS EX VAT.  Columns are DESCRIPTION / VAT / AMOUNT and\nVAT is exactly 15% of AMOUNT on every taxable line (Property Rates is\nzero-rated).  So NO 'sub' computes are needed - the opposite of\nDitsobotla, whose Amount column is VAT-INCLUSIVE.  Verified on all 11\nbills: Sum(AMOUNT column) == printed 'Total Current Levies' and\nSum(VAT column) == printed 'VAT / BTW'.\n\nTWO RENDER SHAPES, one template.\n SHAPE A - the 10 'COM_...' files, 1 page, ~8 300 chars.  Header is a\n   packed multi-column block: 'CITY OF MATLOSANAP.O. Box 99, KLERKSDORP,\n   2570' (glued), 'VAT Reg No/BTW Reg Nr  4680101146' (that is TELKOM's\n   VAT number - it is on 136 bills in the pack, NEVER fingerprint on it),\n   'VAT Registration Nr. / BTW Registrasie No.' with the MUNICIPALITY's\n   number 4560106603 on the NEXT line, 'Acc No / Rek Nr / Lenaane',\n   'Leina la Mmila  KERK (NT 9)', 'Township / Dorpsgebied / ... KLERKSDORP',\n   'Ward / Afdeling / Karolo  19', 'Acc Date / Rek Datum /  JUL 2025',\n   'Stand No / Erf Nr / No Ya Tulo  [number removed]', 'Deposit / Deposito :\n   58140.00', 'Group Code  38', 'Market Value / Mark Waarde  [number removed]'.\n SHAPE B - the single 'MOH_[number removed]_[number removed]_102025.pdf', 227 KB\n   instead of 275 KB, a DIFFERENT PDF producer.  Same template, badly\n   re-flowed: labels split across lines, the street/market-value/township\n   values lost, meter readings printed in SCIENTIFIC NOTATION\n   ('2.[number removed]E7' = [number removed] - Decimal() parses this correctly, verified),\n   the kVA row grows an extra 'prev reading' column, 'Total Current\n   Levies / Totaal Heffings:' prints the VAT TOTAL rather than the levies,\n   the ageing row is garbled, and 'TOTAL / TOTAAL / GOTLHE' and\n   'Due / Verskuldig' both print 0.00.  See 'THE MOH FILE' below.\n\nMETER READINGS TABLE - YES, there is one (unlike Ditsobotla shape A):\n  'Meter Type / Tipe  Meter No / Nr  Date / Datum  Current Reading /\n   Huidige Lesing  Prev Reading / Vorige Lesing  Factor / Faktor\n   Consumption / Verbruik'\n  EL   [number removed]     [number removed]  [number removed]  [number removed]  1.00  90978   <- kWh\n  EL   KVA[number removed]   [number removed]       145            1.00    145   <- kVA\n  WA   351          [number removed]                      1.00     31   <- water\nThe kVA and water rows print NO previous reading in shape A (and a 0.0\none in shape B), which is why those two rules carry a 'patterns' pair\nwith the same capture groups in the same order.  current - prev ==\nprinted Consumption on 11/11 bills (carried as mat_reading_kwh /\nmat_kwh_delta).\n\nWHAT THE BILL DOES NOT PRINT (mapped '_none', not misses):\n  tariff name, reading type (Actual/Estimated), a reading PERIOD (only\n  ONE reading date per meter, so read_start is '_none' and read_end is\n  that date), TOU bands (peak/off-peak), NMD, cash, guarantee, security\n  held.  AND - importantly - any separate DEMAND charge: Matlosana\n  prints ONE combined 'ELECTRICITY / ELEKTRISITEIT' amount covering both\n  the kWh register and the kVA register, with no rate and no split.  I\n  tried to solve for an energy rate + a demand rate across the 11 bills\n  and there is no consistent fit (the charge amounts do not track the\n  same month's readings - three consecutive bills print an identical\n  108 743 kWh and identical R320 642.84, then Aug 2025 charges\n  R352 135.60 for 86 824 kWh), so the split is NOT recoverable.  Single-\n  band convention: standard_kwh = total_kwh, standard_r = the whole\n  ELECTRICITY amount, demand_r = '_none', demand_kva = the printed kVA\n  register.  other_r = BASIC ELECTRICITY.\n\nSECTIONS.  The bill has NO service sub-headings - it is a flat 8-line\nlevy list whose ORDER differs between the two shapes.  So electricity is\nthe only boundary-forming section (start = the readings-table banner\n'WATER / ELECTRICITY CONSUMPTION', which sits above both the meter table\nand the levy list, so it runs to the end of the document and 'header' is\nexactly the page-1 meta block).  water/sewerage/refuse/rates/sundry are\nall \"overlay\": true with \"end\": \"\\\\Z\" so they span to the end and cut\nnothing; every rule then anchors on its own description text, which is\nunique per service, so nothing can leak across services.\n\nRULE ZERO.  The bill prints no ex-VAT ELECTRICITY subtotal, so\ntotal_ex_vat_r (mat_elec_total_ex_r) is the SUM OF ITS OWN PARTS and the\nengine's reconcile is CIRCULAR here - it cannot fail.  Four genuinely\nindependent identities are checked instead and three of them are carried\nin the data so a regression shows them:\n (1) Sum(AMOUNT column, all 8 levy lines) == printed 'Total Current\n     Levies'  -> mat_levy_col_sum_r vs mat_total_levies_r (10/10 exact\n     on shape A; shape B mis-prints the label, see below).\n (2) Current reading - Prev reading == printed Consumption\n     -> mat_kwh_delta == 0 on 11/11.\n (3) Sum(VAT column) == printed 'VAT / BTW'\n     -> mat_vat_delta_r == 0.00 on 11/11.\n (4) BBF - payments + levies == printed 'TOTAL ... EXCL VAT'\n     -> mat_excl_delta_r == 0.00 on 11/11.\n\nZERO-RATED LINE.  On shape A the PROPERTY RATES line prints NO VAT\ncolumn value at all (rates are zero-rated), so mat_rates_vat_r is a\nlegitimate blank on 10 of 11 bills; shape B prints an explicit 0.00.\nThat is why the amount and the VAT of every levy line are TWO SEPARATE\nsingle-group rules rather than one two-group rule - a one-rule version\nwould have dropped the rates AMOUNT on 10 bills.\n\nTHE MOH FILE - VERDICT.  'MOH_[number removed]_[number removed]_102025.pdf' (MOH =\nMohokare) is a CITY OF MATLOSANA bill that is MISNAMED.  It carries the\n'CITY OF MATLOSANA' masthead, 'P.O. Box 99, KLERKSDORP, 2570', VAT\nregistration 4560106603, www.matlosana.gov.za, account [number removed],\ninvoice [number removed]/202510, 'Acc Date ... Oct 2025', stand [number removed],\nmeters [number removed] / KVA[number removed] / 351 - and no Mohokare, Zastron, Rouxville\nor Smithfield marker anywhere.  It is the OCTOBER 2025 bill, the one\nmonth otherwise missing between the Sep 2025 and Nov 2025 COM files, and\nits readings chain exactly into them: Sep ends 23 242 413, MOH runs\n23 242 412 -> 23 339 654, Nov starts 23 339 654.  Its printed TOTAL of\n0.00 is a render bug, not a zero bill: BBF 483 178.27 - payments\n483 171.04 + levies 423 780.63 + VAT 57 943.27 = 481 731.13, which is\nexactly the 'BALANCE BROUGHT FORWARD' printed on the November 2025 bill.\nThe fingerprint was NOT widened for it.\n\nFINGERPRINT.  Anchored on the municipality's own VAT registration\n4560106603 (11/487 files in the pack, all Matlosana), the masthead\n'CITY OF MATLOSANA', the portal, and the bank-account name.  NOT on\n'TAX INVOICE / BELASTINGFAKTUUR' (41 files - shared with Ditsobotla and\nSol Plaatjie), NOT on 'O tshwanetse go duela' (20 files - shared with\nRustenburg; this is the sentence whose 'tshwaneTSE' substring used to\nhijack these bills into the 'cot' profile), NOT on 'Elektrisiteit'\n(46 files), and NOT on Telkom's VAT number 4680101146 (136 files).",
+ "fingerprint": {
+  "all": [],
+  "any": [
+   "4560106603",
+   "CITY OF MATLOSANA",
+   "matlosana.gov.za",
+   "MATLOSANA LOCAL MUNICIPALITY"
+  ],
+  "reject_if_text": [
+   "requires Adobe Reader 8 or higher"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*WATER / ELECTRICITY CONSUMPTION"
+  },
+  "water": {
+   "start": "^[ \\t]*WATER / ELECTRICITY CONSUMPTION",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*FIXED (?:ADDITIONAL|BASIC) SEWERAGE",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "refuse": {
+   "start": "^[ \\t]*BASIC REFUSE",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "rates": {
+   "start": "^[ \\t]*PROPERTY RATES",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "sundry": {
+   "start": "^[ \\t]*PAYMENTS RECEIVED",
+   "overlay": true,
+   "end": "\\Z"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "header",
+   "pattern": "Acc No / Rek Nr / Lenaane[ \\t]{2,}(\\d{8,15})(?![\\d])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Site (street) - Leina la Mmila",
+   "scope": "header",
+   "pattern": "Leina la Mmila[ \\t]{2,}([A-Z][A-Z0-9 ()]*[A-Z0-9)])[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mat_township",
+   "label": "Township / Dorpsgebied",
+   "scope": "header",
+   "pattern": "Township / Dorpsgebied /[^\\n]*?Market Value[^\\n]*?[ \\t]{2,}([A-Z][A-Z]+)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "billing_date",
+   "label": "Acc Date / Rek Datum (billing month)",
+   "scope": "header",
+   "pattern": "Acc Date / Rek Datum[^\\n]*?[ \\t]{2,}([A-Za-z]{3,}[ \\t]+\\d{4})[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "mat_invoice_no",
+   "label": "Invoice number / Faktuurnommer",
+   "scope": "header",
+   "pattern": "(?<![\\d/])(\\d{8,}/\\d{6})(?![\\d])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mat_vat_reg",
+   "label": "Municipality VAT registration",
+   "scope": "header",
+   "pattern": "VAT Registration Nr[^\\n]*\\n[ \\t]*(\\d{10})(?![\\d])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mat_ward",
+   "label": "Ward / Afdeling / Karolo",
+   "scope": "header",
+   "pattern": "Ward / Afdeling / Karolo[ \\t]{2,}(\\S+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mat_stand_no",
+   "label": "Stand No / Erf Nr",
+   "scope": "header",
+   "patterns": [
+    "Stand No / Erf Nr / No Ya Tulo[ \\t]{2,}(\\d{5,})(?![\\d])",
+    "Stand No / Erf Nr / No Ya[\\s\\S]{0,160}?(?<![\\d/])(\\d{8})(?![\\d])"
+   ],
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mat_market_value",
+   "label": "Market Value / Mark Waarde",
+   "scope": "header",
+   "pattern": "Market Value / Mark Waarde[ \\t]{2,}(\\d{4,})(?![\\d])",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "mat_group_code",
+   "label": "Group Code / Groep Kode",
+   "scope": "header",
+   "pattern": "Group Code[ \\t]{2,}(\\d+)(?![\\d])",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "deposit",
+   "label": "Deposit / Deposito",
+   "scope": "header",
+   "pattern": "Deposit / Deposito[ \\t]*:[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mat_payments_up_to",
+   "label": "Payments up to / Betalings tot",
+   "scope": "header",
+   "pattern": "Payments up to[^\\n]*?[ \\t]{2,}(?<![\\d])(\\d{1,2}[ \\t]+[A-Za-z]{3,}[ \\t]+\\d{2,4})(?![\\d])",
+   "type": "date",
+   "required": false
+  },
+  {
+   "fields": [
+    "mat_total_levies_r",
+    "mat_total_vat_r"
+   ],
+   "label": "Total Current Levies + Total Current VAT (printed pair)",
+   "scope": "document",
+   "pattern": "Total Current Levies[ \\t]*:[ \\t]*(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]+Total Current VAT[ \\t]*:[ \\t]*(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "field": "mat_total_excl_vat_r",
+   "label": "TOTAL / TOTAAL / GOTLHE EXCL VAT",
+   "scope": "document",
+   "pattern": "TOTAL[ \\t]*/[ \\t]*TOTAAL[ \\t]*/[ \\t]*GOTLHE[ \\t]+EXCL VAT[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mat_vat_r",
+   "label": "VAT / BTW (whole bill)",
+   "scope": "document",
+   "pattern": "VAT[ \\t]*/[ \\t]*BTW[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mat_total_r",
+   "label": "TOTAL / TOTAAL / GOTLHE (incl VAT)",
+   "scope": "document",
+   "pattern": "TOTAL[ \\t]*/[ \\t]*TOTAAL[ \\t]*/[ \\t]*GOTLHE[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mat_due_r",
+   "label": "Due / Verskuldig / Sekoloto",
+   "scope": "document",
+   "pattern": "Due / Verskuldig / Sekoloto[ \\t]*:[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due Date / Betaaldatum",
+   "scope": "document",
+   "pattern": "Due Date / Betaaldatum[^\\n]*?[ \\t]{2,}(?<![\\d])(\\d{1,2}[ \\t]+[A-Za-z]{3,}[ \\t]+\\d{2,4})(?![\\d])",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "mat_bbf_r",
+   "label": "BALANCE BROUGHT FORWARD",
+   "scope": "document",
+   "pattern": "^[ \\t]*BALANCE BROUGHT FORWARD[^\\n]*?[ \\t]{2,}R?[ \\t]*(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mat_payments_r",
+   "label": "PAYMENTS RECEIVED (signed)",
+   "scope": "document",
+   "pattern": "^[ \\t]*PAYMENTS RECEIVED[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "mat_levy_col_sum_r",
+   "label": "Sum of the AMOUNT/BEDRAG column (all services)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:ELECTRICITY[ \\t]*/[ \\t]*ELEKTRISITEIT|BASIC ELECTRICITY|BASIC REFUSE|FIXED ADDITIONAL SEWERAGE|FIXED BASIC SEWERAGE|WATER[ \\t]*-[ \\t]*INTERIM|BASIC WATER|PROPERTY RATES)[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "mat_vat_col_sum_r",
+   "label": "Sum of the VAT/BTW column (all services)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:ELECTRICITY[ \\t]*/[ \\t]*ELEKTRISITEIT|BASIC ELECTRICITY|BASIC REFUSE|FIXED ADDITIONAL SEWERAGE|FIXED BASIC SEWERAGE|WATER[ \\t]*-[ \\t]*INTERIM|BASIC WATER|PROPERTY RATES)[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "mat_age_90_r",
+    "mat_age_60_r",
+    "mat_age_30_r",
+    "mat_age_current_r"
+   ],
+   "label": "Ageing 90+/60/30/Current",
+   "scope": "document",
+   "pattern": "90 Days \\+[^\\n]*\\n[ \\t]*(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]+(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]+(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]+(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])",
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "mat_el_meter",
+    "read_end",
+    "end_reading_kwh",
+    "start_reading_kwh",
+    "total_kwh"
+   ],
+   "label": "EL kWh register row (meter / read date / curr / prev / consumption)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*EL[ \\t]{2,}(\\d{6,})[ \\t]{2,}(\\d{8})[ \\t]{2,}([\\d.]+(?:E\\+?\\d+)?)[ \\t]{2,}([\\d.]+(?:E\\+?\\d+)?)[ \\t]{2,}[\\d.]+[ \\t]{2,}(\\d+)[ \\t]*$",
+   "types": [
+    "text",
+    "date",
+    "number",
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "mat_kva_meter",
+    "mat_kva_read_date",
+    "mat_kva_reading",
+    "demand_kva"
+   ],
+   "label": "EL kVA register row (meter / read date / reading / demand)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*EL[ \\t]{2,}(KVA\\d+)[ \\t]{2,}(\\d{8})[ \\t]{2,}([\\d.]+(?:E\\+?\\d+)?)[ \\t]{2,}[\\d.]+(?:E\\+?\\d+)?[ \\t]{2,}[\\d.]+[ \\t]{2,}(\\d+)[ \\t]*$",
+    "^[ \\t]*EL[ \\t]{2,}(KVA\\d+)[ \\t]{2,}(\\d{8})[ \\t]{2,}([\\d.]+(?:E\\+?\\d+)?)[ \\t]{2,}[\\d.]+[ \\t]{2,}(\\d+)[ \\t]*$"
+   ],
+   "types": [
+    "text",
+    "date",
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "field": "mat_elec_ex_r",
+   "label": "ELECTRICITY charge, ex VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*ELECTRICITY[ \\t]*/[ \\t]*ELEKTRISITEIT[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_elec_vat_r",
+   "label": "ELECTRICITY charge, VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*ELECTRICITY[ \\t]*/[ \\t]*ELEKTRISITEIT[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_ebasic_ex_r",
+   "label": "BASIC ELECTRICITY, ex VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*BASIC ELECTRICITY[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_ebasic_vat_r",
+   "label": "BASIC ELECTRICITY, VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*BASIC ELECTRICITY[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "mat_wa_meter",
+    "mat_wa_read_date",
+    "mat_water_kl"
+   ],
+   "label": "WA water register row (meter / read date / consumption kL)",
+   "scope": "section:water",
+   "patterns": [
+    "^[ \\t]*WA[ \\t]{2,}(\\S+)[ \\t]{2,}(\\d{8})[ \\t]{2,}[\\d.]+(?:E\\+?\\d+)?[ \\t]{2,}[\\d.]+(?:E\\+?\\d+)?[ \\t]{2,}[\\d.]+[ \\t]{2,}(\\d+)[ \\t]*$",
+    "^[ \\t]*WA[ \\t]{2,}(\\S+)[ \\t]{2,}(\\d{8})[ \\t]{2,}[\\d.]+[ \\t]{2,}(\\d+)[ \\t]*$"
+   ],
+   "types": [
+    "text",
+    "date",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "field": "mat_water_cons_ex_r",
+   "label": "WATER - INTERIM INCLUDED, ex VAT",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*WATER[ \\t]*-[ \\t]*INTERIM[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_water_cons_vat_r",
+   "label": "WATER - INTERIM INCLUDED, VAT",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*WATER[ \\t]*-[ \\t]*INTERIM[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_water_basic_ex_r",
+   "label": "BASIC WATER, ex VAT",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*BASIC WATER[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_water_basic_vat_r",
+   "label": "BASIC WATER, VAT",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*BASIC WATER[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_sewer_add_ex_r",
+   "label": "FIXED ADDITIONAL SEWERAGE, ex VAT",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*FIXED ADDITIONAL SEWERAGE[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_sewer_add_vat_r",
+   "label": "FIXED ADDITIONAL SEWERAGE, VAT",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*FIXED ADDITIONAL SEWERAGE[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_sewer_basic_ex_r",
+   "label": "FIXED BASIC SEWERAGE, ex VAT",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*FIXED BASIC SEWERAGE[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_sewer_basic_vat_r",
+   "label": "FIXED BASIC SEWERAGE, VAT",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*FIXED BASIC SEWERAGE[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_refuse_ex_r",
+   "label": "BASIC REFUSE, ex VAT",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*BASIC REFUSE[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_refuse_vat_r",
+   "label": "BASIC REFUSE, VAT",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*BASIC REFUSE[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_rates_ex_r",
+   "label": "PROPERTY RATES, ex VAT",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*PROPERTY RATES[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "mat_rates_vat_r",
+   "label": "PROPERTY RATES, VAT (only printed on the MOH render)",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*PROPERTY RATES[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "mat_rates_desc",
+   "label": "Rates category",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*(PROPERTY RATES[A-Z& ]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "mat_sundry_payment_r",
+   "label": "PAYMENTS RECEIVED (sundry row)",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*PAYMENTS RECEIVED[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "mat_elec_total_ex_r",
+   "op": "sum",
+   "of": [
+    "mat_elec_ex_r",
+    "mat_ebasic_ex_r"
+   ]
+  },
+  {
+   "field": "mat_elec_total_vat_r",
+   "op": "sum",
+   "of": [
+    "mat_elec_vat_r",
+    "mat_ebasic_vat_r"
+   ]
+  },
+  {
+   "field": "mat_elec_total_inc_r",
+   "op": "sum",
+   "of": [
+    "mat_elec_total_ex_r",
+    "mat_elec_total_vat_r"
+   ]
+  },
+  {
+   "field": "mat_reading_kwh",
+   "op": "diff",
+   "as": "number",
+   "of": [
+    "end_reading_kwh",
+    "start_reading_kwh"
+   ]
+  },
+  {
+   "field": "mat_kwh_delta",
+   "op": "diff",
+   "as": "number",
+   "of": [
+    "mat_reading_kwh",
+    "total_kwh"
+   ]
+  },
+  {
+   "field": "mat_vat_delta_r",
+   "op": "diff",
+   "of": [
+    "mat_vat_col_sum_r",
+    "mat_vat_r"
+   ]
+  },
+  {
+   "field": "mat_excl_calc_r",
+   "op": "sum",
+   "of": [
+    "mat_bbf_r",
+    "mat_payments_r",
+    "mat_levy_col_sum_r"
+   ]
+  },
+  {
+   "field": "mat_excl_delta_r",
+   "op": "diff",
+   "of": [
+    "mat_excl_calc_r",
+    "mat_total_excl_vat_r"
+   ]
+  },
+  {
+   "field": "mat_total_calc_r",
+   "op": "sum",
+   "of": [
+    "mat_excl_calc_r",
+    "mat_vat_r"
+   ]
+  },
+  {
+   "field": "mat_sewer_ex_r",
+   "op": "sum",
+   "of": [
+    "mat_sewer_add_ex_r",
+    "mat_sewer_basic_ex_r"
+   ]
+  },
+  {
+   "field": "mat_water_ex_r",
+   "op": "sum",
+   "of": [
+    "mat_water_cons_ex_r",
+    "mat_water_basic_ex_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "mat_el_meter",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "mat_elec_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "mat_ebasic_ex_r",
+  "total_ex_vat_r": "mat_elec_total_ex_r",
+  "deposit_r": "deposit",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "BALANCE BROUGHT FORWARD[^\\n]*?[ \\t]{2,}R?[ \\t]*(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})[ \\t]*$",
+  "incoming_payment": "PAYMENTS RECEIVED[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})[ \\t]*$",
+  "current_ex": "Total Current Levies[ \\t]*:[ \\t]*(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})[ \\t]+Total Current VAT",
+  "vat": "VAT / BTW[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})[ \\t]*$",
+  "total_due": "Due / Verskuldig / Sekoloto[ \\t]*:[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})",
+  "due_date": "Due Date / Betaaldatum[^\\n]*?[ \\t]{2,}(\\d{1,2}[ \\t]+[A-Za-z]{3,}[ \\t]+\\d{2,4})"
+ }
+}

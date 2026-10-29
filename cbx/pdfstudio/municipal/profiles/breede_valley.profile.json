@@ -1,0 +1,461 @@
+{
+ "profile_id": "breede_valley",
+ "profile_name": "Breede Valley Municipality (Worcester)",
+ "short_name": "Breede Valley",
+ "_doc": "STRUCTURE (verified on all 10 bills, account [number removed], Oct-2025..Aug-2026). ONE account, ONE property (ERF 11784 000, Tulbagh Street 23, Worcester Ou-Dorp1), ONE electricity meter ([number removed]) and ONE water meter (CPJA2363U) per PDF. The whole statement is PDF page 1 ('Page 1 of 1'). The 183,000-199,000 char raw text is NOT many properties and NOT a tariff appendix: PDF page 2 is the printed reverse side (bilingual terms/conditions) which PyMuPDF sort=True renders as ~176,000 chars of whitespace-padded word soup (single lines up to 58,000 chars). One bill ([number removed]) additionally carries a 2-page municipal newsletter insert (pages 3-4). So NO block_anchor / per-meter rows are needed - one electricity row per PDF is correct - but every section MUST be bounded so the page-2 soup is never in scope. That is what the rules-free 'sundry' section at REMITTANCE ADVICE is for: it is a pure boundary that terminates the electricity section before the first \\f. No rule uses 'document' scope for the same reason.\nLAYOUT. Header (above METER READINGS) holds TAX INVOICE NO / ACCOUNT NUMBER (prefixed 'WMUN ') / ACCOUNT DATE / RECEIPTS POSTED TO / DEBTOR VAT NUMBER and the PROPERTY INFORMATION column (ERF, STREET ADDRESS, SUBURB). Then a METER READINGS table with one line per service letter: W = water (kL), E = electricity energy (kWh), K = electricity maximum demand (kVA). Columns are SERVICE / METER NO. / PREVIOUS READING / NEW READING / UNITS / PERIOD; the K line prints NOTHING in PREVIOUS READING (its single reading sits in the NEW READING column, cols 66-73) so its pattern must expect one reading, not two. PERIOD is printed DD/MM-DD/MM with NO YEAR - read_start/read_end are therefore kept exactly as printed ('01/07', '01/08'), per the 'date == as printed' rule.\nThen a charges table SERVICE TYPE / TARIFF / CONSUMPTION / VAT / CHARGE / AMOUNT, with THREE electricity lines: 'ELEC./ELEK.  LPUE' (energy, has a CONSUMPTION value), 'ELEC./ELEK.  LPUS' (service/basic charge, NO consumption - only 3 money columns) and 'Electricity  KVA  LPUDM' (demand). CHARGE is EX VAT and is printed with FIVE decimals (152300.64000); AMOUNT is INC VAT (= CHARGE + VAT) with two. The energy and service-charge lines are told apart STRUCTURALLY (4 numeric columns vs 3), not by tariff code, so a code change cannot silently drop the energy line.\nSINGLE-BAND TARIFF. LPU is a flat energy tariff - no TOU. Following the CoJ-flat / Ekurhuleni convention the single energy band is routed to STANDARD; peak_* and offpeak_* are '_none'. NMD is never printed -> '_none'. Deposit/cash/guarantee/security are never printed (the DEPOSIT label exists in the header but is always blank) -> '_none'.\nRULE ZERO. The bill prints NO independent ex-VAT electricity total, so total_ex_vat_r == sum(energy + service + demand CHARGE) and reconcile is STRUCTURALLY CIRCULAR - do not read it as a check. The genuine checks are (a) bv_elec_vat_r + bv_water_vat_r == the printed TOTAL VAT figure (independently captured from the AGREEMENT block), and (b) end reading - start reading == the printed UNITS == the charges-table CONSUMPTION (three independent prints of total kWh).\nREADING TYPE. The electricity (E) line prints no A/E flag on any of the 10 bills; the water (W) line always prints 'E' and the header note 'your usage for this month has been Estimated' belongs to water (water increments a flat 24-26 kL/month, electricity increments realistically). Electricity reading_type is therefore DERIVED as 'Actual' by label_present when no estimate flag is present - an inference, flagged here deliberately.\nRECON. prev_balance ('Balance brought forward'), incoming_payment ('Receipts:', trailing minus), vat (printed TOTAL VAT), total_due ('AMOUNT DUE') and due_date are all printed and mapped. current_ex is deliberately LEFT BLANK: BVM prints no current-charges total. '** Total monthly', 'CURRENT' and 'AMOUNT DUE' are all the CLOSING BALANCE (opening balance + receipts + this month's charges) - on [number removed] the AGREEMENT row reads ARREARS 319.64 / CURRENT 222947.80 / AMOUNT DUE 223267.44, i.e. CURRENT is a balance-aging split, not the month's charges. Mapping it to current_incl would have put a balance into a charges column (and doubled it into Accrual), so it is omitted. The only honest current-charges figure is the SUM of the CHARGE column across services, which a single-capture recon regex cannot express.\nFINGERPRINT. Breede Valley's own municipal VAT registration 4850193659 (printed 'VAT / BTW : 4850193659'), plus its Worcester private bag and bvm.gov.za. NOT the CBRE recipient address - [address removed] appears on these bills and is what made them hijack the mangaung profile. 4680101146 on these bills is the DEBTOR's (Telkom's) VAT number, not the municipality's - never fingerprint on that.",
+ "fingerprint": {
+  "all": [
+   "4850193659"
+  ],
+  "any": [
+   "BREEDE VALLEI MUNICIPALITY",
+   "PRIVATE BAG X3046, WORCESTER",
+   "bvm.gov.za",
+   "BVM Drinking Water Quality Compliance"
+  ],
+  "reject_if_text": [
+   "Please wait... If this message is not eventually replaced",
+   "PREPAID ELECTRICITY PURCHASE SLIP"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "require": "^[ \\t]*ELEC\\.?/ELEK\\.?[ \\t]"
+  },
+  "water": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "overlay": true,
+   "end": "^[ \\t]*\\*\\* Total monthly:[^\\n]*$",
+   "require": "^[ \\t]*Water[ \\t]{2,}Consumption[ \\t]"
+  },
+  "sundry": {
+   "start": "^[ \\t]*REMITTANCE ADVICE[ \\t]*$"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "header",
+   "pattern": "^[ \\t]*ACCOUNT NUMBER[ \\t]{2,}(?:WMUN[ \\t]+)?(\\d{6,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "tax_invoice_no",
+   "label": "Tax invoice number",
+   "scope": "header",
+   "pattern": "^[ \\t]*TAX INVOICE NO[ \\t]{2,}(\\d{4,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account (statement) date",
+   "scope": "header",
+   "pattern": "^[ \\t]*ACCOUNT DATE[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "bv_billing_month",
+   "label": "Billing month",
+   "scope": "header",
+   "pattern": "^[ \\t]*[A-Z][A-Za-z]+[ \\t]{2,}((?:January|February|March|April|May|June|July|August|September|October|November|December)[ \\t]+\\d{4})[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "bv_receipts_posted_to",
+   "label": "Receipts posted to",
+   "scope": "header",
+   "pattern": "^[ \\t]*RECEIPTS POSTED TO[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "bv_debtor_vat_no",
+   "label": "Debtor VAT number",
+   "scope": "header",
+   "pattern": "^[ \\t]*DEBTOR VAT NUMBER[ \\t]{2,}(\\d{8,})\\b",
+   "type": "text"
+  },
+  {
+   "field": "bv_munic_vat_no",
+   "label": "Municipal VAT number",
+   "scope": "header",
+   "pattern": "^[ \\t]*VAT[ \\t]*/[ \\t]*BTW[ \\t]*:[ \\t]*(\\d{8,})\\b",
+   "type": "text"
+  },
+  {
+   "field": "erf",
+   "label": "Erf",
+   "scope": "header",
+   "pattern": "\\bERF[ \\t]{2,}(\\d+(?:[ \\t]+\\d+)?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "bv_street_address",
+   "label": "Street address",
+   "scope": "header",
+   "pattern": "\\bSTREET ADDRESS[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "bv_suburb",
+   "label": "Suburb",
+   "scope": "header",
+   "pattern": "\\bSUBURB[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "bv_customer_name",
+   "label": "Customer (addressee)",
+   "scope": "header",
+   "pattern": "^[ \\t]*Page[ \\t]+\\d+[ \\t]+of[ \\t]+\\d+[ \\t]*\\n[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "meter",
+    "bv_elec_start_reading",
+    "bv_elec_end_reading",
+    "total_kwh",
+    "read_start",
+    "read_end"
+   ],
+   "label": "Electricity meter reading line (E)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*E[ \\t]{2,}([A-Z0-9]{4,})[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d+)(?:[ \\t]*[AE])?[ \\t]{2,}([\\d,]+\\.\\d{3})[ \\t]{2,}(\\d{2}/\\d{2})-(\\d{2}/\\d{2})[ \\t]*$",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number",
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "bv_elec_est_flag",
+   "label": "Electricity reading estimate flag (E) - absent on every bill seen",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*E[ \\t]{2,}[A-Z0-9]{4,}[ \\t]{2,}\\d+[ \\t]{2,}\\d+[ \\t]*(E)[ \\t]{2,}[\\d,]+\\.\\d{3}[ \\t]{2,}\\d{2}/\\d{2}-\\d{2}/\\d{2}[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "bv_kva_meter",
+    "bv_kva_reading",
+    "bv_demand_kva",
+    "bv_kva_period_start",
+    "bv_kva_period_end"
+   ],
+   "label": "Demand meter reading line (K)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*K[ \\t]{2,}([A-Z0-9]{4,})[ \\t]{2,}(\\d+)[ \\t]{2,}([\\d,]+\\.\\d{3})[ \\t]{2,}(\\d{2}/\\d{2})-(\\d{2}/\\d{2})[ \\t]*$",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "bv_tariff_codes",
+   "label": "Electricity tariff codes",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:ELEC\\.?/ELEK\\.?|Electricity[ \\t]{2,}KVA)[ \\t]{2,}(LPU[A-Z]*)\\b",
+   "type": "text",
+   "collect": "join_unique",
+   "required": true
+  },
+  {
+   "fields": [
+    "bv_energy_kwh",
+    "bv_energy_vat_r",
+    "bv_energy_r",
+    "bv_energy_incl_r"
+   ],
+   "label": "Energy charge line (ELEC./ELEK. + consumption)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*ELEC\\.?/ELEK\\.?[ \\t]{2,}[A-Z]+[ \\t]{2,}(\\d[\\d,]*)[ \\t]{2,}([\\d,]+\\.\\d{2})[ \\t]{2,}([\\d,]+\\.\\d{2,5})[ \\t]{2,}([\\d,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "bv_service_vat_r",
+    "bv_service_r",
+    "bv_service_incl_r"
+   ],
+   "label": "Electricity service/basic charge line (ELEC./ELEK. no consumption)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*ELEC\\.?/ELEK\\.?[ \\t]{2,}[A-Z]+[ \\t]{2,}([\\d,]+\\.\\d{2})[ \\t]{2,}([\\d,]+\\.\\d{2,5})[ \\t]{2,}([\\d,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "bv_demand_kva_billed",
+    "bv_demand_vat_r",
+    "bv_demand_r",
+    "bv_demand_incl_r"
+   ],
+   "label": "Maximum demand charge line (Electricity KVA)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity[ \\t]{2,}KVA[ \\t]{2,}[A-Z]+[ \\t]{2,}(\\d[\\d,]*)[ \\t]{2,}([\\d,]+\\.\\d{2})[ \\t]{2,}([\\d,]+\\.\\d{2,5})[ \\t]{2,}([\\d,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "bv_prev_balance_r",
+   "label": "Balance brought forward",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Balance brought forward:[ \\t]{2,}([\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "bv_receipts_r",
+   "label": "Receipts",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Receipts:[ \\t]*\\d*[ \\t]{2,}([\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "bv_total_monthly_r",
+   "label": "** Total monthly (closing balance)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\*\\*[ \\t]*Total monthly:[ \\t]{2,}([\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "bv_total_vat_r",
+    "bv_arrears_r",
+    "bv_current_r",
+    "bv_amount_due_r"
+   ],
+   "label": "Account summary (TOTAL VAT / ARREARS / CURRENT / AMOUNT DUE)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*AGREEMENT[ \\t]{2,}TOTAL VAT[^\\n]*\\n[ \\t]*([\\d,]+\\.\\d{2}-?)[ \\t]{2,}([\\d,]+\\.\\d{2}-?)[ \\t]{2,}([\\d,]+\\.\\d{2}-?)[ \\t]{2,}([\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*DUE DATE[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "bv_deposit_r",
+   "label": "Deposit held (label printed, always blank on these bills)",
+   "scope": "header",
+   "pattern": "^[ \\t]*DEPOSIT[ \\t]{2,}([\\d,]+\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "meter",
+    "bv_water_start_reading",
+    "bv_water_end_reading",
+    "bv_water_kl",
+    "read_start",
+    "read_end"
+   ],
+   "label": "Water meter reading line (W)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*W[ \\t]{2,}([A-Z0-9]{4,})[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d+)(?:[ \\t]*[AE])?[ \\t]{2,}([\\d,]+\\.\\d{3})[ \\t]{2,}(\\d{2}/\\d{2})-(\\d{2}/\\d{2})[ \\t]*$",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number",
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "bv_water_est_flag",
+   "label": "Water reading estimate flag (E)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*W[ \\t]{2,}[A-Z0-9]{4,}[ \\t]{2,}\\d+[ \\t]{2,}\\d+[ \\t]*(E)[ \\t]{2,}[\\d,]+\\.\\d{3}[ \\t]{2,}\\d{2}/\\d{2}-\\d{2}/\\d{2}[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "bv_water_tariff",
+    "bv_water_billed_kl",
+    "bv_water_vat_r",
+    "bv_water_r",
+    "bv_water_incl_r"
+   ],
+   "label": "Water consumption charge line",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Water[ \\t]{2,}Consumption[ \\t]{2,}([A-Z]+)[ \\t]{2,}(\\d[\\d,]*)[ \\t]{2,}([\\d,]+\\.\\d{2})[ \\t]{2,}([\\d,]+\\.\\d{2,5})[ \\t]{2,}([\\d,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "text",
+    "number",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "label": "Site = street address + suburb",
+   "op": "concat",
+   "of": [
+    "bv_street_address",
+    "bv_suburb"
+   ]
+  },
+  {
+   "field": "reading_type",
+   "label": "Actual/Estimate (derived: E flag present => Estimated, else Actual)",
+   "op": "label_present",
+   "of": [
+    "bv_elec_est_flag",
+    "bv_elec_end_reading"
+   ],
+   "labels": [
+    "Estimated",
+    "Actual"
+   ]
+  },
+  {
+   "field": "bv_kwh_from_readings",
+   "label": "End reading - start reading (independent kWh check)",
+   "op": "diff",
+   "of": [
+    "bv_elec_end_reading",
+    "bv_elec_start_reading"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "demand_kva_out",
+   "label": "Demand kVA (reading table, fallback charge line)",
+   "op": "prefer",
+   "of": [
+    "bv_demand_kva",
+    "bv_demand_kva_billed"
+   ]
+  },
+  {
+   "field": "bv_elec_vat_r",
+   "label": "Electricity VAT (sum of the three printed VAT columns)",
+   "op": "sum",
+   "of": [
+    "bv_energy_vat_r",
+    "bv_service_vat_r",
+    "bv_demand_vat_r"
+   ]
+  },
+  {
+   "field": "bv_elec_incl_r",
+   "label": "Electricity inc VAT (sum of the three printed AMOUNT columns)",
+   "op": "sum",
+   "of": [
+    "bv_energy_incl_r",
+    "bv_service_incl_r",
+    "bv_demand_incl_r"
+   ]
+  },
+  {
+   "field": "bv_elec_total_ex_r",
+   "label": "Electricity ex VAT (SUM OF PARTS - circular, see _doc Rule Zero)",
+   "op": "sum",
+   "of": [
+    "bv_energy_r",
+    "bv_service_r",
+    "bv_demand_r"
+   ]
+  },
+  {
+   "field": "bv_vat_gap_r",
+   "label": "Printed TOTAL VAT minus this service's own VAT (elec row: should equal the water VAT)",
+   "op": "sub",
+   "of": [
+    "bv_total_vat_r",
+    "bv_elec_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "bv_tariff_codes",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "bv_elec_start_reading",
+  "end_reading_kwh": "bv_elec_end_reading",
+  "total_kwh": [
+   "total_kwh",
+   "bv_energy_kwh"
+  ],
+  "peak_kwh": "_none",
+  "standard_kwh": [
+   "bv_energy_kwh",
+   "total_kwh"
+  ],
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva_out",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "bv_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "bv_demand_r",
+  "nmd_r": "_none",
+  "other_r": "bv_service_r",
+  "total_ex_vat_r": "bv_elec_total_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "^[ \\t]*Balance brought forward:[ \\t]{2,}([\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "^[ \\t]*Receipts:[ \\t]*\\d*[ \\t]{2,}([\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "vat": "^[ \\t]*AGREEMENT[ \\t]{2,}TOTAL VAT[^\\n]*\\n[ \\t]*([\\d,]+\\.\\d{2}-?)[ \\t]{2,}[\\d,]+\\.\\d{2}-?[ \\t]{2,}[\\d,]+\\.\\d{2}-?[ \\t]{2,}[\\d,]+\\.\\d{2}-?[ \\t]*$",
+  "total_due": "^[ \\t]*AMOUNT DUE[ \\t]{2,}([\\d,]+\\.\\d{2}-?)",
+  "due_date": "^[ \\t]*DUE DATE[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})"
+ }
+}

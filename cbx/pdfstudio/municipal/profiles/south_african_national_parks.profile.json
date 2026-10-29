@@ -1,0 +1,126 @@
+{
+ "profile_id": "south_african_national_parks",
+ "profile_name": "South African National Parks (Kruger National Park, Skukuza) - electricity recharge",
+ "short_name": "SANParks",
+ "_doc": "South African National Parks (Kruger National Park, Skukuza branch) one-page TAX INVOICE: masthead with SANParks' own VAT number, Invoice No., Date, Branch, an order row (Order No., Debtor ID = account, customer VAT, terms), one item line 'ELEC-SK  1.00  Electricity - Skukuza-dd/mm to dd/mm' with Unit Price ex VAT, VAT and VAT-incl total, and a TOTAL row (VAT, incl). A lump-sum electricity recharge: no kWh, meter or readings are printed, so the ex-VAT amount is mapped to other_r and total_ex_vat_r; read_start/read_end are the dd/mm period as printed (no year); site = Branch. IDENTITY san_total_ex_check_r = printed TOTAL incl - TOTAL VAT: exact on 9/9 bills. Fingerprint: SANParks VAT number + 'Kruger Nat Park'/'Electricity - Skukuza' (the customer VAT in the order row is not used). 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "4370114284"
+  ],
+  "any": [
+   "Kruger Nat Park",
+   "Electricity - Skukuza"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Item No\\.[ \\t]+Qty[ \\t]+Description",
+   "require": "^[ \\t]*ELEC\\S*[ \\t]+[\\d.]+[ \\t]+Electricity"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Debtor ID",
+   "scope": "header",
+   "pattern": "^[ \\t]*\\S+[ \\t]{2,}(T\\d{3,})[ \\t]{2,}\\d{10}[ \\t]",
+   "required": true
+  },
+  {
+   "field": "san_invoice_no",
+   "label": "Invoice No.",
+   "scope": "header",
+   "pattern": "Invoice No\\.[ \\t]+(\\S+)"
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice Date",
+   "scope": "header",
+   "pattern": "^[ \\t]*Date:[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "san_branch",
+   "label": "Branch (site)",
+   "scope": "header",
+   "pattern": "Branch:[ \\t]+(\\S.*?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "tariff_name",
+    "read_start",
+    "read_end",
+    "san_line_ex_r",
+    "san_line_vat_r",
+    "san_line_inc_r"
+   ],
+   "label": "Electricity line (period dd/mm, ex VAT, VAT, incl)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(ELEC\\S*)[ \\t]+[\\d.]+[ \\t]+Electricity\\b.*?(\\d{2}/\\d{2})[ \\t]+to[ \\t]+(\\d{2}/\\d{2})[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]*$",
+   "types": [
+    "text",
+    "date",
+    "date",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "san_total_vat_r",
+    "san_total_inc_r"
+   ],
+   "label": "TOTAL row (VAT, incl)",
+   "scope": "section:electricity",
+   "pattern": "\\bTOTAL[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]{2,}(-?\\d[\\d ]*\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "san_total_ex_check_r",
+   "label": "printed TOTAL incl - TOTAL VAT",
+   "op": "sub",
+   "of": [
+    "san_total_inc_r",
+    "san_total_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "san_branch",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "san_line_ex_r",
+  "total_ex_vat_r": "san_line_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

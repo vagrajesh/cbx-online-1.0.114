@@ -1,0 +1,403 @@
+{
+ "profile_id": "alfred_duma",
+ "profile_name": "Alfred Duma Local Municipality (Ladysmith, KZN)",
+ "short_name": "Alfred Duma",
+ "_doc": "TAX INVOICE/STATEMENT OF ACCOUNT, emunsoft ledger family (same engine as KwaDukuza / Abaqulusi / Bela-Bela). Masthead 'ALFRED DUMA LOCAL MUNICIPALITY / PO BOX 29 LADYSMITH, KZN 3370', VAT No.:4450274669. Fingerprint = masthead AND that VAT number, so it can never match a sibling emunsoft municipality. LAYOUT: header block of 'Label: value' pairs (Account Number / Account Date / Consumer Name / Tax Invoice No. / ERF Description / Suburb / Street / Market Value / Land Area / Deposit / Internet PIN). Then 'METER READINGS' with columns METER NO. / METER TYPE / OLD READING / NEW READING / CONSUMPTION / LEVIED AMOUNT / READING DATES -- note this municipality prints CONSUMPTION *before* LEVIED AMOUNT and has NO 'READING TYPE' column (Bela-Bela's variant of the same engine puts READING DATE + READING TYPE before CONSUMPTION and prints no LEVIED AMOUNT). READING DATES is a range 'dd/mm/yyyy - dd/mm/yyyy'; on one bill the range start is blank and the cell reads '- 17/02/2026', and on one bill the LEVIED AMOUNT cell is empty for every meter. Then 'ACCOUNT DETAILS' ledger DATE / CODE / DESCRIPTION / UNITS / TARIFF / VALUE. Codes seen across the 10-bill set: 007030 electricity, 008888 payment, 009008 VAT. This account is ELECTRICITY ONLY -- no water/sewer/refuse/rates lines exist, so those services are correctly absent. Electricity ledger shapes: 'ELECTRICITY CONS' (kWh @ 4.0742 -- the energy line), 'ELECTRICITY CONS BASIC CHARGE' (1.000 @ 212.29 -- note it starts with the same words, so the energy pattern uses a negative lookahead for ' BASIC'), 'FINAL USAGE ELECTRICIY' (sic, misspelt on the bill -- negative kWh reversals at the same tariff when a meter is closed off), 'RAISING OF ELECT CONS-06/25 TO 04/26' (a prior-period correction, .000 units, R129,685.20 on one bill) and 'TRF BILLING FROM A/C [number removed] TO [number removed] <date>' transfer lines that print the date and code AFTER the description and end in '(TRANSFER)'. SUMMING CHOICES: standard_kwh / standard_r = ELECTRICITY CONS + FINAL USAGE ELECTRICIY netted together (both are metered consumption at the same 4.0742 tariff, the second simply negative) -- the netted pair keeps R/kWh == 4.0742 exactly. other_r = BASIC CHARGE + RAISING OF ELECT CONS + TRANSFERS: those three carry no kWh (units .000) so folding them into the energy band would break the kWh<->Rand ratio. total_kwh is taken from the METER READINGS CONSUMPTION column (summed) so it stays INDEPENDENT of the ledger kWh in standard_kwh -- the two agree on all 10 bills, which is the real self-check. Single band only: this is a flat-rate LV supply, no TOU, no demand, no NMD, no reading-type column -> those canonical columns are '_none'. RULE ZERO: the bill prints NO independent ex-VAT current-charges total (the ageing row's CURRENT column is a balance, not a levy), so total_ex_vat_r IS the sum of the parts and the reconcile leg is structurally circular -- see the report. The genuine checks are (a) sum(METER READINGS LEVIED AMOUNT) == standard_r, (b) sum(METER READINGS CONSUMPTION) == standard_kwh, (c) printed VAT == 15% of total_ex_vat_r.",
+ "fingerprint": {
+  "all": [
+   "ALFRED DUMA LOCAL MUNICIPALITY",
+   "VAT No.:4450274669"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "requires Adobe Reader 8 or higher",
+   "BELA-BELA MUNICIPALITY",
+   "ABAQULUSI MUNICIPALITY"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "overlay": true,
+   "end": "^120\\+ DAYS[ \\t]",
+   "require": "^[ \\t]*[0-9A-Z]{3,}[ \\t]+ELECTRICITY[ \\t]|ELECTRICITY CONS|FINAL USAGE ELECTRICI"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "^Account Number:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Consumer Name",
+   "scope": "document",
+   "pattern": "^Consumer Name:[ \\t]*(.+?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2} [A-Z]{3} \\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "invoice_number",
+   "label": "Tax Invoice No.",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "munic_vat_no",
+   "label": "Municipal VAT No.",
+   "scope": "document",
+   "pattern": "VAT No\\.:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "erf_description",
+   "label": "ERF Description",
+   "scope": "document",
+   "pattern": "ERF Description:[ \\t]*(\\S.*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "suburb",
+   "label": "Suburb",
+   "scope": "document",
+   "pattern": "^[ \\t]*Suburb:[ \\t]*(\\S.*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "street",
+   "label": "Street",
+   "scope": "document",
+   "pattern": "Street:[ \\t]*(\\S.*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "market_value",
+   "label": "Market Value",
+   "scope": "document",
+   "pattern": "Market Value:[ \\t]*((?<![\\d.,])[\\d,]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "land_area",
+   "label": "Land Area",
+   "scope": "document",
+   "pattern": "Land Area:[ \\t]*([\\d,]*\\.\\d{4})",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "deposit",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]*((?<![\\d.,])[\\d,]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "internet_pin",
+   "label": "Internet PIN",
+   "scope": "document",
+   "pattern": "Internet PIN:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "total_due",
+   "label": "Total Due",
+   "scope": "document",
+   "pattern": "TOTAL DUE:[ \\t]*((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Total Due On Or Before",
+   "scope": "document",
+   "pattern": "TOTAL DUE ON OR BEFORE:[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "opening_balance_r",
+   "label": "Opening Balance",
+   "scope": "document",
+   "pattern": "^[ \\t]*Opening Balance[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "payments_r",
+   "label": "Payments received",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]+DIRECT DEPOSIT PAYMENT[^\\n]*?((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "vat_r",
+   "label": "VAT",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{6}[ \\t]+VAT[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "age_120",
+    "age_90",
+    "age_60",
+    "age_30",
+    "current_r",
+    "closing_balance_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Ageing row / TOTAL DUE",
+   "scope": "document",
+   "pattern": "^120\\+ DAYS[^\\n]*\\n[ \\t]*((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meter number(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*([0-9A-Z]{3,})[ \\t]+ELECTRICITY[ \\t]",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "start_reading_kwh",
+   "label": "Old reading (summed over meters)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*[0-9A-Z]{3,}[ \\t]+ELECTRICITY[ \\t]+((?<![\\d.])[\\d,]+\\.\\d{3})[ \\t]+[\\d,]+\\.\\d{3}",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "end_reading_kwh",
+   "label": "New reading (summed over meters)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*[0-9A-Z]{3,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]+\\.\\d{3}[ \\t]+((?<![\\d.])[\\d,]+\\.\\d{3})",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "alf_meter_kwh",
+   "label": "Meter-table CONSUMPTION (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*[0-9A-Z]{3,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]+\\.\\d{3}[ \\t]+[\\d,]+\\.\\d{3}[ \\t]+((?<![\\d.])-?[\\d,]+\\.\\d{3}-?)",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "alf_meter_levied_r",
+   "label": "Meter-table LEVIED AMOUNT (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*[0-9A-Z]{3,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]+\\.\\d{3}[ \\t]+[\\d,]+\\.\\d{3}[ \\t]+-?[\\d,]+\\.\\d{3}-?[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "read_start",
+   "label": "Reading period start",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[0-9A-Z]{3,}[ \\t]+ELECTRICITY[ \\t][^\\n]*?(?<![\\d/])(\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]*$",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "read_end",
+   "label": "Reading period end",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[0-9A-Z]{3,}[ \\t]+ELECTRICITY[ \\t][^\\n]*?-[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "alf_energy_kwh",
+    "alf_energy_rate",
+    "alf_energy_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "ELECTRICITY CONS (energy)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]+ELECTRICITY CONS(?![ \\t]+BASIC)[ \\t]+(-?[\\d,]+\\.\\d{3}-?)[ \\t]+([\\d,]*\\.\\d+)[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "alf_final_kwh",
+    "alf_final_rate",
+    "alf_final_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "FINAL USAGE ELECTRICIY (reversal)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]+FINAL USAGE ELECTRICIT?Y[ \\t]+(-?[\\d,]+\\.\\d{3}-?)[ \\t]+([\\d,]*\\.\\d+)[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "alf_basic_units",
+    "alf_basic_rate",
+    "alf_basic_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "ELECTRICITY CONS BASIC CHARGE",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]+ELECTRICITY CONS BASIC CHARGE[ \\t]+([\\d,]+\\.\\d{3})[ \\t]+([\\d,]*\\.\\d+)[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "alf_raise_r",
+   "label": "RAISING OF ELECT CONS (prior-period correction)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d{6}[ \\t]+RAISING OF ELECT[^\\n]*?((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "alf_transfer_r",
+   "label": "TRF BILLING FROM A/C (transfer in)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*TRF BILLING FROM A/C[^\\n]*?((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)[ \\t]+\\(TRANSFER\\)",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "alf_std_kwh",
+   "op": "sum",
+   "of": [
+    "alf_energy_kwh",
+    "alf_final_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "alf_std_r",
+   "op": "sum",
+   "of": [
+    "alf_energy_r",
+    "alf_final_r"
+   ]
+  },
+  {
+   "field": "alf_other_r",
+   "op": "sum",
+   "of": [
+    "alf_basic_r",
+    "alf_raise_r",
+    "alf_transfer_r"
+   ]
+  },
+  {
+   "field": "alf_total_ex_r",
+   "op": "sum",
+   "of": [
+    "alf_std_r",
+    "alf_other_r"
+   ]
+  },
+  {
+   "field": "alf_total_kwh_out",
+   "op": "prefer",
+   "of": [
+    "alf_meter_kwh",
+    "alf_std_kwh"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "alf_total_kwh_out",
+  "peak_kwh": "_none",
+  "standard_kwh": "alf_std_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "alf_std_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "alf_other_r",
+  "total_ex_vat_r": "alf_total_ex_r",
+  "deposit_r": "deposit",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?i)^[ \\t]*Opening Balance[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "(?i)DIRECT DEPOSIT PAYMENT[^\\n]*?(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "vat": "(?i)^[ \\t]*\\d{6}[ \\t]+VAT[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "total_due": "(?i)TOTAL DUE:[ \\t]*(-?[\\d,]+\\.\\d{2}-?)",
+  "due_date": "(?i)TOTAL DUE ON OR BEFORE:[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+  "deposito": "(?i)Deposit:[ \\t]*([\\d,]+\\.\\d{2})"
+ }
+}

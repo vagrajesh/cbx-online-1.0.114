@@ -1,0 +1,213 @@
+{
+ "profile_id": "lekwa",
+ "profile_name": "Lekwa Local Municipality (Standerton, Mpumalanga)",
+ "short_name": "Lekwa",
+ "_doc": "Lekwa LM (Standerton, Mpumalanga) - NOT Lekwa-Teemane (lekwa_teemane): fingerprint is Lekwa's own VAT number plus 'LEKWA MUNICIPALITY', and it rejects any text naming Lekwa-Teemane. emunsoft-style 'TAX INVOICE/STATEMENT OF ACCOUNT' (same system as Makana): METER READINGS row (meter, old, new, reading date, type letter, consumption) and ACCOUNT DETAILS ledger (date, 6-digit code, description, units, tariff, VALUE ex VAT, trailing '-' credits) with one whole-bill VAT line (code 009008) and INTEREST (009009). Electricity = code 050141 basic charge (-> other) + 050142 energy (kWh -> standard). Deposit printed (0.00). IDENTITY x_elec_ex_id = TOTAL DUE - Opening Balance - all other coded lines (payments, transfers) - VAT - interest: 0.00 on 10/10. 10 bills checked; readings are estimates (type E) on every bill.",
+ "fingerprint": {
+  "all": [
+   "4700113097"
+  ],
+  "any": [
+   "LEKWA MUNICIPALITY",
+   "Lekwa Local Municipality"
+  ],
+  "reject_if_text": [
+   "Lekwa-Teemane",
+   "Lekwa Teemane"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*ACCOUNT DETAILS[ \\t]*$",
+   "require": "\\b0501(?:41|42)[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account Number:[ \\t]+(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]+(\\d{1,2} [A-Z]{3} \\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.:[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "site_name",
+   "label": "Consumer Name (site)",
+   "scope": "document",
+   "pattern": "Consumer Name:[ \\t]+(\\S[^\\n]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]+(\\d[\\d,]*\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "meter",
+    "start_r",
+    "end_r",
+    "read_end",
+    "reading_type",
+    "lk_meter_kwh"
+   ],
+   "label": "Electricity meter row",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+ELECTRICITY[ \\t]+(\\d*\\.\\d+)[ \\t]+(\\d*\\.\\d+)[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+([AEIN])[ \\t]+(\\d*\\.\\d+)",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "date",
+    "text",
+    "number"
+   ],
+   "required": false
+  },
+  {
+   "field": "lk_basic_r",
+   "label": "Basic charge (050141)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+0501(?:41)[ \\t]+[^\\n]*?[ \\t](\\d[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "lk_kwh",
+    "lk_energy_r"
+   ],
+   "label": "Energy (050142)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+0501(?:42)[ \\t]+[^\\n]*?[ \\t]{2,}(-?\\d*\\.\\d{3}-?)[ \\t]+[\\d,]*\\.\\d+[ \\t]+(\\d[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "x_opening",
+   "label": "Opening Balance",
+   "scope": "document",
+   "pattern": "Opening Balance[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_nonelec",
+   "label": "Non-electricity lines incl. payments",
+   "scope": "document",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?(?!0501(?:41|42)\\b|009008\\b|009009\\b)\\d{6}[ \\t]+[^\\n]*?[ \\t](\\d[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "x_vat",
+   "label": "VAT (whole bill)",
+   "scope": "document",
+   "pattern": "^[ \\t]*009008[ \\t]+VAT[ \\t]+(\\d[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_interest",
+   "label": "Interest",
+   "scope": "document",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?009009[ \\t]+INTEREST[ \\t]+(\\d[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_total_due",
+   "label": "TOTAL DUE",
+   "scope": "document",
+   "pattern": "^[ \\t]*TOTAL DUE[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "lk_total_ex",
+   "op": "sum",
+   "of": [
+    "lk_basic_r",
+    "lk_energy_r"
+   ]
+  },
+  {
+   "field": "x_elec_ex_id",
+   "op": "sub",
+   "of": [
+    "x_total_due",
+    "x_opening",
+    "x_nonelec",
+    "x_vat",
+    "x_interest"
+   ]
+  },
+  {
+   "field": "lk_total_kwh",
+   "op": "prefer",
+   "of": [
+    "lk_meter_kwh",
+    "lk_kwh"
+   ],
+   "as": "number"
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_r",
+  "end_reading_kwh": "end_r",
+  "total_kwh": "lk_total_kwh",
+  "standard_kwh": "lk_kwh",
+  "standard_r": "lk_energy_r",
+  "other_r": "lk_basic_r",
+  "total_ex_vat_r": "lk_total_ex",
+  "deposit_r": "deposit_r",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "tariff_name": "_none",
+  "read_start": "_none"
+ }
+}

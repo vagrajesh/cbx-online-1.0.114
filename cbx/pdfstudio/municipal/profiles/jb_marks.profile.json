@@ -1,0 +1,432 @@
+{
+ "profile_id": "jb_marks",
+ "profile_name": "JB Marks Local Municipality (Potchefstroom / Ventersdorp, North West)",
+ "short_name": "JB Marks",
+ "fingerprint": {
+  "all": [
+   "4910117789"
+  ],
+  "any": [
+   "JB Marks Local Municipality",
+   "JB Marks"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*M E T E R[ \\t]+R E A D I N G S",
+   "require": "^[ \\t]*ELECTRICITY-(?!.*\\[PAYMENT\\])"
+  },
+  "sundry": {
+   "start": "^[ \\t]*Bank Ref No"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "ACCOUNTNO",
+   "scope": "header",
+   "pattern": "\\bACCOUNTNO[ \\t]+(\\d{6,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "STATEMENT DATE (yyyymmdd as printed)",
+   "scope": "header",
+   "pattern": "\\bSTATEMENT DATE[ \\t]+(\\d{8})\\b",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "jbm_tax_invoice",
+   "label": "Tax invoice number",
+   "scope": "header",
+   "pattern": "TAX INVOICE[ \\t]*:[ \\t]*(\\d{8,})",
+   "type": "text"
+  },
+  {
+   "field": "jbm_use",
+   "label": "Valuation use",
+   "scope": "header",
+   "pattern": "Valuation Value[ \\t]+\\d+[ \\t]+([A-Za-z]+)",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "DEPOSIT (value under the DEPOSIT heading)",
+   "scope": "header",
+   "pattern": "^[ \\t]*DEPOSIT[ \\t]+LOAN AMOUNT[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(\\d+(?:\\.\\d{2})?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "jbm_meters",
+   "label": "Electricity meters (reading table)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{8}[ \\t]+-[ \\t]+\\d{8}[ \\t]+(\\S+)[ \\t]+\\d+[ \\t]+[A-Za-z]{3}[ \\t]+\\d+[ \\t]+\\d+[ \\t]+KWh\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "jbm_kwh",
+   "label": "Consumption kWh (sum of meters)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{8}[ \\t]+-[ \\t]+\\d{8}[ \\t]+\\S+[ \\t]+\\d+[ \\t]+[A-Za-z]{3}[ \\t]+\\d+[ \\t]+(\\d+)[ \\t]+KWh\\b",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "READING PERIOD (first meter, as printed)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{8})[ \\t]+-[ \\t]+(\\d{8})[ \\t]+\\S+[ \\t]+\\d+[ \\t]+[A-Za-z]{3}[ \\t]"
+  },
+  {
+   "field": "jbm_read_codes",
+   "label": "Reading codes (Rdg / Int)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{8}[ \\t]+-[ \\t]+\\d{8}[ \\t]+\\S+[ \\t]+\\d+[ \\t]+([A-Za-z]{3})[ \\t]",
+   "type": "text"
+  },
+  {
+   "field": "jbm_elec_incl_r",
+   "label": "Electricity charge lines (ELECTRICITY-..., VAT-inclusive)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*ELECTRICITY-(?![^\\n]*\\[PAYMENT\\])[^\\n]*?[ \\t](-?\\d*\\.\\d{2})(?=[ \\t]|$)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "jbm_tariff",
+   "label": "Electricity tariff (ELECTRICITY-<name> <code>)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(ELECTRICITY-\\S+[ \\t]+[A-Z]\\d+)[ \\t]",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "jbm_el_bf_r",
+    "jbm_el_cr_r",
+    "jbm_el_dr_r",
+    "jbm_el_bal_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Service summary ELECTR. (B/F, credits, debits, balance)",
+   "scope": "section:electricity",
+   "pattern": "\\bELECTR\\.[ \\t]+(-?\\d*\\.\\d{2})[ \\t]+(-?\\d*\\.\\d{2})[ \\t]+(-?\\d*\\.\\d{2})[ \\t]+(-?\\d*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "field": "jbm_nonelec_dr_r",
+   "label": "Service summary debits of the other VAT-able services (WATER, SEWER, REFUSE)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "[ \\t](?:WATER|SEWER|REFUSE)[ \\t]+-?\\d*\\.\\d{2}[ \\t]+-?\\d*\\.\\d{2}[ \\t]+(-?\\d*\\.\\d{2})[ \\t]+-?\\d*\\.\\d{2}[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "jbm_vat_rate",
+    "jbm_vat_r"
+   ],
+   "types": [
+    "text",
+    "money"
+   ],
+   "label": "VAT included @ n% (rate + amount)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*VAT included @[ \\t]*(\\d+)%[ \\t]+(-?\\d*\\.\\d{2})"
+  },
+  {
+   "field": "jbm_dot",
+   "label": "Decimal point as printed in the VAT amount (to build the VAT rate fraction - the engine has no literals)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*VAT included @[ \\t]*\\d+%[ \\t]+-?\\d*(\\.)\\d{2}",
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "jbm_vat_frac",
+   "op": "concat",
+   "of": [
+    "jbm_dot",
+    "jbm_vat_rate"
+   ]
+  },
+  {
+   "field": "vat_r",
+   "op": "mul",
+   "of": [
+    "jbm_vat_frac"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbe_r2",
+   "op": "mul",
+   "of": [
+    "vat_r",
+    "vat_r"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbe_r4",
+   "op": "mul",
+   "of": [
+    "jbe_r2",
+    "jbe_r2"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbe_r8",
+   "op": "mul",
+   "of": [
+    "jbe_r4",
+    "jbe_r4"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbe_xr",
+   "op": "mul",
+   "of": [
+    "jbm_elec_incl_r",
+    "vat_r"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbe_y1",
+   "op": "sub",
+   "of": [
+    "jbm_elec_incl_r",
+    "jbe_xr"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbe_y1b",
+   "op": "mul",
+   "of": [
+    "jbe_y1",
+    "jbe_r2"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbe_y2",
+   "op": "sum",
+   "of": [
+    "jbe_y1",
+    "jbe_y1b"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbe_y2b",
+   "op": "mul",
+   "of": [
+    "jbe_y2",
+    "jbe_r4"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbe_y3",
+   "op": "sum",
+   "of": [
+    "jbe_y2",
+    "jbe_y2b"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbe_y3b",
+   "op": "mul",
+   "of": [
+    "jbe_y3",
+    "jbe_r8"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbm_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "jbe_y3",
+    "jbe_y3b"
+   ]
+  },
+  {
+   "field": "jbn_r2",
+   "op": "mul",
+   "of": [
+    "vat_r",
+    "vat_r"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbn_r4",
+   "op": "mul",
+   "of": [
+    "jbn_r2",
+    "jbn_r2"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbn_r8",
+   "op": "mul",
+   "of": [
+    "jbn_r4",
+    "jbn_r4"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbn_xr",
+   "op": "mul",
+   "of": [
+    "jbm_nonelec_dr_r",
+    "vat_r"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbn_y1",
+   "op": "sub",
+   "of": [
+    "jbm_nonelec_dr_r",
+    "jbn_xr"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbn_y1b",
+   "op": "mul",
+   "of": [
+    "jbn_y1",
+    "jbn_r2"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbn_y2",
+   "op": "sum",
+   "of": [
+    "jbn_y1",
+    "jbn_y1b"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbn_y2b",
+   "op": "mul",
+   "of": [
+    "jbn_y2",
+    "jbn_r4"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbn_y3",
+   "op": "sum",
+   "of": [
+    "jbn_y2",
+    "jbn_y2b"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbn_y3b",
+   "op": "mul",
+   "of": [
+    "jbn_y3",
+    "jbn_r8"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "jbm_nonelec_ex_r",
+   "op": "sum",
+   "of": [
+    "jbn_y3",
+    "jbn_y3b"
+   ]
+  },
+  {
+   "field": "jbm_nonelec_vat_r",
+   "op": "sub",
+   "of": [
+    "jbm_nonelec_dr_r",
+    "jbm_nonelec_ex_r"
+   ]
+  },
+  {
+   "field": "jbm_elec_vat_from_total_r",
+   "op": "sub",
+   "of": [
+    "jbm_vat_r",
+    "jbm_nonelec_vat_r"
+   ]
+  },
+  {
+   "field": "jbm_ex_via_vat_r",
+   "label": "IDENTITY: electricity incl - (printed VAT - VAT share of water/sewer/refuse)",
+   "op": "sub",
+   "of": [
+    "jbm_elec_incl_r",
+    "jbm_elec_vat_from_total_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "_none",
+  "billing_date": "billing_date",
+  "tariff_name": "jbm_tariff",
+  "account_number": "account_number",
+  "meter": "jbm_meters",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "jbm_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "jbm_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "jbm_elec_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "_none",
+  "total_ex_vat_r": "jbm_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "_doc": "Bilingual 'REKENINGSTAAT - STATEMENT OF ACCOUNT / BELASTINGFAKTUUR - TAX INVOICE' print: masthead with the municipality's own 'VAT REG NO', ACCOUNTNO, STATEMENT DATE (yyyymmdd), bank block naming JB Marks Local Municipality, property valuation, DEPOSIT block, a METER READINGS table (READING PERIOD | METER NO | CURRENT READING + Rdg/Int code | PREV. READING | CONSUMPTION KWh, CT factor already applied), then the transaction list (left) beside a per-service summary (ELECTR./WATER/SEWER/REFUSE: B/F BAL, CREDITS, DEBITS, BALANCE), sub-totals, 'VAT included @ n%' and GRAND TOTAL. Three electricity meters on one account, each billed as one 'ELECTRICITY-PRIVATE <tariff>' energy line; every amount is VAT-INCLUSIVE and nothing ex-VAT is printed. total_ex_vat_r (= standard_r, single band) is therefore derived: electricity incl / (1 + rate), the rate built from the printed 'VAT included @ n%' (concat of the printed '.' and '15', since the engine has no literals or division) and the division done as x(1-r)(1+r^2)(1+r^4)(1+r^8) with mul/sub/sum (error < 1e-9 R). Meters joined with '/', kWh = sum of the meters' consumption; individual readings are not mapped (three meters). The READING PERIOD prints the same date twice; mapped as printed. IDENTITY jbm_ex_via_vat_r = electricity incl - (printed VAT - the VAT share of the WATER/SEWER/REFUSE summary debits): within 1c on 10/10 (cent rounding of the bill's VAT). Also ELECTR. summary DEBITS = sum of electricity lines. 10/10 routed, 0 checks. Fingerprint: municipality VAT number + name."
+}

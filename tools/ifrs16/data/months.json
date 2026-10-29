@@ -1,0 +1,80 @@
+{
+  "kind": "table",
+  "title": "data.months.title",
+  "scope": "mine",
+  "write": "nobody",
+  "columns": [
+    {
+      "key": "month",
+      "label": "col.month",
+      "type": "text",
+      "hint": "hint.month",
+      "required": true
+    },
+    {
+      "key": "upload",
+      "label": "col.upload",
+      "type": "link",
+      "table": "uploads",
+      "show": "summary"
+    },
+    {
+      "key": "source",
+      "label": "col.source",
+      "type": "text"
+    },
+    {
+      "key": "status",
+      "label": "col.status",
+      "type": "choice",
+      "options": [
+        "Working",
+        "Done",
+        "Failed"
+      ],
+      "default": "Working"
+    },
+    {
+      "key": "imports",
+      "label": "col.imports",
+      "type": "int"
+    },
+    {
+      "key": "workbooks",
+      "label": "col.workbooks",
+      "type": "file",
+      "accept": [
+        "zip"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "report",
+      "label": "col.report",
+      "type": "file",
+      "accept": [
+        "xlsx"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "papers",
+      "label": "col.papers",
+      "type": "file",
+      "accept": [
+        "xlsx"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "recon",
+      "label": "col.recon",
+      "type": "text"
+    },
+    {
+      "key": "note",
+      "label": "col.note",
+      "type": "text"
+    }
+  ]
+}

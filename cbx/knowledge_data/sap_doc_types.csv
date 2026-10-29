@@ -1,0 +1,76 @@
+Document Type,Number Range,Account Types,Reverse DocumentType,Net document type,SAP Billing Document,Batch Input Only,Init.Acct Assignment,Only One Customer/Vendor Allowed?,Inter-Company,Enter Trading Part.,Authorization Group,Debit Rec.Indicator,Rec.Indicator Credit,Document Header Text,Reference Number,Doc.Type for Subseq.Adjustment,Exchange Rate Type for FC Documents,Negative Postings Permitted,Assets,Customer,Supplier,Material,G/L Account,Official document numbering,Self-issued document,Check Date,Document Class,Rollup,Planning,Act.Allocation,Plan.Allocation,ERD Partial Payments,Market Data Exchange Rate,Post to Position Accounts,Assignment to Acctg Principles Is Unique,Secondary Costs,Long Invoice reference required,Description
+AA,01,ADKMS,,,,,,,,,,,,,,,,,X,X,X,X,X,,,,,,,,,,,,,,,Asset Posting
+AB,12,ADKMS,AB,,,,,,X,,,,,,,,,,X,X,X,X,X,,,,,,,,,,,,,,,Accounting Document
+AF,03,AS,AF,,,,,,,,,,,,,,,,X,,,,X,,,,,,,,,,,,,,,Depreciation Pstngs
+AN,01,AKMS,,X,,,,,,,,,,,,,,,X,,X,X,X,,,,,,,,,,,,,,,Net Asset Posting
+CH,01,ADS,,,X,,,,,,,,,,,,,,X,X,,,X,,,,,,,,,,,,,,,Contract Settlement
+DA,16,DS,DA,,,,,,,,,,,,,,,,,X,,,X,X,X,X,,,,,,,,,,,,Customer Document
+DG,16,DS,DG,,,,,,,,,,,,,,,,,X,,,X,X,X,X,C,,,,,,,,,,,Customer Credit Memo
+DR,18,ADMS,DG,,,,,,,X,,,,,,,,,X,X,,X,X,X,X,X,A,,,,,,,,,,,Customer Invoice
+DS,05,ADKMS,DS,,,,,,,,,,,,,,,,X,X,X,X,X,,,,,,,,,,,,,,,Stat Key Figures
+DZ,14,DS,DZ,,,,,,,,,,,,,,M,X,,X,,,X,,,,B,,,,,,,,,,,Customer Payment
+EB,20,DS,EB,,,,,,,,,,,,,,,X,,X,,,X,,,,,,,,,,,,,,,ElectronicBank Input
+EC,20,S,EC,,,,,,,,,,,,,,,X,,,,,X,,,,,,,,,,,,,,,Manual Bank Journals
+EU,02,ADKMS,,,,,,,,,,,,,,,,,X,X,X,X,X,,,,,,,,,,,,,,,Euro Rounding Diff.
+EX,02,DKS,EX,,,,,,,,,,,,,,,,,X,X,,X,,,,,,,,,,,,,,,External Number
+KA,17,AKMS,KA,,,,,,,,,,,,,,,,X,,X,X,X,,,,,,,,,,,,,,,Vendor Document
+KG,17,AKMS,KG,,,,,,,,,,,,,,,,X,,X,X,X,,,,C,,,,,,,,,,,Vendor Credit Memo
+KN,01,ASK,,X,,,,,,,,,,,,,,,X,,X,,X,,,,,,,,,,,,,,,Net Vendors
+KP,48,ASM,KP,,,,,,,,,,,,,,,,X,,,X,X,,,,,,,,,,,,,,,Account Maintenance
+KR,19,AKMS,KG,,,,,,,,,,,,,,,,X,,X,X,X,,,,A,,,,,,,,,,,Vendor Invoice
+KZ,15,KS,KZ,,,,,,,,,,,,,,M,,,,X,,X,,,X,B,,,,,,,,,,,Vendor Payment
+ML,47,MS,,,,,,,,,,,,,,,,,,,,X,X,,,,,,,,,,,,,,,ML Settlement
+PR,48,MS,,,,,,,,,,,,,,,,,,,,X,X,,,,,,,,,,,,,,,Price Change
+RA,51,AKMS,RA,,,,,,,,,,,,,,,,X,,X,X,X,,,,,,,,,,,,,,,Sub.Cred.Memo Stlmt
+RB,RB,S,,,,,,,,,,,,,,,,,,,,,X,,,,,,,,,,,,,,,Reserve for Bad Debt
+RE,51,AKMS,RE,,,,,,,,,,,,,,,,X,,X,X,X,,,,A,,,,,,,,,,,Invoice - Gross
+RN,51,AKMS,RN,X,,,,,,,0002,,,,,,,,X,,X,X,X,,,,A,,,,,,,,,,,Invoice - Net
+RV,00,ADS,RV,,X,,,,,,,,,,,,,,X,X,,,X,X,X,X,A,,,,,,,,,,,Billing Doc.Transfer
+SA,12,ADKMS,SA,,,,,,,,,,,,,,,,X,X,X,X,X,,,,,,,,,,,,,,,G/L Account Document
+SB,12,DKS,SB,,,,,,X,,,,,,,,,,,X,X,,X,,,,,,,,,,,,,,,G/L Account Posting
+SK,13,S,SK,,,,,,,,,,,,,,,,,,,,X,,,,B,,,,,,,,,,,Cash Document
+SU,01,S,SU,,,,,,X,X,,,,,,,,,,,,,X,,,,D,,,,,,,,,,,Adjustment Document
+UE,04,ADKMS,,,,,,,,,,,,,,,,,X,X,X,X,X,,,,,,,,,,,,,,,Data Transfer
+WA,49,AMS,,,,,,,,,,,,,,,,,X,,,X,X,,,,,,,,,,,,,,,Goods Issue
+WE,50,AMS,,,,,,,,,,,,,,,,,X,,,X,X,,,,,,,,,,,,,,,Goods Receipt
+WI,49,AMS,,,,,,,,,,,,,,,,,X,,,X,X,,,,,,,,,,,,,,,Inventory Document
+WL,49,AMS,,,,,,,,,,,,,,,,,X,,,X,X,,,,,,,,,,,,,,,Goods Issue/Delivery
+WN,50,AMS,,X,,,,,,,,,,,,,,,X,,,X,X,,,,,,,,,,,,,,,Net Goods Receipt
+YA,16,DS,YA,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Admin Fee
+YB,16,DS,YB,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Bad Debt Written
+YC,16,DS,YC,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Contract Fees
+YD,16,DS,YD,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Deposit Landlord
+YE,16,DS,YE,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE DepLandlrd refund
+YF,16,DS,YF,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE DepLandlrd Approp
+YG,16,DS,YG,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Cust Cred Memo
+YH,16,DS,YH,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Damage Compens
+YI,16,DS,YI,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,Tenant Installation
+YJ,16,DS,YJ,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Deposit Agent
+YK,16,DS,YK,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Dep Agent Refund
+YL,16,DS,YL,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Dep Agent Approp
+YM,16,DS,YM,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE - Merchants Assoc
+YN,16,DS,YN,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Debt Redemption
+YO,16,DS,YO,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Debt Redem Repay
+YP,16,DS,YP,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Pre-Paid T/over
+YQ,16,DS,YQ,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Inv Excl
+YR,16,DS,YR,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Customer Invoice
+YS,16,DS,YS,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Stamp Duty
+YT,16,DS,YT,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Transfer
+YU,16,DS,YU,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE - Own Use
+YV,16,DS,YV,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Vacancy
+YW,16,DS,YW,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Legal Charges
+YX,16,DS,YX,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Addi Cost Control
+YY,16,DS,YY,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Recovery Bad Debt
+YZ,16,DS,YZ,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,RE Bnk Chrgs Recover
+ZC,01,ADKMS,ZC,,,,,,,,,,,,,,,,X,X,X,X,X,,,,,,,,,,,,,,,CO Integration post
+ZD,25,DS,ZD,,,,,,,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,Debit Order Payments
+ZE,18,ADMS,,,,,,,,,,,,,,,,,X,X,,X,X,,,,,,,,,,,,,,,Customer Deposit inv
+ZF,18,ADMS,,,,,,,,,,,,,,,,,X,X,,X,X,,,,,,,,,,,,,,,Cust Deposit refund
+ZG,18,ADMS,,,,,,,,,,,,,,,,,X,X,,X,X,,,,,,,,,,,,,,,Cust Dep refund use
+ZJ,52,DS,ZJ,,,,,,X,,,,,,,,,,,X,,,X,,,,,,,,,,,,,,,Cash Document
+ZP,20,ADKMS,ZP,,,,,,,,,,,,,,,,X,X,X,X,X,,,,B,,,,,,,,,,,Provision Bad Debt
+ZQ,20,ADKMS,ZQ,,,,,,,,,,,,,,,,X,X,X,X,X,,,,,,,,,,,,,,,Bad Debt written off
+ZR,20,,ZR,,,,,,,,,,,,,,,,,X,X,,X,,,,,,,,,,,,,,,Bank Reconciliation
+ZS,05,DKS,,,,,,,,,,,,,,,,,,X,X,,X,,,,,,,,,,,,,,,Payment by Check
+ZT,04,DKS,,,,,,,,,,,,,,,,,,X,X,,X,,,,,,,,,,,,,,,Payroll
+ZV,20,ADKMS,ZV,,,,,,X,,,,,,,,,,X,X,X,X,X,,,,,,,,,,,,,,,Payment Clearing

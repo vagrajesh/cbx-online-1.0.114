@@ -1,0 +1,561 @@
+{
+ "profile_id": "matzikama",
+ "profile_name": "Matzikama Local Municipality (Vredendal, Western Cape)",
+ "short_name": "Matzikama",
+ "_doc": "MATZIKAMA LOCAL MUNICIPALITY (Vredendal, WC011). AFRIKAANS one-page 'STAAT' (statement), account [number removed], municipal VAT (BTW) 4120103736. 10 bills = 10 consecutive months Oct-2025 .. Jul-2026. All 10 have a real text layer (ocr='never' reads them; scanned=False, no warnings, no OCR needed).\n\nMASTHEAD IS LETTER-SPACED / GLYPH-DRAWN: the heading reads '.  STAAT      .' (the dots are the logo glyphs), so a pattern for a clean 'STAAT' heading string needs the surrounding junk tolerated. 'STAAT' as a bare substring is NOT unique either -- it hits 29 files in 4 folders (Matzikama 10, Rustenburg 9, Ditsobotla 9, Overstrand 1), so it is not used for identification.\n\nFINGERPRINT: the municipal BTW number 4120103736 -- 10 files, 1 folder over the whole 487-PDF tree -- backed by 'MATZIKAMA' (also 10/1) / '[address removed]' (also 10/1) in 'any'. NOT fingerprinted: 'DEBITEURE BTW NOMMER: 4680101146' (that is TELKOM's own VAT, on 136 files in 17 folders), the TELKOM/PRIVATE BAG X137 addressee, or the cbreexcellerate.com contact e-mail (which even changes mid-portfolio: LINDOKUHLE.SITHOLE@ on Oct-Mar, zakhele.mabena@ on Apr-Jul). The generic Afrikaans family markers are useless as a fingerprint here and NONE of them appears in this fingerprint -- re-measured over all 487 PDFs: VERWYSING 42 files / 6 folders (Breede Valley, Matzikama, Mosselbay, Outshoorn, Overstrand, Swartland), STAAT 29 / 4 (Ditsobotla, Matzikama, Overstrand, Rustenburg), VULLIS VERWYDERING 20 / 2 (Matzikama, Outshoorn), BALANS OORGEBRING 31 / 3 and TOTALE BTW 20 / 2 (neither of which even appears on a Matzikama bill -- this layout says 'Saldo oorgedra' and 'TOTAAL').\n\nFILENAMES carry the demarcation code and billing month (MATZ_17501_WC011_<YYMM>_[number removed].pdf) but 'WC011' appears NOWHERE in the PDF text (0 files tree-wide) and the month is read from the printed 'DATUM VAN STAAT' line, never from the filename.\n\nLAYOUT. Header: masthead, 'BTW Registrasie Nommer', POSBUS 98 VREDENDAL address, 'DATUM VAN STAAT <dd/mm/yyyy>', 'REKENING NOMMER [number removed]TFMC PTY LTD' (the account number is GLUED to the customer name -- capture digits only), 'ERF:000255', 'AREA:', 'WOONBUURT VredendalPRIVATE BAG X137' (suburb glued to the postal address), 'LIGGING CENTRALSTRAAT 10' (the site address), 'MARK WAARDE', 'SONERING'.\nCharge table with columns BESKRYWING | HEFFING (ex VAT) | BTW | BERDRAG (incl VAT):\n    Saldo oorgedra:                    (BERDRAG only)   balance brought forward\n    Betalings:                         (BERDRAG only)   payments, trailing minus\n    Rente                              interest, BTW always 0.00\n    Elektrisiteit Basies               fixed basic charge\n    Elektrisiteit C/amps:310           x3, SEE BELOW\n    1-[number removed]kWh @ R0.26580    rate sub-line for the R register\n    0-kWh @ R0.00000\n    1-[number removed]kWh @ R2.72080       an UNEXPLAINED sub-line, see below\n    Water   + 1-6kl / 7-20kl / 21-40kl / 41-60kl step sub-lines\n    2 x RIOOL BESIGHEID/STAAT PER TOILET/\n    VULLIS VERWYDERING MEDIUM BESIGHEID\n    VULLIS INFRAKS HEFFING\n    VERVAL DATUM <dd/mm/yyyy>   TOTAAL  <total BTW>  <BEDRAG BETAALBAAR>\n    90 DAE PLUS | 60 DAE | 30 DAE | HUIDIG | BEDRAG BETAALBAAR\nThen a meter table BELOW the totals (so its rules are document-scoped):\n    METER ID        VORIGE   HUIDIGE  GEBRUIK  VORIGE(date)  HUIDIGE(date)\n  E [number removed]R       133562   133668   106      01/07/2026    01/08/2026\n  E [number removed]TOU     TOU      TOU      23424    01/07/2026    01/08/2026\n  W 255ww           7643     7698     55       09/06/2026    09/07/2026\n\nTHE THREE IDENTICAL 'Elektrisiteit C/amps:310' LINES are told apart STRUCTURALLY, never by order or magnitude:\n  1. CAPACITY charge -- the only one FOLLOWED BY another C/amps line.      Constant per tariff year (15363.60 Oct-Jun, 24889.90 from Jul-2026): a      fixed 310-amp supply-capacity charge, not a measured demand. -> demand_r      (demand_kva is '_none': no kVA is ever printed, the 310 is AMPS).\n  2. R-REGISTER ENERGY -- the one FOLLOWED BY '1-<n>kWh @ R0.xxxxx'. Proven:      106 kWh x R0.28980 = 30.72 exactly (Jul-26); 3470 x 0.26580 = 922.33      (Oct-25); 4988 x 0.26580 = 1325.81 (Jan-26). \n  3. TOU-REGISTER ENERGY -- the LAST C/amps line (negative lookahead: not      followed by another C/amps line and not followed by an R0. rate line).      This is the big one and the bill gives NO band breakdown for it:      87869.72 / 23424 kWh = R3.7513 in Jul-26 but 64849.79 / 24519 = R2.6448      in Oct-25, i.e. a composite of unprinted time-of-use rates.\nConsequence: peak_kwh / offpeak_kwh / peak_r / offpeak_r are '_none' -- the bill is on a TOU meter but prints no TOU split. Both energy registers are summed into the single STANDARD band (the same single-band convention the handbook uses for CoJ flat-rate and Ekurhuleni), with the split kept in the natives matz_reg_kwh / matz_tou_kwh and matz_reg_ex_r / matz_tou_ex_r.\n\nTHE '1-[number removed]kWh @ R2.72080' SUB-LINE IS NOT EXPLAINED. It prints on 8 of 10 bills (absent Jun-26 and Jul-26) and its amount does NOT equal its parent C/amps line. What IS now established: amount / 2.72080 is an exact whole number of units on all 8 bills (3933, 4618, 3679, 3817, 3953, 4491, 3666, 3773 -- each x 2.7208 reproduces the printed cents), and that unit count is a steady 13.7-16.0% of the TOU register consumption. So it is a metered kWh band inside the TOU parent charge, and a TOU PEAK band is the obvious candidate -- but the hypothesis is contradicted by the fact that the line vanishes in exactly the two SA high-season months (Jun-26, Jul-26) with no replacement band, so it stays unproven. It is captured as the natives matz_tou_step_rate / matz_tou_step_r, is NOT used in any canonical column (peak_kwh / peak_r remain '_none') and is NOT part of any reconciliation. Do not wire it in until Matzikama says what it is.\n\nREADINGS. Only the R register prints VORIGE/HUIDIGE readings; the TOU register literally prints the word 'TOU' in both reading columns. So end_reading_kwh - start_reading_kwh equals the R-register consumption ONLY (106 in Jul-26), NOT total_kwh (23530 = 106 + 23424). That is the bill's doing, not a miss. read_start / read_end come from the R-register date pair.\n\nMONEY IS DOT-DECIMAL WITH NO THOUSANDS SEPARATOR AT ALL ('117180.23', '87869.72'). There are NO comma decimals on this layout, so the stock money cleaner is correct and the _to_decimal 100x comma trap does NOT apply here (checked every figure on all 10 bills: zero commas in the text). Credits print a TRAILING minus ('115921.89-'), which the money token captures inside the group so clean_value sees it. Column gaps are matched with [ \\t]{2,} and the money token is anchored (?<![\\d.]) ... (?![\\d]).\n\nNOT PRINTED (mapped '_none'): Actual/Estimate flag (the E/W prefix in the meter table is the SERVICE, not a reading type), peak/off-peak registers, demand kVA, NMD, Deposit, Cash, Guarantee, Security Held. There is also NO rates/BELASTING charge line on this account at all (only MARK WAARDE [number removed] and SONERING 221 are printed), so no rates section is defined.\n\nRULE ZERO -- READ THIS BEFORE TRUSTING THE RECONCILE. The bill prints NO ex-VAT total of any kind (TOTAAL gives total BTW and BEDRAG BETAALBAAR, and BEDRAG BETAALBAAR includes the brought-forward balance). total_ex_vat_r is therefore CONSTRUCTED, not printed. It is deliberately built from a DIFFERENT PAIR OF PRINTED COLUMNS than the Rand buckets: standard_r / demand_r / other_r read the HEFFING column, while total_ex_vat_r is the sum of (BERDRAG - BTW) over the same four electricity lines (matz_*_ex_calc). So the harness reconcile is not the tautology 'sum of my own parts equals my own sum' -- it is a real per-line test that HEFFING == BERDRAG - BTW on all four electricity lines. It is still NOT a check against an independently printed ex-VAT total, because the bill has none; that is stated plainly in the report and the real proof is carried by the printed identities below.\n\nPRINTED IDENTITIES (all measured at max deviation R0.00 across all 10 bills). (1) printed TOTAAL BTW == sum of the per-line BTW column across every service (Rente + Basies + capacity + R-register + TOU + Water + RIOOL + VULLIS VERWYDERING + VULLIS INFRAKS) -- the primary one, and it spans every service so it also protects the water/sewer/refuse captures. (2) R-register kWh read out of the meter table BELOW the totals x the rate printed on the '1-...kWh @ R0.xxxxx' sub-line == that C/amps line's HEFFING (3470 x 0.26580 = 922.33 ... 106 x 0.28980 = 30.72) -- this crosses two physically separate blocks of the bill. (3) sum of the printed kl step amounts == the Water HEFFING (7 bills that have water). (4) sum of the printed BERDRAG column == the printed HUIDIG cell of the aging strip. (5) 90 DAE PLUS + 60 DAE + 30 DAE + HUIDIG == printed BEDRAG BETAALBAAR. (6) Saldo oorgedra + Betalings + sum(BERDRAG) == BEDRAG BETAALBAAR. (7) each bill's Saldo oorgedra == the previous month's BEDRAG BETAALBAAR, unbroken over all 10 months.",
+ "fingerprint": {
+  "all": [
+   "4120103736"
+  ],
+  "any": [
+   "MATZIKAMA",
+   "headoff@matzikamamun.co.za"
+  ],
+  "reject_if_text": [
+   "requires Adobe Reader",
+   "Please wait... If this message is not eventually replaced"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Elektrisiteit[ \\t]+Basies\\b"
+  },
+  "water": {
+   "start": "^[ \\t]*Water[ \\t]{2,}\\d"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*\\d+[ \\t]*x[ \\t]*RIOOL\\b"
+  },
+  "refuse": {
+   "start": "^[ \\t]*VULLIS[ \\t]+VERWYDERING\\b"
+  },
+  "sundry": {
+   "start": "^[ \\t]*Rente[ \\t]{2,}\\d",
+   "overlay": true,
+   "end": "\\n"
+  }
+ },
+ "fields": [
+  {
+   "field": "billing_date",
+   "label": "Statement date (DATUM VAN STAAT)",
+   "scope": "header",
+   "type": "date",
+   "required": true,
+   "pattern": "^[ \\t]*DATUM[ \\t]+VAN[ \\t]+STAAT[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})"
+  },
+  {
+   "field": "account_number",
+   "label": "Account number (REKENING NOMMER)",
+   "scope": "header",
+   "type": "text",
+   "required": true,
+   "pattern": "^[ \\t]*REKENING[ \\t]+NOMMER[ \\t]{2,}(\\d{6,12})"
+  },
+  {
+   "field": "matz_site_addr",
+   "label": "Site address (LIGGING)",
+   "scope": "header",
+   "type": "text",
+   "required": true,
+   "pattern": "^[ \\t]*LIGGING[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$"
+  },
+  {
+   "field": "matz_suburb",
+   "label": "Suburb (WOONBUURT)",
+   "scope": "header",
+   "type": "text",
+   "required": true,
+   "patterns": [
+    "^[ \\t]*WOONBUURT[ \\t]{2,}(\\S*?)(?:PRIVATE[ \\t]+BAG|POSBUS|PO[ \\t]+BOX|P[ \\t]*O[ \\t]+BOX)",
+    "^[ \\t]*WOONBUURT[ \\t]{2,}(\\S+)[ \\t]*$",
+    "^[ \\t]*WOONBUURT[ \\t]{2,}(\\S+)"
+   ]
+  },
+  {
+   "field": "matz_erf",
+   "label": "Erf number",
+   "scope": "header",
+   "type": "text",
+   "pattern": "\\bERF:[ \\t]*(\\d+)\\b"
+  },
+  {
+   "field": "matz_market_value",
+   "label": "Market value (MARK WAARDE)",
+   "scope": "header",
+   "type": "number",
+   "pattern": "^[ \\t]*MARK[ \\t]+WAARDE[ \\t]{2,}(\\d+)\\b"
+  },
+  {
+   "field": "matz_zoning",
+   "label": "Zoning (SONERING)",
+   "scope": "header",
+   "type": "text",
+   "pattern": "\\bSONERING[ \\t]{2,}(\\d+)[ \\t]*$"
+  },
+  {
+   "field": "matz_area_ha",
+   "label": "Area (ha)",
+   "scope": "header",
+   "type": "number",
+   "pattern": "\\bAREA:[ \\t]*(\\d+(?:\\.\\d+)?)"
+  },
+  {
+   "field": "due_date",
+   "label": "Due date (VERVAL DATUM)",
+   "scope": "document",
+   "type": "date",
+   "required": true,
+   "pattern": "^[ \\t]*VERVAL[ \\t]+DATUM[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})"
+  },
+  {
+   "fields": [
+    "matz_total_vat_r",
+    "matz_total_due_r"
+   ],
+   "label": "TOTAAL: total BTW / BEDRAG BETAALBAAR",
+   "scope": "document",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true,
+   "pattern": "\\bTOTAAL[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "field": "matz_balance_bf_r",
+   "label": "Balance brought forward (Saldo oorgedra)",
+   "scope": "document",
+   "type": "money",
+   "required": true,
+   "pattern": "^[ \\t]*Saldo[ \\t]+oorgedra:[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "field": "matz_payments_r",
+   "label": "Payments (Betalings)",
+   "scope": "document",
+   "type": "money",
+   "required": true,
+   "pattern": "^[ \\t]*Betalings:[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "fields": [
+    "matz_age_90",
+    "matz_age_60",
+    "matz_age_30",
+    "matz_age_current",
+    "matz_payable_r"
+   ],
+   "label": "Aging strip",
+   "scope": "document",
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "fields": [
+    "matz_r_register",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "matz_reg_kwh",
+    "read_start",
+    "read_end"
+   ],
+   "label": "Electricity R register row",
+   "scope": "document",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number",
+    "date",
+    "date"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*E[ \\t]+(\\d+R)[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]*$"
+  },
+  {
+   "field": "matz_meter",
+   "label": "Electricity meter number",
+   "scope": "document",
+   "type": "text",
+   "required": true,
+   "pattern": "^[ \\t]*E[ \\t]+(\\d+)R[ \\t]{2,}\\d"
+  },
+  {
+   "fields": [
+    "matz_tou_register",
+    "matz_tou_kwh",
+    "matz_tou_from",
+    "matz_tou_to"
+   ],
+   "label": "Electricity TOU register row",
+   "scope": "document",
+   "types": [
+    "text",
+    "number",
+    "date",
+    "date"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*E[ \\t]+(\\d+TOU)[ \\t]{2,}TOU[ \\t]{2,}TOU[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "matz_water_meter",
+    "matz_water_prev",
+    "matz_water_curr",
+    "matz_water_kl",
+    "matz_water_from",
+    "matz_water_to"
+   ],
+   "label": "Water meter row",
+   "scope": "document",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number",
+    "date",
+    "date"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*W[ \\t]+(\\S+)[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]*$"
+  },
+  {
+   "field": "matz_tariff",
+   "label": "Tariff (C/amps)",
+   "scope": "section:electricity",
+   "type": "text",
+   "required": true,
+   "pattern": "^[ \\t]*Elektrisiteit[ \\t]+(C/amps:\\d+)"
+  },
+  {
+   "fields": [
+    "matz_basies_ex_r",
+    "matz_basies_vat_r",
+    "matz_basies_incl_r"
+   ],
+   "label": "Elektrisiteit Basies HEFFING/BTW/BERDRAG",
+   "scope": "section:electricity",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*Elektrisiteit[ \\t]+Basies[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "fields": [
+    "matz_capacity_amps",
+    "matz_capacity_ex_r",
+    "matz_capacity_vat_r",
+    "matz_capacity_incl_r"
+   ],
+   "label": "C/amps capacity charge (line followed by another C/amps line)",
+   "scope": "section:electricity",
+   "types": [
+    "text",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*Elektrisiteit[ \\t]+C/amps:(\\d+)[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*\\n[ \\t]*Elektrisiteit[ \\t]+C/amps:"
+  },
+  {
+   "fields": [
+    "matz_reg_ex_r",
+    "matz_reg_vat_r",
+    "matz_reg_incl_r"
+   ],
+   "label": "C/amps R-register energy (line followed by an R0. rate line)",
+   "scope": "section:electricity",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*Elektrisiteit[ \\t]+C/amps:\\d+[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*\\n[ \\t]*1-\\d+kWh[ \\t]*@[ \\t]*R0\\."
+  },
+  {
+   "fields": [
+    "matz_tou_ex_r",
+    "matz_tou_vat_r",
+    "matz_tou_incl_r"
+   ],
+   "label": "C/amps TOU-register energy (last C/amps line)",
+   "scope": "section:electricity",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*Elektrisiteit[ \\t]+C/amps:\\d+[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*\\n(?![ \\t]*(?:Elektrisiteit[ \\t]+C/amps:|1-\\d+kWh[ \\t]*@[ \\t]*R0\\.))"
+  },
+  {
+   "fields": [
+    "matz_reg_rate",
+    "matz_reg_step_r"
+   ],
+   "label": "R-register kWh rate line",
+   "scope": "section:electricity",
+   "types": [
+    "number",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*1-\\d+kWh[ \\t]*@[ \\t]*R(0\\.\\d+)[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "fields": [
+    "matz_tou_step_rate",
+    "matz_tou_step_r"
+   ],
+   "label": "Unexplained R2.72080 sub-line (NOT used in any canonical column)",
+   "scope": "section:electricity",
+   "types": [
+    "number",
+    "money"
+   ],
+   "required": false,
+   "pattern": "^[ \\t]*1-\\d+kWh[ \\t]*@[ \\t]*R([1-9]\\d*\\.\\d+)[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "fields": [
+    "matz_water_ex_r",
+    "matz_water_vat_r",
+    "matz_water_incl_r"
+   ],
+   "label": "Water HEFFING/BTW/BERDRAG",
+   "scope": "section:water",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": false,
+   "pattern": "^[ \\t]*Water[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "field": "matz_water_step_r",
+   "label": "Water step charges (summed)",
+   "scope": "section:water",
+   "type": "money",
+   "collect": "sum",
+   "required": false,
+   "pattern": "^[ \\t]*\\d+-\\d*kl[ \\t]*@[ \\t]*R[\\d.]+[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "field": "matz_water_steps",
+   "label": "Water step tariffs",
+   "scope": "section:water",
+   "type": "text",
+   "collect": "join_unique",
+   "required": false,
+   "pattern": "^[ \\t]*(\\d+-\\d*kl[ \\t]*@[ \\t]*R[\\d.]+)[ \\t]{2,}(?:(?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "fields": [
+    "matz_sewer_units",
+    "matz_sewer_ex_r",
+    "matz_sewer_vat_r",
+    "matz_sewer_incl_r"
+   ],
+   "label": "RIOOL per toilet",
+   "scope": "section:sewerage",
+   "types": [
+    "number",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*(\\d+)[ \\t]*x[ \\t]*RIOOL[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "fields": [
+    "matz_refuse_ex_r",
+    "matz_refuse_vat_r",
+    "matz_refuse_incl_r"
+   ],
+   "label": "VULLIS VERWYDERING",
+   "scope": "section:refuse",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*VULLIS[ \\t]+VERWYDERING[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "fields": [
+    "matz_infra_ex_r",
+    "matz_infra_vat_r",
+    "matz_infra_incl_r"
+   ],
+   "label": "VULLIS INFRAKS HEFFING",
+   "scope": "section:refuse",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true,
+   "pattern": "^[ \\t]*VULLIS[ \\t]+INFRAKS[^\\n]*?[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  },
+  {
+   "fields": [
+    "matz_rente_ex_r",
+    "matz_rente_vat_r",
+    "matz_rente_incl_r"
+   ],
+   "label": "Rente (interest)",
+   "scope": "section:sundry",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": false,
+   "pattern": "^[ \\t]*Rente[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]{2,}((?<![\\d.])-?\\d+\\.\\d{2}-?(?![\\d]))[ \\t]*$"
+  }
+ ],
+ "computes": [
+  {
+   "field": "matz_site",
+   "op": "concat",
+   "of": [
+    "matz_site_addr",
+    "matz_suburb"
+   ]
+  },
+  {
+   "field": "matz_total_kwh",
+   "op": "sum",
+   "of": [
+    "matz_reg_kwh",
+    "matz_tou_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "matz_energy_ex_r",
+   "op": "sum",
+   "of": [
+    "matz_tou_ex_r",
+    "matz_reg_ex_r"
+   ]
+  },
+  {
+   "field": "matz_energy_vat_r",
+   "op": "sum",
+   "of": [
+    "matz_tou_vat_r",
+    "matz_reg_vat_r"
+   ]
+  },
+  {
+   "field": "matz_basies_ex_calc",
+   "op": "sub",
+   "of": [
+    "matz_basies_incl_r",
+    "matz_basies_vat_r"
+   ]
+  },
+  {
+   "field": "matz_capacity_ex_calc",
+   "op": "sub",
+   "of": [
+    "matz_capacity_incl_r",
+    "matz_capacity_vat_r"
+   ]
+  },
+  {
+   "field": "matz_reg_ex_calc",
+   "op": "sub",
+   "of": [
+    "matz_reg_incl_r",
+    "matz_reg_vat_r"
+   ]
+  },
+  {
+   "field": "matz_tou_ex_calc",
+   "op": "sub",
+   "of": [
+    "matz_tou_incl_r",
+    "matz_tou_vat_r"
+   ]
+  },
+  {
+   "field": "matz_elec_total_ex_r",
+   "op": "sum",
+   "of": [
+    "matz_basies_ex_calc",
+    "matz_capacity_ex_calc",
+    "matz_reg_ex_calc",
+    "matz_tou_ex_calc"
+   ]
+  },
+  {
+   "field": "matz_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "matz_basies_vat_r",
+    "matz_capacity_vat_r",
+    "matz_reg_vat_r",
+    "matz_tou_vat_r"
+   ]
+  },
+  {
+   "field": "matz_elec_incl_r",
+   "op": "sum",
+   "of": [
+    "matz_basies_incl_r",
+    "matz_capacity_incl_r",
+    "matz_reg_incl_r",
+    "matz_tou_incl_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "matz_site",
+  "tariff_name": "matz_tariff",
+  "meter": "matz_meter",
+  "reading_type": "_none",
+  "total_kwh": "matz_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "matz_total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "matz_energy_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "matz_capacity_ex_r",
+  "nmd_r": "_none",
+  "other_r": "matz_basies_ex_r",
+  "total_ex_vat_r": "matz_elec_total_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "^[ \\t]*Saldo[ \\t]+oorgedra:[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "^[ \\t]*Betalings:[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+  "vat": "TOTAAL[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]{2,}-?\\d+\\.\\d{2}-?[ \\t]*$",
+  "total_due": "TOTAAL[ \\t]{2,}-?\\d+\\.\\d{2}-?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+  "due_date": "^[ \\t]*VERVAL[ \\t]+DATUM[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})"
+ }
+}

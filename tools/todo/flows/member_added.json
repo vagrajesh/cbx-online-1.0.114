@@ -1,0 +1,50 @@
+{
+  "title": "flow.member_added.title",
+  "enabled": true,
+  "trigger": {
+    "type": "row_added",
+    "data": "job_members"
+  },
+  "run_as": "starter",
+  "start": "if1",
+  "steps": {
+    "s1": {
+      "type": "approval",
+      "who": {
+        "kind": "manager_of",
+        "person": "{{trigger.row.person}}"
+      },
+      "question": "Someone from your team has been asked onto a job. May they join it?",
+      "no": "s2",
+      "yes": "s3"
+    },
+    "s2": {
+      "type": "update_row",
+      "data": "job_members",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "status": "Declined"
+      }
+    },
+    "s3": {
+      "type": "update_row",
+      "data": "job_members",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "status": "Active"
+      }
+    },
+    "if1": {
+      "type": "if",
+      "match": "all",
+      "when": [
+        {
+          "left": "{{trigger.row.status}}",
+          "op": "equals",
+          "value": "Requested"
+        }
+      ],
+      "yes": "s1"
+    }
+  }
+}

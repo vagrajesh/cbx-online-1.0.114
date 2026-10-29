@@ -1,0 +1,290 @@
+{
+ "profile_id": "kareeberg",
+ "profile_name": "Kareeberg Local Municipality (Carnarvon, Northern Cape)",
+ "short_name": "Kareeberg",
+ "_doc": "Kareeberg LM (Carnarvon) electricity-only 'Utility Portal' tax invoice, the same print as Nama Khoi's newer bills (patterns reused from nama_khoi shape B). 'ELECTRICITY - SG <stand> - <meter> @ <tariff>  Excl. VAT' heading, 'Consumption for period <d Mon yyyy> to <d Mon yyyy> = n Units', then Basic Charge (-> other) and either one 'Energy Charge' (-> standard) or 'Active Energy-<season> - Peak/Standard/Off Peak' TOU lines, all printed ex VAT with an R prefix; Sub Total / VATable items / VAT / Total (for billing period) / Opening Balance / Interest / Total due. Account = Reference No (the 'Account No.' in the payment block is the bank account). Fingerprint: own VAT number + name. IDENTITY x_elec_ex_id = Total (for billing period) - VAT: 0.00 on 10/10. 10 bills checked (9 conventional, 1 TOU); no meter readings printed.",
+ "fingerprint": {
+  "all": [
+   "4960194399"
+  ],
+  "any": [
+   "Kareeberg"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^ELECTRICITY[ \\t]*-[ \\t]*(?:SG[ \\t]*)?\\d+[ \\t]*-",
+   "require": "^(?:Basic Charge|Energy Charge|Active Energy)"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Reference No (account)",
+   "scope": "document",
+   "pattern": "Reference No\\.?:[ \\t]+([A-Z]{0,3}\\d{4,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Tax Invoice Date",
+   "scope": "document",
+   "pattern": "Tax Invoice Date:[ \\t]+(\\d{1,2} [A-Za-z]{3} \\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Tax Invoice No:[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "site_name",
+   "label": "Full Name (site)",
+   "scope": "document",
+   "pattern": "Full Name:[ \\t]+(?:-[ \\t]*)?(\\S[^\\n]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "kb_sg",
+   "label": "SG / stand",
+   "scope": "section:electricity",
+   "pattern": "^ELECTRICITY[ \\t]*-[ \\t]*(?:SG[ \\t]*)?(\\d+)[ \\t]*-",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "meter",
+   "label": "Meter",
+   "scope": "section:electricity",
+   "pattern": "^ELECTRICITY[ \\t]*-[ \\t]*(?:SG[ \\t]*)?\\d+[ \\t]*-[ \\t]*(\\S+)[ \\t]*@",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "tariff_name",
+   "label": "Tariff",
+   "scope": "section:electricity",
+   "pattern": "^ELECTRICITY[ \\t]*-[ \\t]*(?:SG[ \\t]*)?\\d+[ \\t]*-[ \\t]*\\S+[ \\t]*@[ \\t]*(\\S[^\\n]*?)[ \\t]{2,}Excl\\. VAT",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "read_start",
+   "label": "Period from",
+   "scope": "section:electricity",
+   "pattern": "^Consumption for period[ \\t]+(\\d{1,2} [A-Za-z]{3} \\d{4})",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "read_end",
+   "label": "Period to",
+   "scope": "section:electricity",
+   "pattern": "^Consumption for period[^\\n]*?[ \\t]to[ \\t]+(\\d{1,2} [A-Za-z]{3} \\d{4})",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "kb_units",
+   "label": "Units",
+   "scope": "section:electricity",
+   "pattern": "^Consumption for period[^\\n]*=[ \\t]*([\\d ,]+\\.\\d+)[ \\t]*Units",
+   "type": "number",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "start_r",
+    "end_r"
+   ],
+   "label": "Start/End reading",
+   "scope": "section:electricity",
+   "pattern": "^Start Reading[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+End Reading[ \\t]+([\\d ,]+\\.\\d+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "kb_basic_r",
+   "label": "Basic Charge",
+   "scope": "section:electricity",
+   "pattern": "^Basic Charge[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "kb_flat_kwh",
+    "kb_flat_r"
+   ],
+   "label": "Energy Charge",
+   "scope": "section:electricity",
+   "pattern": "^Energy Charge(?:[ \\t]*-[ \\t]*\\w+)?[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*@[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "peak_kwh",
+    "peak_r"
+   ],
+   "label": "Peak",
+   "scope": "section:electricity",
+   "pattern": "^Active Energy[^\\n]*?-[ \\t]*Peak[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*@[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "kb_std_kwh",
+    "kb_std_r"
+   ],
+   "label": "Standard",
+   "scope": "section:electricity",
+   "pattern": "^Active Energy[^\\n]*?-[ \\t]*Standard[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*@[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "offpeak_kwh",
+    "offpeak_r"
+   ],
+   "label": "Off Peak",
+   "scope": "section:electricity",
+   "pattern": "^Active Energy[^\\n]*?-[ \\t]*Off Peak[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*@[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "demand_kva",
+    "demand_r"
+   ],
+   "label": "Demand",
+   "scope": "section:electricity",
+   "pattern": "^Demand Charge[ \\t]+(?:\\d{1,2} [A-Za-z]{3} \\d{4}[ \\t]+\\d{2}:\\d{2}[ \\t]+)?([\\d ,]+\\.\\d+)[ \\t]*@[^\\n]*?[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "kb_subtotal_r",
+   "label": "Sub Total",
+   "scope": "section:electricity",
+   "pattern": "^Sub Total[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_vat_r",
+   "label": "VAT",
+   "scope": "document",
+   "pattern": "(?<![A-Za-z])VAT[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_total_period_r",
+   "label": "Total (for billing period)",
+   "scope": "document",
+   "pattern": "Total \\(for billing period\\)[ \\t]{2,}R[ \\t]+(-?[\\d ,]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "standard_kwh",
+   "op": "prefer",
+   "of": [
+    "kb_std_kwh",
+    "kb_flat_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "standard_r",
+   "op": "prefer",
+   "of": [
+    "kb_std_r",
+    "kb_flat_r"
+   ]
+  },
+  {
+   "field": "kb_total_ex",
+   "op": "sum",
+   "of": [
+    "peak_r",
+    "standard_r",
+    "offpeak_r",
+    "demand_r",
+    "kb_basic_r"
+   ]
+  },
+  {
+   "field": "x_elec_ex_id",
+   "op": "sub",
+   "of": [
+    "x_total_period_r",
+    "x_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "meter": "meter",
+  "tariff_name": "tariff_name",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_r",
+  "end_reading_kwh": "end_r",
+  "total_kwh": "kb_units",
+  "peak_kwh": "peak_kwh",
+  "standard_kwh": "standard_kwh",
+  "offpeak_kwh": "offpeak_kwh",
+  "peak_r": "peak_r",
+  "standard_r": "standard_r",
+  "offpeak_r": "offpeak_r",
+  "demand_kva": "demand_kva",
+  "demand_r": "demand_r",
+  "other_r": "kb_basic_r",
+  "total_ex_vat_r": "kb_total_ex",
+  "nmd_kva": "_none",
+  "nmd_r": "_none",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "reading_type": "_none"
+ }
+}

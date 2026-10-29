@@ -1,0 +1,600 @@
+{
+ "profile_id": "tokologo",
+ "profile_name": "Tokologo Local Municipality (Boshof, Free State)",
+ "short_name": "Tokologo",
+ "_doc": "Tokologo LM, Free State (offices Boshof, this stand in Hertzogville). 10 bills, one account ([number removed], old account 250237/204508, property id [number removed], site '000 Telkom, E120, Hertzogville, Hertzogville'), Sep-2025 to Jul-2026 billing months, TWO pages each. One consistent template on all 10 files - no shape variants beyond a few column-width shifts.\n\nSame print vendor as Joe Gqabi / Nama Khoi / Ubuntu / two George bills (40 files in the tree carry 'Municipality VAT Nr:' + 'Computer Generated Tax Invoice'). Fingerprint is the municipal VAT registration 4000846479 plus the masthead 'Tokologo Municipality' and the switchboard [number removed] - each of those occurs on exactly these 10 files and nowhere else in the 487-PDF tree. Never fingerprint on the vendor boilerplate, on the 'T  f m c' / 'Private Bag X137' / 'Centurion' addressee block, or on Telkom's VAT 4680101146.\n\nSERVICES: FOUR, all flat/basic charges - 'Electricity Basic', 'Sanitation Basic', 'Waste Disposal', 'Water Flat Rate' - on all 10 bills, in that order, one line each in the page-1 summary. NO meter numbers, NO readings, NO kWh and NO kL anywhere on any of the 10 bills ('Meter' appears only inside the label 'Cycle, Meter book & Route'). Blank kWh / meter / reading columns are therefore correct, and are mapped '_none'.\n\nLAYOUT (from --raw only)\n  Page 1 masthead: 'Tel: [number removed]' / 'Fax: [number removed]' / 'Tokologo Municipality' / 'Address: Voortrekker, , Distrik Boshof, Boshoff, 8340' / 'Municipality VAT Nr: 4000846479' / 'Client VAT Nr:' (blank - Telkom's own VAT is not printed).\n  'Computer Generated Tax Invoice for: <Month> <YYYY>' / 'Account No.' / 'Invoice No. 10763/2026/08/08' / 'Old Account No.'\n  Meta grid is LABEL LINE then VALUE LINE (no blank line between, unlike Joe Gqabi):\n    'Property Id | SG Number | Town/Suburb | Days'  -> the SG NUMBER WRAPS onto the following line ('F004/0003/000001' + '20/00000' = F004/0003/[number removed]/00000). Both halves are captured (tok_sg_part1 / tok_sg_part2) and deliberately NOT glued together with a compute, because 'concat' would insert a space and produce a wrong identifier.\n    'Physical Address | Sectional Title Scheme/Farm/PSI/...'\n    'Cycle, Meter book & Route | Account Grouping | Deposit Date | Deposit | Guarantee Date | Guarantee'\n    'Longitude: 0 Latitude: 0   Market Value: 420000.00  Stand size (SQ): 2974.00'\n  Page-1 ledger columns: Date | Details | Amount (excl.Vat) | Vat | Amount (Incl.Vat). Rows: Opening Balance, Receipts, Sub Totals(A), the four service lines, 'VAT Services <base>' (VAT column only), Total Amount(B), Total Amount Payable(A+B).\n  Aging block: '90+ Days | 30 - 90 Days | Total charge (excluding VAT) | Total VAT | Total Charge (including VAT)' - two label lines, a blank line, then one line of five R-amounts.\n  Page 2 is the transaction detail: the four EFT receipt reversals, 'Interest Charges', four 'Levy:' lines (each followed by 'Dwelling Units: 1' and a '1.000000 x <rate> = <amount>' calculation line), then the same VAT Services / Total Amount(B) / Total Amount Payable(A+B) trio. THE LEVY LINES CARRY NO SERVICE NAME, so they cannot be attributed to a service; they are extracted at document scope as sums only.\n\nMONEY FORMAT: space thousands, PERIOD decimals throughout ('R 1 038.79', 'R 10 498.40'). NO comma-decimal figures on any of the 10 bills (checked with a scan of every '\\d+,\\d{2}' occurrence: zero hits), so the _to_decimal 100x comma trap does not bite here and every Rand figure is cent-exact. Credits print as accountant parens - 'Receipts (R 4 558.64)' - captured WITH the parens so money() reads them negative.\n\nVAT IS PRINTED PER LINE and the amount column is EX VAT, so nothing has to be derived from an inclusive figure. That is used as the reconciliation identity instead (see Rule Zero below).\n\nINTEREST: the page-2 'Interest Charges' line is VAT-free, and the page-1 per-service ex-VAT amounts have the interest ALLOCATED ACROSS THE FOUR SERVICES. Aug-2026 bill: page-1 services 1038.79 + 565.99 + 650.92 + 345.16 = 2600.86 = Total Amount(B); page-2 levies 1011.26 + 550.43 + 636.52 + 333.91 = 2532.12, + interest 68.74 = 2600.86. Per-service VAT is levied on the levy only (1011.26 x 15% = 151.69 = the printed electricity VAT), which is why per-service VAT is NOT 15% of the per-service ex-VAT amount. Do not 'fix' that.\n\nRULE ZERO / reconciliation: canonical total_ex_vat_r is the bill's own printed ex-VAT column on the Electricity Basic line; canonical other_r is a SEPARATE figure, tok_elec_ex_derived_r = printed inclusive MINUS printed VAT. The harness reconcile therefore compares two independently printed numbers (incl - VAT vs excl) rather than a figure against itself. It is 0.00 off on all 10 bills. Three further in-row identities are computed and are 0.00 on all 10 bills: tok_svc_vs_totalb_ex_diff_r (four service lines vs Total Amount(B)), tok_levyint_vs_totalb_diff_r (page-2 levies + interest vs Total Amount(B)) and tok_ab_vs_aging_diff_r (Total Amount Payable(A+B) vs the aging block's 'Total charge (excluding VAT)').\n\nSECTIONS are plain boundary sections, not overlays: the four service headings occur once each, in printed order, so electricity = the 'Electricity Basic' line, sewerage = 'Sanitation Basic', refuse = 'Waste Disposal', and water = 'Water Flat Rate' to end-of-document (its rule is line-anchored, so the page-2 tail it contains cannot leak in). header = everything above 'Electricity Basic', i.e. the whole page-1 meta block.",
+ "fingerprint": {
+  "all": [
+   "Municipality VAT Nr: 4000846479"
+  ],
+  "any": [
+   "Tokologo Municipality",
+   "Tel:     0535410014",
+   "0535410014"
+  ],
+  "reject_if_text": [
+   "Please wait...",
+   "If this message is not eventually replaced"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity Basic\\b",
+   "require": "Electricity Basic[ \\t]+R"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*Sanitation Basic\\b",
+   "require": "Sanitation Basic[ \\t]+R"
+  },
+  "refuse": {
+   "start": "^[ \\t]*Waste Disposal\\b",
+   "require": "Waste Disposal[ \\t]+R"
+  },
+  "water": {
+   "start": "^[ \\t]*Water Flat Rate\\b",
+   "require": "Water Flat Rate[ \\t]+R"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account No.",
+   "scope": "document",
+   "pattern": "Account No\\.[ \\t]+(\\d{9,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "old_account_number",
+   "label": "Old Account No.",
+   "scope": "document",
+   "pattern": "Old Account No\\.[ \\t]+(\\S+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "invoice_number",
+   "label": "Invoice No.",
+   "scope": "document",
+   "pattern": "Invoice No\\.[ \\t]+(\\S+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_month",
+   "label": "Invoice month",
+   "scope": "document",
+   "pattern": "Computer Generated Tax Invoice for:[ \\t]*([A-Za-z]+[ \\t]+\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Print Date",
+   "scope": "document",
+   "pattern": "Print Date:[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due Date",
+   "scope": "document",
+   "pattern": "Due Date[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "amount_payable_r",
+   "label": "Amount Payable",
+   "scope": "document",
+   "pattern": "Due Date[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+Amount Payable[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Physical Address",
+   "scope": "document",
+   "pattern": "^[ \\t]*Physical Address[^\\n]*\\n[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "tok_property_id",
+    "tok_sg_part1",
+    "tok_town",
+    "tok_days",
+    "tok_sg_part2"
+   ],
+   "types": [
+    "text",
+    "text",
+    "text",
+    "number",
+    "text"
+   ],
+   "label": "Property Id / SG (line 1) / Town-Suburb / Days / SG (wrapped line 2)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Property Id[^\\n]*\\n[ \\t]*(\\d+)[ \\t]+(\\S+)[ \\t]+(\\S[^\\n]*?)[ \\t]{2,}(\\d+)[ \\t]*\\n[ \\t]*(\\S+)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "tok_cycle",
+    "tok_grouping",
+    "tok_deposit_r",
+    "tok_guarantee_date",
+    "tok_guarantee_r"
+   ],
+   "types": [
+    "text",
+    "text",
+    "money",
+    "text",
+    "money"
+   ],
+   "label": "Cycle/Meter book/Route, Account Grouping, Deposit, Guarantee",
+   "scope": "document",
+   "pattern": "^[ \\t]*Cycle, Meter book & Route[^\\n]*\\n[ \\t]*(\\S+)[ \\t]+(\\S+)[ \\t]+([\\d,]+\\.\\d{2})[ \\t]+(\\d+)[ \\t]+([\\d,]+\\.\\d{2})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "market_value_r",
+    "stand_size_sq"
+   ],
+   "types": [
+    "money",
+    "number"
+   ],
+   "label": "Market Value / Stand size (SQ)",
+   "scope": "document",
+   "pattern": "Market Value:[ \\t]*([\\d,]+\\.\\d{2})[ \\t]{2,}Stand size \\(SQ\\):[ \\t]*([\\d,]+\\.\\d{2})",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "opening_balance_ex_r",
+    "opening_balance_vat_r",
+    "opening_balance_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Opening Balance (ex / VAT / incl)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Opening Balance[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "receipts_ex_r",
+    "receipts_vat_r",
+    "receipts_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Receipts (accountant parens = credit)",
+   "scope": "document",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?Receipts[ \\t]+(\\(R[ ]?[\\d ]+\\.\\d{2}\\))[ \\t]+(\\(R[ ]?[\\d ]+\\.\\d{2}\\))[ \\t]+(\\(R[ ]?[\\d ]+\\.\\d{2}\\))",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "receipts_date",
+   "label": "Receipts date",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]+Receipts\\b",
+   "type": "date",
+   "required": false
+  },
+  {
+   "fields": [
+    "subtotal_a_ex_r",
+    "subtotal_a_vat_r",
+    "subtotal_a_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Sub Totals(A)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Sub Totals\\(A\\)[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "tok_svc_ex_sum_r",
+    "tok_svc_vat_sum_r",
+    "tok_svc_incl_sum_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Sum of the four service lines (ex / VAT / incl)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:Electricity Basic|Sanitation Basic|Waste Disposal|Water Flat Rate)[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "tok_vat_services_base",
+    "tok_vat_services_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "VAT Services <base> ... VAT",
+   "scope": "document",
+   "pattern": "^[ \\t]*VAT Services[ \\t]+([\\d,]+\\.\\d{2})[ \\t]{2,}[^\\n]*?R[ ]?(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "total_b_ex_r",
+    "total_b_vat_r",
+    "total_b_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Total Amount(B) = current month's charges",
+   "scope": "document",
+   "pattern": "^[ \\t]*Total Amount\\(B\\)[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "total_ab_ex_r",
+    "total_ab_vat_r",
+    "total_ab_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Total Amount Payable(A+B)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Total Amount Payable\\(A\\+B\\)[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "aged_90plus_r",
+    "aged_30_90_r",
+    "aging_total_ex_r",
+    "aging_total_vat_r",
+    "aging_total_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Aging row: 90+ / 30-90 / Total charge ex / Total VAT / Total charge incl",
+   "scope": "document",
+   "pattern": "^[ \\t]*90\\+ Days[^\\n]*\\n[^\\n]*\\n[ \\t]*\\n[ \\t]*R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "tok_interest_r",
+   "label": "Interest Charges (page 2), summed",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Interest Charges[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "tok_levy_ex_sum_r",
+    "tok_levy_vat_sum_r",
+    "tok_levy_incl_sum_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Page-2 'Levy:' lines (ex / VAT / incl), summed - no service name printed",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Levy:[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "tok_levy_date",
+   "label": "Levy transaction date",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]+Levy:",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "tok_levy_units_sum",
+    "tok_levy_rate_sum",
+    "tok_levy_calc_sum_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "Page-2 levy calculation lines (units x rate = amount), summed",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*([\\d.]+)[ \\t]*x[ \\t]*([\\d,.]+)[ \\t]*=[ \\t]*([\\d.]+)[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "tok_dwelling_units",
+   "label": "Dwelling Units",
+   "scope": "document",
+   "pattern": "^[ \\t]*Dwelling Units:[ \\t]*(\\d+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "tok_receipt_refs",
+   "label": "EFT receipt references (page 2)",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "EFT - Receipt No:[ \\t]*(\\S+)[ \\t]*-[ \\t]*Paid Amount:",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "tok_elec_ex_r",
+    "tok_elec_vat_r",
+    "tok_elec_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity Basic (ex / VAT / incl)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity Basic[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "tok_elec_label",
+   "label": "Electricity charge description",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(Electricity Basic)[ \\t]{2,}R",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "tok_san_ex_r",
+    "tok_san_vat_r",
+    "tok_san_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Sanitation Basic (ex / VAT / incl)",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*Sanitation Basic[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "tok_san_label",
+   "label": "Sanitation charge description",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*(Sanitation Basic)[ \\t]{2,}R",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "tok_ref_ex_r",
+    "tok_ref_vat_r",
+    "tok_ref_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Waste Disposal (ex / VAT / incl)",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*Waste Disposal[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "tok_ref_label",
+   "label": "Refuse charge description",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*(Waste Disposal)[ \\t]{2,}R",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "tok_wat_ex_r",
+    "tok_wat_vat_r",
+    "tok_wat_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Water Flat Rate (ex / VAT / incl)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Water Flat Rate[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "tok_wat_label",
+   "label": "Water charge description",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*(Water Flat Rate)[ \\t]{2,}R",
+   "type": "text",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "tok_elec_ex_derived_r",
+   "op": "sub",
+   "of": [
+    "tok_elec_incl_r",
+    "tok_elec_vat_r"
+   ]
+  },
+  {
+   "field": "tok_san_ex_derived_r",
+   "op": "sub",
+   "of": [
+    "tok_san_incl_r",
+    "tok_san_vat_r"
+   ]
+  },
+  {
+   "field": "tok_ref_ex_derived_r",
+   "op": "sub",
+   "of": [
+    "tok_ref_incl_r",
+    "tok_ref_vat_r"
+   ]
+  },
+  {
+   "field": "tok_wat_ex_derived_r",
+   "op": "sub",
+   "of": [
+    "tok_wat_incl_r",
+    "tok_wat_vat_r"
+   ]
+  },
+  {
+   "field": "tok_elec_ex_diff_r",
+   "op": "diff",
+   "of": [
+    "tok_elec_ex_r",
+    "tok_elec_ex_derived_r"
+   ]
+  },
+  {
+   "field": "tok_svc_vs_totalb_ex_diff_r",
+   "op": "diff",
+   "of": [
+    "tok_svc_ex_sum_r",
+    "total_b_ex_r"
+   ]
+  },
+  {
+   "field": "tok_levy_plus_interest_ex_r",
+   "op": "sum",
+   "of": [
+    "tok_levy_ex_sum_r",
+    "tok_interest_r"
+   ]
+  },
+  {
+   "field": "tok_levyint_vs_totalb_diff_r",
+   "op": "diff",
+   "of": [
+    "tok_levy_plus_interest_ex_r",
+    "total_b_ex_r"
+   ]
+  },
+  {
+   "field": "tok_ab_vs_aging_diff_r",
+   "op": "diff",
+   "of": [
+    "total_ab_ex_r",
+    "aging_total_ex_r"
+   ]
+  },
+  {
+   "field": "tok_vatbase_vs_levy_diff_r",
+   "op": "diff",
+   "of": [
+    "tok_vat_services_base",
+    "tok_levy_ex_sum_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "other_r": "tok_elec_ex_derived_r",
+  "total_ex_vat_r": "tok_elec_ex_r",
+  "deposit_r": "tok_deposit_r",
+  "guarantee_r": "tok_guarantee_r",
+  "tariff_name": "_none",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "cash_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?i)^[ \\t]*Opening Balance[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+  "incoming_payment": "(?i)^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?Receipts[ \\t]+\\(R[ ]?([\\d ]+\\.\\d{2})\\)",
+  "subtotal": "(?i)^[ \\t]*Sub Totals\\(A\\)[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+  "current_ex": "(?i)^[ \\t]*Total Amount\\(B\\)[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+  "vat": "(?i)^[ \\t]*Total Amount\\(B\\)[ \\t]+R[ ]?-?[\\d ]+\\.\\d{2}[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+  "total_due": "(?i)Due Date[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+Amount Payable[ \\t]+R[ ]?(-?[\\d ]+\\.\\d{2})",
+  "due_date": "(?i)Due Date[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+  "deposito": "(?i)^[ \\t]*Cycle, Meter book & Route[^\\n]*\\n[ \\t]*\\S+[ \\t]+\\S+[ \\t]+([\\d,]+\\.\\d{2})",
+  "guarantee": "(?i)^[ \\t]*Cycle, Meter book & Route[^\\n]*\\n[ \\t]*\\S+[ \\t]+\\S+[ \\t]+[\\d,]+\\.\\d{2}[ \\t]+\\d+[ \\t]+([\\d,]+\\.\\d{2})"
+ }
+}

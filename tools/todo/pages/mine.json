@@ -1,0 +1,206 @@
+{
+  "title": "page.mine.title",
+  "intro": "page.mine.intro",
+  "menu": true,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_mylist",
+                "type": "table",
+                "title": "w.w_mylist.title",
+                "source": {
+                  "data": "tasks"
+                },
+                "columns": [
+                  {
+                    "key": "title",
+                    "label": "col.title"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  },
+                  {
+                    "key": "steps",
+                    "label": "col.steps"
+                  },
+                  {
+                    "key": "size",
+                    "label": "col.size"
+                  },
+                  {
+                    "key": "due",
+                    "label": "col.due"
+                  }
+                ],
+                "where": [
+                  {
+                    "field": "kind",
+                    "op": "equals",
+                    "value": "Mine"
+                  },
+                  {
+                    "field": "who",
+                    "op": "equals",
+                    "value": "{{person.id}}"
+                  },
+                  {
+                    "field": "status",
+                    "op": "not_equals",
+                    "value": "Done"
+                  }
+                ],
+                "sort": {
+                  "key": "due",
+                  "desc": false
+                },
+                "filters": [
+                  "status"
+                ],
+                "preset": {
+                  "kind": "Mine"
+                },
+                "actions": [
+                  {
+                    "label": "w.w_mylist.a0",
+                    "flow": "done"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_myteam",
+                "type": "table",
+                "title": "w.w_myteam.title",
+                "source": {
+                  "data": "tasks"
+                },
+                "columns": [
+                  {
+                    "key": "title",
+                    "label": "col.title"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  },
+                  {
+                    "key": "steps",
+                    "label": "col.steps"
+                  },
+                  {
+                    "key": "size",
+                    "label": "col.size"
+                  },
+                  {
+                    "key": "due",
+                    "label": "col.due"
+                  }
+                ],
+                "where": [
+                  {
+                    "field": "kind",
+                    "op": "equals",
+                    "value": "Team"
+                  },
+                  {
+                    "field": "who",
+                    "op": "equals",
+                    "value": "{{person.id}}"
+                  },
+                  {
+                    "field": "status",
+                    "op": "not_equals",
+                    "value": "Done"
+                  }
+                ],
+                "sort": {
+                  "key": "due",
+                  "desc": false
+                },
+                "search": false,
+                "preset": {
+                  "kind": "Team"
+                },
+                "actions": [
+                  {
+                    "label": "w.w_myteam.a0",
+                    "flow": "done"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_mydone",
+                "type": "table",
+                "title": "w.w_mydone.title",
+                "source": {
+                  "data": "tasks"
+                },
+                "columns": [
+                  {
+                    "key": "title",
+                    "label": "col.title"
+                  },
+                  {
+                    "key": "size",
+                    "label": "col.size"
+                  },
+                  {
+                    "key": "finished",
+                    "label": "col.finished"
+                  }
+                ],
+                "where": [
+                  {
+                    "field": "done_by",
+                    "op": "equals",
+                    "value": "{{person.id}}"
+                  },
+                  {
+                    "field": "finished",
+                    "op": "this_month"
+                  }
+                ],
+                "sort": {
+                  "key": "finished",
+                  "desc": true
+                },
+                "search": false,
+                "add": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "order": 1
+}

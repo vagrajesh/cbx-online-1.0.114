@@ -1,0 +1,271 @@
+{
+ "profile_id": "thaba_chweu",
+ "profile_name": "Thaba Chweu Local Municipality (Lydenburg)",
+ "short_name": "Thaba Chweu",
+ "_doc": "Emunsoft 'TAX INVOICE/STATEMENT OF ACCOUNT': header (Account Number, Account Date, Street, Deposit), a METER READINGS table (meter, type, old/new reading, reading date, reading type, consumption) and an ACCOUNT DETAILS ledger (DATE CODE DESCRIPTION UNITS TARIFF VALUE, ex-VAT values, one VAT line for the whole bill), aging and a remittance TOTAL DUE. Fingerprint: Thaba Chweu's own VAT number as printed (spaced) + 'THABA CHWEU LOCAL MUNICIPALITY'. TOU account: TOU: PEAK / STANDARD / OFF-PEAK KWH lines, TOU: KVA LV (-> demand), ACCESS CHARGE and TOU: FIXED CHARGE (-> other); every electricity line has a TOU* tariff code, which also defines the non-electricity lines. Some bills split a month into two sets of TOU lines (summed). The meter is printed as three kWh registers + three kVA registers, so meter = the kWh register ids and start/end readings stay blank. IDENTITY x_elec_resid_r = TOTAL DUE - Opening Balance - every non-electricity ledger line (payments, other services, interest, rebates) - the VAT line, i.e. the electricity total implied by the bill's own balance movement, independent of the electricity lines; 0.00 gap on all 10 bills (10 checked).",
+ "fingerprint": {
+  "all": [
+   "4120 111 648",
+   "THABA CHWEU LOCAL MUNICIPALITY"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS",
+   "require": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+TOU\\w*[ \\t]+"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account Number:[ \\t]+(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]+(\\d{1,2} [A-Z]{3} \\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "invoice_number",
+   "label": "Tax Invoice No.",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.?:[ \\t]+(\\d{6,})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "site_name",
+   "label": "Street (site address)",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "meter",
+   "label": "Electricity register(s)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\S+)[ \\t]+ELECTRICITY[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+\\d{2}/\\d{2}/\\d{4}",
+   "type": "text",
+   "required": false,
+   "collect": "join_unique"
+  },
+  {
+   "field": "read_end",
+   "label": "Reading date (first kWh register)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\S+[ \\t]+ELECTRICITY[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "reading_type",
+   "label": "Reading type(s)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\S+[ \\t]+ELECTRICITY[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+([A-Z])[ \\t]",
+   "type": "text",
+   "required": false,
+   "collect": "join_unique"
+  },
+  {
+   "fields": [
+    "peak_kwh",
+    "peak_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TOU: PEAK KWH",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+TOU: PEAK KWH[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]*@?[ \\t]+[\\d.,]+[ \\t]*\\*?[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "standard_kwh",
+    "standard_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TOU: STANDARD KWH",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+TOU: STANDARD KWH[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]*@?[ \\t]+[\\d.,]+[ \\t]*\\*?[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "offpeak_kwh",
+    "offpeak_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TOU: OFF-PEAK KWH",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+TOU: OFF-PEAK KWH[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]*@?[ \\t]+[\\d.,]+[ \\t]*\\*?[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "demand_kva",
+    "demand_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TOU: KVA (demand)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+TOU: KVA[^\\n]*?[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]*@?[ \\t]+[\\d.,]+[ \\t]*\\*?[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "tc_access_kva",
+    "tc_access_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "ACCESS CHARGE",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+ACCESS CHARGE[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]*@?[ \\t]+[\\d.,]+[ \\t]*\\*?[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "tc_fixed_qty",
+    "tc_fixed_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TOU: FIXED CHARGE",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+TOU: FIXED CHARGE[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]*@?[ \\t]+[\\d.,]+[ \\t]*\\*?[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "field": "x_total_due_r",
+   "label": "TOTAL DUE (remittance)",
+   "scope": "document",
+   "pattern": "TOTAL DUE:[ \\t]+([\\d,]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_opening_r",
+   "label": "Opening Balance",
+   "scope": "document",
+   "pattern": "Opening Balance[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_vat_r",
+   "label": "VAT (whole bill)",
+   "scope": "document",
+   "pattern": "^[ \\t]+\\d+[ \\t]+VAT[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_nonelec_r",
+   "label": "Non-electricity ledger lines (incl. payments)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?!TOU)\\S+[ \\t]+[^\\n]*?[ \\t]([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false,
+   "collect": "sum"
+  }
+ ],
+ "computes": [
+  {
+   "field": "total_kwh",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "peak_kwh",
+    "standard_kwh",
+    "offpeak_kwh"
+   ]
+  },
+  {
+   "field": "other_r",
+   "op": "sum",
+   "of": [
+    "tc_access_r",
+    "tc_fixed_r"
+   ]
+  },
+  {
+   "field": "tc_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "peak_r",
+    "standard_r",
+    "offpeak_r",
+    "demand_r",
+    "other_r"
+   ]
+  },
+  {
+   "field": "tariff_name",
+   "op": "label_present",
+   "of": [
+    "peak_kwh"
+   ],
+   "labels": [
+    "TOU"
+   ]
+  },
+  {
+   "field": "x_elec_resid_r",
+   "op": "sub",
+   "of": [
+    "x_total_due_r",
+    "x_opening_r",
+    "x_nonelec_r",
+    "x_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "total_ex_vat_r": "tc_elec_ex_r",
+  "read_start": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "nmd_kva": "_none",
+  "nmd_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

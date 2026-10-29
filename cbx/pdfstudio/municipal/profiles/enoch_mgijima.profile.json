@@ -1,0 +1,178 @@
+{
+ "profile_id": "enoch_mgijima",
+ "profile_name": "Enoch Mgijima Local Municipality (Queenstown / Komani, Eastern Cape)",
+ "short_name": "Enoch Mgijima",
+ "_doc": "'Solar' print-stream statement (same engine as Breede Valley / Naledi / Bitou: 'Account date', 'Receipts posted to', a 'Service Type / Tariff / Consumption / Basic' summary) but the text layer interleaves the left message column with the summary, so rows are matched mid-line, never line-anchored. Electricity is ONE summary row 'ELECTRICITY CONSUMPTION <tariff> <kWh> <basic> <amount incl VAT>'; no meter number, readings or dates are printed. Only property rates (zero-rated) sit beside it, so the statement's TOTAL VAT is the electricity VAT: total_ex_vat_r = amount - TOTAL VAT, other_r = the printed basic, standard_r = the rest (assumes the basic column is ex VAT). The 'Cpy VAT No' on the bill is Telkom's (customer) - NOT used; FINGERPRINT is the municipality's 'Registration No' as printed + its name. IDENTITY: only circular is possible (no electricity sub-total); the independent sanity is TOTAL VAT = 15/115 of the amount (holds to the cent on every bill), run as identity on the circular eno_elec_ex_r. One statement is a credit-only month with no electricity line (routes, no row). Checked on 10 bills.",
+ "fingerprint": {
+  "all": [
+   "4810281024"
+  ],
+  "any": [
+   "Enoch Mgijima Local Municipality",
+   "Enoch Mgijima"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "ELECTRICITY CONSUMPTION[ \\t]+\\S+[ \\t]+\\d",
+   "require": "ELECTRICITY CONSUMPTION[ \\t]+\\S+[ \\t]+[\\d.]+[ \\t]+-?[\\d.]+[ \\t]+-?\\d+\\.\\d{2}"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "patterns": [
+    "Account Number[ \\t]+(\\d{8,})",
+    "TAX Inv\\.[ \\t]+\\d{6}-(\\d{8,})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account date",
+   "scope": "document",
+   "pattern": "Account date:[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "eno_period",
+   "label": "Tax invoice period (YYYYMM)",
+   "scope": "document",
+   "pattern": "TAX Inv\\.[ \\t]+(\\d{6})-",
+   "type": "text"
+  },
+  {
+   "field": "eno_receipts_to",
+   "label": "Receipts posted to",
+   "scope": "document",
+   "pattern": "Receipts posted to:[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date"
+  },
+  {
+   "field": "eno_stand",
+   "label": "Stand",
+   "scope": "document",
+   "pattern": "Stand:[ \\t]+(\\d+)",
+   "type": "text"
+  },
+  {
+   "field": "eno_street",
+   "label": "Street",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(\\S(?:[^\\n]*?\\S)?)(?=[ \\t]{2,}|[ \\t]*$)",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "guarantee_r",
+   "label": "Guarantee",
+   "scope": "document",
+   "pattern": "Guarantee:[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "eno_total_vat_r",
+    "eno_amount_due_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "TOTAL VAT / AMOUNT DUE",
+   "scope": "document",
+   "pattern": "TOTAL VAT[ \\t]+AMOUNT DUE[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]*((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "required": true
+  },
+  {
+   "field": "eno_rates_r",
+   "label": "PROPERTY RATES line",
+   "scope": "document",
+   "pattern": "PROPERTY RATES[ \\t]+\\S+[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "tariff_name",
+    "eno_kwh",
+    "eno_basic_r",
+    "eno_elec_inc_r"
+   ],
+   "types": [
+    "text",
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "ELECTRICITY CONSUMPTION row: tariff, consumption kWh, basic, amount incl VAT",
+   "scope": "section:electricity",
+   "pattern": "ELECTRICITY CONSUMPTION[ \\t]+(\\S+)[ \\t]+((?<![\\d.,])\\d+(?:\\.\\d+)?)(?![\\d])[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "eno_street"
+   ]
+  },
+  {
+   "field": "eno_elec_ex_r",
+   "op": "sub",
+   "of": [
+    "eno_elec_inc_r",
+    "eno_total_vat_r"
+   ]
+  },
+  {
+   "field": "eno_energy_r",
+   "op": "sub",
+   "of": [
+    "eno_elec_ex_r",
+    "eno_basic_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "eno_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "eno_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "eno_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "eno_basic_r",
+  "total_ex_vat_r": "eno_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "guarantee_r",
+  "security_held_r": "_none"
+ }
+}

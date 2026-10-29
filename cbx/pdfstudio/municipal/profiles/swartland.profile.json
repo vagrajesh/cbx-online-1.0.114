@@ -1,0 +1,591 @@
+{
+ "profile_id": "swartland",
+ "profile_name": "Swartland Municipality (Malmesbury, Western Cape, WC015)",
+ "short_name": "Swartland",
+ "_doc": "COMPACT ACCOUNT-STATEMENT LEDGER, AFRIKAANS (no masthead). Same compact layout as Knysna and Oudtshoorn (Matlosana and Matzikama use the same ledger body but DO print a masthead and their own municipal VAT number): the text layer opens straight into data with NO municipality name, NO address, NO portal URL and NO municipal VAT number anywhere. The ONLY 4xxxxxxxxx on the page is 4680101146, which is TELKOM's own VAT number (136 of the 487 PDFs in this tree, across 17 folders) and here it is even printed twice - once on the addressee line and once as 'BTW Registrasie nommer'. Fingerprinting on it would hijack the whole portfolio. FINGERPRINT USED: '>>>>>91587', the EasyPay/bill-scan line at the foot of the page. Structure is 9 + 4-digit EasyPay receiver id + 12-digit account + check digit; receiver 1587 is Swartland's. Verified 10/487 hits in the tree, all in the Swartland folder. Knysna is 1597, Newcastle 1001; Oudtshoorn, Mossel Bay, Matlosana and Matzikama print no scan line at all. LAYOUT (per --raw): line 1 = formatted account '1-02-06165-001-8'. Line 3 = an unlabelled header column row '<valuation>  <property key>  <num3>  <stmt date>  <account date>'; the valuation (204000) is confirmed by the BELASTING KENNISGEWING table's 204,000.00. num3 (170.00) is UNLABELLED and constant across all 10 months - either erf size in m2 or the consumer deposit - so it is captured as swt_hdr_num3 and canonical deposit_r is left _none rather than guess. Then the street line ('800 0 AKASIALAAN' = erf 800 portion 0, Akasialaan) immediately ABOVE the 'TELKOM SA' addressee line, whose own tail carries the suburb ('WESBANK', a Malmesbury township); site_name is the concat of the two. Then '<account>-MM-YY'. LEDGER: one line per transaction, 'DD/MM/YY  <meter|code>  <BESKRYWING> [(dd/mm/yyyy-dd/mm/yyyy)]  <BTW>  <BEDRAG INKL BTW>'. THE AMOUNT COLUMN IS VAT-INCLUSIVE and that line's VAT sits in its own column immediately to its left, so every ex-VAT figure is derived with 'sub'. Non-VAT lines (BALANS OORGEBRING, KWITANSIE, REKENING AFRONDING, the INSTALL/BELASTING lines) print only the amount. FIVE SERVICES share the one ledger and appear in a FIXED ORDER, so plain (non-overlay) section starts carve it cleanly: WATER < ELEKTRISITEIT/ELEK. NETWERK HEFFING < VULLIS (refuse) < RIOOL (sewerage) < INSTALL BELAS... (rates). Under a consumption line: '<end> - <start> = <units> KWH|Kl <n> DAYS' (NOTE: END reading is printed FIRST) and tariff-period lines '<eff date> <units> KWH @ <rate> = <rand>' (ex VAT), plus 'TAR: <code>' and a fixed levy 'NETWERK HEFFINGS: = <rand>' (water) or 'BASIES: = <rand>'. Energy is a single non-TOU band -> routed to the STANDARD canonical band (same convention as CoJ flat-rate / Ekurhuleni). 'ELEK. NETWERK HEFFING' is a flat monthly electricity network charge with NO kVA figure printed, so it goes to other_r, NOT to nmd_r/demand_r. 7 of the 10 bills print no ELEKTRISITEIT consumption line at all (the meter did not advance) - only the network charge; blank kWh on those is correct, not a miss. 'TFR CR Dt/Kt' pairs are the rates transfer and net to zero; they are captured as swt_transfer_r for the ledger reconciliation only. RATES are VAT-exempt: 'BELAS PAAIEMENT' is the monthly instalment, 'Betaalbaar/Toekomstige Belasting' are the payable/future split of the same money, and the BELASTING KENNISGEWING table prints valuation x tariff = annual amount (only on the July annual-notice bill). DATES ARE KEPT EXACTLY AS PRINTED: billing_date reads '31/07/26', read_start/read_end read '05/06/2026'/'08/07/2026' - the app never reformats dates. Money is comma-thousands / period-decimal ('4,253.85') so the standard money cleaner is correct (unlike Oudtshoorn on this same layout, which uses space thousands). Not printed anywhere on this bill: reading type (Actual/Estimate), TOU bands, demand kVA, NMD, tariff NAME (only a numeric tariff code, mapped to tariff_name), consumer securities -> all _none. RECONCILE IS GENUINE, NOT CIRCULAR: total_ex_vat_r comes from the LEDGER money columns of the electricity section (sum of amounts minus sum of VAT), while standard_r comes from the tariff-period KWH lines and other_r from the network line - different printed figures.",
+ "fingerprint": {
+  "all": [
+   ">>>>>91587"
+  ],
+  "reject_if_text": [
+   "Please wait...",
+   "does not support the use of JavaScript"
+  ]
+ },
+ "sections": {
+  "water": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}WATER[ \\t(]",
+   "require": "WATER"
+  },
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}(?:ELEKTRISITEIT|ELEK\\.)",
+   "require": "ELEK"
+  },
+  "refuse": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}VULLIS",
+   "require": "VULLIS"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}RIOOL",
+   "require": "RIOOL"
+  },
+  "rates": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}INSTALL[ \\t]{2,}(?:BELAS|Betaalbaar|Toekomstige)",
+   "require": "BELAS"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]{2,}(\\d{10,14})-\\d{2}-\\d{2}[ \\t]*$",
+    "\\*(\\d{10,14})\\*"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "swt_account_formatted",
+   "label": "Account Number (formatted)",
+   "scope": "document",
+   "pattern": "^[ \\t]{2,}(\\d-\\d{2,6}-\\d{3,6}-\\d{3}-\\d)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "statement_month",
+   "label": "Statement period MM-YY",
+   "scope": "document",
+   "pattern": "^[ \\t]{2,}\\d{10,14}-(\\d{2}-\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "swt_valuation_r",
+    "swt_property_key",
+    "swt_hdr_num3",
+    "swt_stmt_date",
+    "billing_date"
+   ],
+   "types": [
+    "money",
+    "text",
+    "money",
+    "date",
+    "date"
+   ],
+   "label": "Header column row (valuation / property key / unlabelled num3 / statement date / account date)",
+   "scope": "document",
+   "pattern": "^[ \\t]{5,}(\\d+)[ \\t]{2,}(\\d+)[ \\t]{2,}((?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "swt_site_street",
+   "label": "Property / street line (above the addressee)",
+   "scope": "document",
+   "pattern": "^[ \\t]{10,}(\\S[^\\n]*?)[ \\t]*\\n[ \\t]*TELKOM SA",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "swt_site_town",
+   "label": "Suburb / town (tail of the addressee line)",
+   "scope": "document",
+   "pattern": "^[ \\t]*TELKOM SA[^\\n]*?[ \\t]{2,}([A-Za-z][A-Za-z .'-]+?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "swt_total_vat_r",
+   "label": "TOTALE BTW (total VAT)",
+   "scope": "document",
+   "pattern": "TOTALE BTW:[ \\t]+(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "swt_balance_bf_r",
+   "label": "BALANS OORGEBRING (balance brought forward)",
+   "scope": "document",
+   "pattern": "BALANS OORGEBRING[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "swt_receipts_r",
+   "label": "KWITANSIE (receipts)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}KWITANSIE[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "swt_rounding_r",
+   "label": "REKENING AFRONDING (rounding)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "REKENING AFRONDING[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "swt_transfer_r",
+   "label": "TFR CR Dt/Kt transfer lines (net to zero)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}TFR[ \\t]*CR[ \\t]{2,}Dt/Kt[ \\t]{2,}(?:-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?[ \\t]{2,})?(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "swt_transfer_vat_r",
+   "label": "TFR CR Dt/Kt VAT column",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}TFR[ \\t]*CR[ \\t]{2,}Dt/Kt[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]{2,}-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "swt_current_r",
+    "due_date",
+    "swt_total_due_r"
+   ],
+   "types": [
+    "money",
+    "date",
+    "money"
+   ],
+   "label": "Aging row: current / due date / total due",
+   "scope": "document",
+   "pattern": "^[ \\t]+(?:-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?[ \\t]+){1,6}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "w_meter",
+   "label": "Water meter number",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}(\\S+)[ \\t]{2,}WATER[ \\t(]",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "w_tariff",
+   "label": "Water tariff code",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "TAR:[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "w_read_start",
+    "w_read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Water consumption period (as printed)",
+   "scope": "section:water",
+   "pattern": "WATER[^\\n(]*\\((\\d{2}/\\d{2}/\\d{4})-(\\d{2}/\\d{2}/\\d{4})\\)",
+   "type": "date",
+   "required": false
+  },
+  {
+   "fields": [
+    "end_reading_kl",
+    "start_reading_kl",
+    "w_read_kl",
+    "w_days"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "Water reading line (END - START = UNITS Kl n DAYS)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]+((?<![\\d.,])[\\d,]+(?:\\.\\d+)?)[ \\t]*-[ \\t]*((?<![\\d.,])[\\d,]+(?:\\.\\d+)?)[ \\t]*=[ \\t]*((?<![\\d.,])[\\d,]+(?:\\.\\d+)?)[ \\t]+Kl\\b[ \\t]+(\\d+)[ \\t]+DAYS",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "w_tier_kl",
+    "water_usage_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Water tariff-period lines (Kl @ rate = Rand, ex VAT)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]+(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?((?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]+Kl[ \\t]*@[ \\t]+[\\d,.]+[ \\t]+=[ \\t]+((?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "water_levy_r",
+   "label": "Water fixed levy (NETWERK HEFFINGS / BASIES, ex VAT)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "(?:NETWERK HEFFINGS?|BASIES|BASIC)[ \\t]*:?[ \\t]*=[ \\t]*(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "w_vat_r",
+    "water_charges_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Ledger WATER line: VAT column + amount column (inc VAT)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}WATER[^\\n]*?[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meter number",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}(\\d{4,})[ \\t]{2,}ELEKTRISITEIT",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "tariff_name",
+   "label": "Electricity tariff code (TAR:)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "TAR:[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "swt_description",
+   "label": "Electricity charge descriptions",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}(ELEK[^\\n]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Electricity consumption period (as printed)",
+   "scope": "section:electricity",
+   "pattern": "ELEKTRISITEIT[^\\n(]*\\((\\d{2}/\\d{2}/\\d{4})-(\\d{2}/\\d{2}/\\d{4})\\)",
+   "type": "date",
+   "required": false
+  },
+  {
+   "fields": [
+    "end_reading_kwh",
+    "start_reading_kwh",
+    "swt_read_kwh",
+    "swt_days"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "Electricity reading line (END - START = UNITS KWH n DAYS)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+((?<![\\d.,])[\\d,]+(?:\\.\\d+)?)[ \\t]*-[ \\t]*((?<![\\d.,])[\\d,]+(?:\\.\\d+)?)[ \\t]*=[ \\t]*((?<![\\d.,])[\\d,]+(?:\\.\\d+)?)[ \\t]+KWH[ \\t]+(\\d+)[ \\t]+DAYS",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "swt_tier_kwh",
+    "swt_tier_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Electricity tariff-period lines (kWh @ rate = Rand, ex VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]+(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?((?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]+KWH[ \\t]*@[ \\t]+[\\d,.]+[ \\t]+=[ \\t]+((?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "swt_elec_basic_r",
+   "label": "Electricity fixed levy printed inside the block (BASIES, ex VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?:BASIES|BASIC)[ \\t]*:?[ \\t]*=[ \\t]*(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "swt_netwerk_vat_r",
+    "swt_netwerk_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "ELEK. NETWERK HEFFING ledger line (flat network charge)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}ELEK\\.[ \\t]*NETWERK[^\\n]*?[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "swt_elec_vat_r",
+    "swt_elec_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "All electricity ledger lines: VAT column + amount column (inc VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}ELEK[^\\n]*?[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "refuse_vat_r",
+    "refuse_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "VULLIS (refuse) ledger line: VAT + amount inc VAT",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}VULLIS[^\\n]*?[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "refuse_code",
+   "label": "Refuse charge code",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}(\\S+)[ \\t]{2,}VULLIS",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "ws_vat_r",
+    "ws_total_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "RIOOL (sewerage) ledger line: VAT + amount inc VAT",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}RIOOL[^\\n]*?[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sewer_code",
+   "label": "Sewerage charge code",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}(\\S+)[ \\t]{2,}RIOOL",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "swt_rates_installment_r",
+   "label": "BELAS PAAIEMENT (monthly rates instalment, VAT-exempt)",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}INSTALL[ \\t]{2,}BELAS PAAIEMENT[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "swt_rates_description",
+    "swt_rates_valuation_r",
+    "swt_rates_tariff",
+    "swt_rates_annual_r"
+   ],
+   "types": [
+    "text",
+    "money",
+    "number",
+    "money"
+   ],
+   "label": "BELASTING KENNISGEWING table: description / valuation / tariff / annual amount",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*([A-Z][A-Z. ]*\\d*)[ \\t]{2,}((?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]{2,}(0?\\.\\d{4,})[ \\t]{2,}((?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "swt_rates_annual_text_r",
+   "label": "Annual rates total from the instalment sentence",
+   "scope": "section:rates",
+   "pattern": "totaal van R[ \\t]*((?<![\\d.,])[\\d,]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "swt_site_street",
+    "swt_site_town"
+   ]
+  },
+  {
+   "field": "swt_elec_ex_r",
+   "op": "sub",
+   "of": [
+    "swt_elec_inc_r",
+    "swt_elec_vat_r"
+   ]
+  },
+  {
+   "field": "swt_netwerk_ex_r",
+   "op": "sub",
+   "of": [
+    "swt_netwerk_inc_r",
+    "swt_netwerk_vat_r"
+   ]
+  },
+  {
+   "field": "swt_other_r",
+   "op": "sum",
+   "of": [
+    "swt_netwerk_ex_r",
+    "swt_elec_basic_r"
+   ]
+  },
+  {
+   "field": "swt_total_kwh",
+   "op": "prefer",
+   "as": "number",
+   "of": [
+    "swt_read_kwh",
+    "swt_tier_kwh"
+   ]
+  },
+  {
+   "field": "w_ex_r",
+   "op": "sub",
+   "of": [
+    "water_charges_r",
+    "w_vat_r"
+   ]
+  },
+  {
+   "field": "total_kl",
+   "op": "prefer",
+   "as": "number",
+   "of": [
+    "w_read_kl",
+    "w_tier_kl"
+   ]
+  },
+  {
+   "field": "refuse_ex_r",
+   "op": "sub",
+   "of": [
+    "refuse_inc_r",
+    "refuse_vat_r"
+   ]
+  },
+  {
+   "field": "ws_total_ex_r",
+   "op": "sub",
+   "of": [
+    "ws_total_r",
+    "ws_vat_r"
+   ]
+  },
+  {
+   "field": "sewer_r",
+   "op": "prefer",
+   "of": [
+    "ws_total_ex_r"
+   ]
+  },
+  {
+   "field": "rates_total_r",
+   "op": "prefer",
+   "of": [
+    "swt_rates_installment_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "swt_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "swt_tier_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "swt_tier_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "swt_other_r",
+  "total_ex_vat_r": "swt_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "BALANS OORGEBRING[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "KWITANSIE[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "vat_total": "TOTALE BTW:[ \\t]+(-?[\\d,]+\\.\\d{2}-?)",
+  "total_due": "(?:-?[\\d,]+\\.\\d{2}[ \\t]+){1,6}\\d{2}/\\d{2}/\\d{4}[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "due_date": "(?:-?[\\d,]+\\.\\d{2}[ \\t]+){1,6}(\\d{2}/\\d{2}/\\d{4})[ \\t]+-?[\\d,]+\\.\\d{2}[ \\t]*$"
+ }
+}

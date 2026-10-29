@@ -1,0 +1,187 @@
+{
+ "profile_id": "maquassi_hills",
+ "profile_name": "Maquassi Hills Local Municipality (Wolmaransstad, North West)",
+ "short_name": "Maquassi Hills",
+ "_doc": "Maquassi Hills LM (Wolmaransstad). Bilingual one-page ledger: 'TAX INVOICE <biller VAT> <account> <yyyymmdd>' then DATUM / DOK Nr / BESKRYWING / BEDRAG lines (yy/mm/dd), '*' marks vatable lines, followed by 'VALUE ADDED TAX INCLUDED <vat>' and TOTAL AMOUNT PAYABLE. EVERY AMOUNT IS VAT-INCLUSIVE (proof: 15/115 of the starred lines equals the printed VAT within 1c) and no ex-VAT figure, rate or per-line VAT is printed; the engine has no divide/constant op, so total_ex_vat_r and the Rand columns are deliberately BLANK. The VAT-inclusive electricity figures are kept natively: mq_kwh_incl_r ('KVA<meter> INDUSTRIAL KVA CHARGE' + PREV/CURR/CONS kWh line), mq_kva_incl_r ('KVAS<meter> INDUSTRIAL KVA CHARGE' + kVA CONS) and mq_basic_incl_r, summed in mq_elec_incl_r. Readings, kWh, kVA, meter, tariff (INDUSTRIAL), deposits are filled. Fingerprint: the biller VAT number on the TAX INVOICE line + 'MAQUASSI HILLS'. CHECK mq_ledger_identity_r = balance b/f + receipts + all current lines vs printed total payable: within 0.05 (bill rounds to 5c) on 10/10. No identity for ex-VAT possible.",
+ "fingerprint": {
+  "all": [
+   "4520108517",
+   "MAQUASSI HILLS"
+  ],
+  "any": [],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*DATUM / DATE[ \\t]",
+   "overlay": true,
+   "end": "VALUE ADDED TAX INCLUDED",
+   "require": "INDUSTRIAL KVA CHARGE|BASIC ELECTRICITY"
+  }
+ },
+ "fields": [
+  {
+   "fields": [
+    "account_number",
+    "billing_date"
+   ],
+   "label": "Account number + statement date (YYYYMMDD)",
+   "scope": "document",
+   "pattern": "^[ \\t]*TAX INVOICE[ \\t]+\\d{10}[ \\t]+(\\d{5,})[ \\t]+(\\d{8})[ \\t]*$",
+   "types": [
+    "text",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Property address",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d+[A-Z]?[ \\t]+[A-Z][^\\n]*?)[ \\t]{2,}THIS ACCOUNT MUST",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Total deposits",
+   "scope": "document",
+   "pattern": "Total Deposits[ \\t]+((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "mq_bf_r",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+BALANCE B/FWD[ \\t]+((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "mq_receipts_r",
+   "label": "Receipts",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+[^\\n]*RECEIPT[ \\t]+((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "field": "mq_vat_incl_r",
+   "label": "VAT included (whole bill)",
+   "scope": "document",
+   "pattern": "VALUE ADDED TAX INCLUDED[ \\t]+((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "mq_total_payable_r",
+   "label": "Total amount payable",
+   "scope": "document",
+   "pattern": "TOTAL AMOUNT PAYABLE[ \\t]+((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "mq_charges_incl_r",
+   "label": "All current lines (VAT-inclusive)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\*?[ \\t]*(?!BALANCE B/FWD)(?![^\\n]*RECEIPT[ \\t])[A-Z][^\\n]*?[ \\t]{2,}((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "meter",
+    "mq_kwh_incl_r",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "total_kwh"
+   ],
+   "label": "kWh register line (KVA<meter>) + readings",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\*?[ \\t]*(KVA\\d{5,})[ \\t]+INDUSTRIAL KVA CHARGE[ \\t]+((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*\\n[ \\t]*PREV[ \\t]+(\\d+)[ \\t]+CURR[ \\t]+(\\d+)[ \\t]+CONS[ \\t]+(\\d+)",
+   "types": [
+    "text",
+    "money",
+    "number",
+    "number",
+    "number"
+   ]
+  },
+  {
+   "fields": [
+    "mq_kva_meter",
+    "mq_kva_incl_r",
+    "demand_kva"
+   ],
+   "label": "kVA demand line (KVAS<meter>)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\*?[ \\t]*(KVAS\\d+)[ \\t]+INDUSTRIAL KVA CHARGE[ \\t]+((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*\\n[ \\t]*PREV[ \\t]+(?:\\d+[ \\t]+)?CURR[ \\t]+(?:\\d+[ \\t]+)?CONS[ \\t]+(\\d+)",
+   "types": [
+    "text",
+    "money",
+    "number"
+   ]
+  },
+  {
+   "field": "mq_basic_incl_r",
+   "label": "Basic electricity (incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\*?[ \\t]*BASIC ELECTRICITY[^\\n]*?[ \\t]{2,}((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "field": "tariff_name",
+   "label": "Tariff (from basic charge line)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+\\*?[ \\t]*BASIC ELECTRICITY[ \\t]+([A-Z][A-Z ]*?)[ \\t]{2,}",
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "mq_elec_incl_r",
+   "op": "sum",
+   "of": [
+    "mq_kwh_incl_r",
+    "mq_kva_incl_r",
+    "mq_basic_incl_r"
+   ]
+  },
+  {
+   "field": "mq_ledger_identity_r",
+   "op": "sum",
+   "of": [
+    "mq_bf_r",
+    "mq_receipts_r",
+    "mq_charges_incl_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "_none",
+  "total_ex_vat_r": "_none",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

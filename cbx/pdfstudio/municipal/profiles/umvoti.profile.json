@@ -1,0 +1,317 @@
+{
+ "profile_id": "umvoti",
+ "profile_name": "Umvoti Local Municipality (Greytown, KwaZulu-Natal)",
+ "short_name": "Umvoti",
+ "_doc": "Umvoti Local Municipality (Greytown) 'TAX INVOICE / STATEMENT' (same ledger family as Mthonjaneni but comma decimals): masthead 'VAT Reg No:' - the municipality prints two different numbers across this folder (4000791816 on 7 files, 4850122930 on the 3 mid-2025 files), so the fingerprint is 'UMVOTI LOCAL MUNICIPALITY' + either VAT. Month / Statement Date / Due Date / Account / Amount Due, then a ledger (Date | Reference | Description | Tax | Debit | Credit | Balance; Debit is VAT-inclusive, '4 136,41' money): 'Electricity Basic Commercial- R<ex>' (ex VAT printed in the description), refuse lines '@ R<ex>', 'E-D <meter> Electricity Consumption <n>KWH - [start to end]' with a Units/Rates sub-table, 'E- <meter> Electricity Demand Charge <n>KVA' with its own sub-table, aging strip and a 'Vat' statement total. The VAT column drops trailing zeros ('435,6'), which the money parser would read 100x too big, so it is never read per line; the 4-decimal comma kWh rate ('2,1996') is rebuilt via concat with a '.' taken from the bill. total_ex_vat_r = basic (description) + kWh x rate + kVA x rate; standard_r = energy, demand_r = demand, other_r = basic. Statement date is billing_date. One file set (3 identical copies of the Feb 2026 statement) bills four months (Nov-Feb) at once: Rands and kWh are summed over all periods, readings run first start -> last end, demand_kva is the latest period's kVA while demand_r covers all four. IDENTITY umv_ident_ex = electricity Debits - (statement Vat - refuse VAT, refuse VAT = refuse Debits - refuse description price): 0.00/<=0.01 on 9/10; the June 2025 bill is off by R26.99 because its own refuse 'add' line charges R258.32 ex while its description says R285.32 (electricity VAT / 0.15 still matches total_ex there). No reading dates, tariff name or deposit printed. Checked on 10 bills.",
+ "fingerprint": {
+  "all": [
+   "UMVOTI LOCAL MUNICIPALITY"
+  ],
+  "any": [
+   "4000791816",
+   "4850122930"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Balance Brought Forward\\b",
+   "require": "Electricity (?:Basic|Consumption|Demand)"
+  },
+  "sundry": {
+   "start": "^[ \\t]*180 Days[ \\t]+150 Days"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account",
+   "scope": "document",
+   "pattern": "^[ \\t]*Account[ \\t]+(\\d{5,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "pattern": "Statement Date:[ \\t]+(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "umv_month",
+   "label": "Month (first billed month)",
+   "scope": "document",
+   "pattern": "Month:[ \\t]+([A-Za-z]+[ \\t]+\\d{4})",
+   "type": "text"
+  },
+  {
+   "field": "umv_due_date",
+   "label": "Due Date",
+   "scope": "document",
+   "pattern": "Due Date:[ \\t]+(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "umv_invoice_no",
+   "label": "Invoice No",
+   "scope": "document",
+   "pattern": "Invoice No\\.:[ \\t]+(\\d+[ \\t]+\\d+)",
+   "type": "text"
+  },
+  {
+   "field": "site_name",
+   "label": "Street line under the addressee",
+   "scope": "document",
+   "pattern": "^TELKOM SA[^\\n]*\\n(?:[ \\t]+[^\\n]*\\n|[ \\t]*\\n)*([A-Z][^\\n]*?STREET)\\b",
+   "type": "text"
+  },
+  {
+   "field": "umv_amount_due",
+   "label": "Amount Due",
+   "scope": "document",
+   "pattern": "Amount Due[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "umv_vat_total",
+   "label": "Vat (statement total)",
+   "scope": "document",
+   "pattern": "Reference:[^\\n]*?Vat[ \\t]+(-?\\d[\\d ]*,\\d{2})[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "umv_dot",
+   "label": "literal '.' from the bill (for the rate rebuild)",
+   "scope": "section:electricity",
+   "pattern": "Basic Commercial-[ \\t]*R\\d+(\\.)\\d{2}",
+   "type": "text"
+  },
+  {
+   "field": "umv_basic_ex",
+   "label": "Basic charge ex VAT (printed in the description)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Basic[^\\n]*?-[ \\t]*R(\\d+\\.\\d{2})\\b",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "umv_basic_incl",
+   "label": "Basic charge debit (incl. VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Electricity Basic[^\\n]*?[ \\t]{2,}\\S+[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]{2,}-?\\d{1,3}(?: \\d{3})*,\\d{2}[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "umv_energy_incl",
+   "label": "Consumption debit (incl. VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+E-D[ \\t]+\\d+[ \\t]+Electricity Consumption[^\\n]*?[ \\t]{2,}\\S+[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]{2,}-?\\d{1,3}(?: \\d{3})*,\\d{2}[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "umv_demand_incl",
+   "label": "Demand debit (incl. VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+E-[ \\t]+\\d+[ \\t]+Electricity Demand[^\\n]*?[ \\t]{2,}\\S+[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]{2,}-?\\d{1,3}(?: \\d{3})*,\\d{2}[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "umv_meter",
+   "label": "Energy meter",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+E-D[ \\t]+(\\d+)[ \\t]+Electricity Consumption",
+   "type": "text"
+  },
+  {
+   "field": "umv_demand_meter",
+   "label": "Demand meter",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+E-[ \\t]+(\\d+)[ \\t]+Electricity Demand",
+   "type": "text"
+  },
+  {
+   "field": "umv_kwh",
+   "label": "kWh units (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]+\\d+KWH[ \\t]*-[ \\t]*\\[\\d+[ \\t]+to[ \\t]+\\d+\\][ \\t]+(\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]+\\d+,\\d+[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "umv_rate_int",
+    "umv_rate_frac"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "kWh rate (int, fraction)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+\\d+KWH[ \\t]*-[ \\t]*\\[\\d+[ \\t]+to[ \\t]+\\d+\\][ \\t]+\\d{1,3}(?: \\d{3})*,\\d{2}[ \\t]+(\\d+),(\\d+)[ \\t]*$"
+  },
+  {
+   "field": "umv_start_reading",
+   "label": "Start register (first period)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+\\d+KWH[ \\t]*-[ \\t]*\\[(\\d+)[ \\t]+to[ \\t]+\\d+\\]",
+   "type": "number"
+  },
+  {
+   "field": "umv_end_reading",
+   "label": "End register (last period)",
+   "scope": "section:electricity",
+   "pattern": "[\\s\\S]*^[ \\t]+\\d+KWH[ \\t]*-[ \\t]*\\[\\d+[ \\t]+to[ \\t]+(\\d+)\\]",
+   "type": "number"
+  },
+  {
+   "field": "umv_kva_sum",
+   "label": "kVA units (summed over periods)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]+\\d+KVA[ \\t]*-[ \\t]*\\[\\d+[ \\t]+to[ \\t]+\\d+\\][ \\t]+(\\d+,\\d{2})[ \\t]+[\\d,]+[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "field": "umv_kva",
+   "label": "kVA (latest period)",
+   "scope": "section:electricity",
+   "pattern": "[\\s\\S]*^[ \\t]+\\d+KVA[ \\t]*-[ \\t]*\\[\\d+[ \\t]+to[ \\t]+\\d+\\][ \\t]+(\\d+,\\d{2})[ \\t]+[\\d,]+[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "field": "umv_kva_rate",
+   "label": "kVA rate",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+\\d+KVA[ \\t]*-[ \\t]*\\[\\d+[ \\t]+to[ \\t]+\\d+\\][ \\t]+\\d+,\\d{2}[ \\t]+(\\d+(?:,\\d{2})?)[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "field": "umv_periods",
+   "label": "Number of billed periods (basic lines)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]+Electricity Basic"
+  },
+  {
+   "field": "umv_refuse_incl",
+   "label": "Refuse debits",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Refuse Removal[^\\n]*?[ \\t]{2,}\\S+[ \\t]+(-?\\d{1,3}(?: \\d{3})*,\\d{2})[ \\t]{2,}-?\\d{1,3}(?: \\d{3})*,\\d{2}[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "umv_refuse_ex",
+   "label": "Refuse ex VAT (printed in description)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Refuse Removal[^\\n]*?@[ \\t]*R(\\d+\\.\\d{2})\\b",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "umv_rate",
+   "op": "concat",
+   "of": [
+    "umv_rate_int",
+    "umv_dot",
+    "umv_rate_frac"
+   ]
+  },
+  {
+   "field": "umv_energy_ex",
+   "op": "mul",
+   "of": [
+    "umv_kwh",
+    "umv_rate"
+   ]
+  },
+  {
+   "field": "umv_demand_ex",
+   "op": "mul",
+   "of": [
+    "umv_kva_sum",
+    "umv_kva_rate"
+   ]
+  },
+  {
+   "field": "umv_elec_ex",
+   "op": "sum",
+   "of": [
+    "umv_basic_ex",
+    "umv_energy_ex",
+    "umv_demand_ex"
+   ]
+  },
+  {
+   "field": "umv_elec_incl",
+   "op": "sum",
+   "of": [
+    "umv_basic_incl",
+    "umv_energy_incl",
+    "umv_demand_incl"
+   ]
+  },
+  {
+   "field": "umv_refuse_vat",
+   "op": "sub",
+   "of": [
+    "umv_refuse_incl",
+    "umv_refuse_ex"
+   ]
+  },
+  {
+   "field": "umv_elec_vat_strip",
+   "op": "sub",
+   "of": [
+    "umv_vat_total",
+    "umv_refuse_vat"
+   ]
+  },
+  {
+   "field": "umv_ident_ex",
+   "op": "diff",
+   "of": [
+    "umv_elec_vat_strip",
+    "umv_elec_incl"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "umv_meter",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "umv_start_reading",
+  "end_reading_kwh": "umv_end_reading",
+  "total_kwh": "umv_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "umv_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "umv_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "umv_energy_ex",
+  "offpeak_r": "_none",
+  "demand_r": "umv_demand_ex",
+  "nmd_r": "_none",
+  "other_r": "umv_basic_ex",
+  "total_ex_vat_r": "umv_elec_ex",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

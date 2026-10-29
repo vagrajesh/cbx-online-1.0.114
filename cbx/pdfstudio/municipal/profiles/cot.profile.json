@@ -1,0 +1,633 @@
+{
+ "profile_id": "cot",
+ "profile_name": "City of Tshwane",
+ "short_name": "CoT",
+ "_doc": "City of Tshwane (flattened PDF). Handles BOTH CoT layouts: (a) the metered English/Afrikaans summary bill, and (b) the Afrikaans TOU prepaid bill (Elektrisiteit Vooruitbetaal / Spits=Peak, Niespits=Off-Peak, Standard, Vaste=Fixed, Aanvraag=Demand). All patterns are DATE-AGNOSTIC. Amounts use spaces as thousands separators. XFA 'Adobe Reader' shells cannot be read - flatten in Adobe Reader first.\n\nFINGERPRINT (2026-08-28, hijack fix - extraction rules unchanged). Matching is plain case-insensitive SUBSTRING containment, so the old any-list entry \"Elektrisiteit\" (merely Afrikaans for electricity, printed by 15 of 219 unrelated bills in the Telkom pack) let City of Matlosana (Klerksdorp) bills route here: their Setswana small print reads \"O tshwanetse go duela disuga tsa gago tsa kgwedi...\", and \"tshwanetse\" CONTAINS the all-marker TSHWANE, while their Afrikaans column heading \"WATER / ELEKTRISITEITVERBRUIK\" satisfied the any-list. Rustenburg bills carry the identical Setswana line and were one Afrikaans heading away from the same hijack.\nThe any-list is now the sole discriminator and every entry is unique to Tshwane: \"CITY OF TSHWANE\" and \"STAD TSHWANE\" (the English/Afrikaans corporate names), \"4000142267\" (the CoT VAT registration number, printed on the payment stub as \"CITY OF TSHWANE VAT REG NO 4000142267\" - survives OCR wording damage, cf. mbombela), \"GISKEY\" (the Tshwane billing-system GIS-key field on the stand-info block; language-neutral, present on the real CoT fixture, absent from all 219 other bills in the pack), plus the municipal slogan and portal domain. \"MATLOSANA\" is added to reject_if_text as defence in depth - no CoT document names another municipality, so this covers every Matlosana layout and language variant. \"Prepayment Account Update\" must stay: it hands the Tshwane prepayment letters to cot_smart, which sorts AFTER cot. \"requires Adobe Reader 8 or higher\" must stay: it keeps unrendered Tshwane XFA e-billing shells in Unrecognized instead of producing an empty row. | CBX 1.0.77 (tested on the Telkom folder): the prepaid TOU registers print as E_PK_PP / E_OP_PP / E_STD_PP and the 'Elektrisiteit Vooruitbetaal' line prints no amounts — kWh now read for those codes and, when the category line has no total, the ex-VAT total is the sum of its charge lines (checked against the bill's own 'Total Current Levy (B)').",
+ "canonical": {
+  "deposit_r": "cot_deposit_r",
+  "guarantee_r": "cot_guarantee_r",
+  "site_name": "site_out",
+  "tariff_name": "cot_tariff",
+  "reading_type": [
+   "reading_type",
+   "w_reading_type"
+  ],
+  "meter": "meter",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "cot_start_reading",
+  "end_reading_kwh": "cot_end_reading",
+  "peak_kwh": "peak_kwh",
+  "standard_kwh": "std_kwh_out",
+  "offpeak_kwh": "offpeak_kwh",
+  "total_kwh": "total_kwh_out",
+  "demand_kva": "demand_kva",
+  "peak_r": "peak_ex_r",
+  "standard_r": "std_ex_out",
+  "offpeak_r": "offpeak_ex_r",
+  "demand_r": "demand_ex_r",
+  "other_r": "cot_other_r",
+  "total_ex_vat_r": "elec_ex_out"
+ },
+ "fingerprint": {
+  "all": [
+   "TSHWANE"
+  ],
+  "any": [
+   "CITY OF TSHWANE",
+   "STAD TSHWANE",
+   "4000142267",
+   "GISKEY",
+   "IGNITING EXCELLENCE",
+   "tshwane.gov.za"
+  ],
+  "reject_if_text": [
+   "Prepayment Account Update",
+   "requires Adobe Reader 8 or higher",
+   "MATLOSANA"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "(?:Elektrisiteit(?: Vooruitbetaal)?\\s*\\n\\s*(?:Niespits|Lesingdatums)|\\d{2}/\\d{2}/\\d{2}\\s+Electricity\\s+-?[\\d ,]+\\.\\d{2}|\\d{2}/\\d{2}/\\d{2}\\s+Electricity\\s*$)"
+  },
+  "water": {
+   "start": "\\bWater\\s*\\n\\s*Lesingdatums"
+  },
+  "sewerage": {
+   "start": "\\bSanitasie\\s*\\n\\s*Lesingdatums"
+  }
+ },
+ "fields": [
+  {
+   "fields": [
+    "cot_deposit_r",
+    "cot_guarantee_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Deposit / Guarantee",
+   "scope": "document",
+   "pattern": "(?:Deposit date|Deposito ?-?datum)[^\\n]*\\n\\s*\\S+\\s+\\S+\\s+(?:\\d{2}/\\d{2}/\\d{2}\\s+)?([\\d ,]+\\.\\d{2})\\s+(?:\\d{2}/\\d{2}/\\d{2}\\s+)?([\\d ,]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account No\\.\\s+(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "invoice_number",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Copy of TAX invoice\\s*:\\s*(\\d+)|TAX invoice\\s*:?\\s*(\\d{6,})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "billing_date",
+   "label": "Issued Date",
+   "scope": "document",
+   "pattern": "Issued\\s*:?\\s*(\\d{2}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "account_holder",
+   "label": "Account Holder",
+   "scope": "header",
+   "pattern": "^\\s+([A-Z][A-Z .]+\\((?:BAF|PRET)[^)]*\\))",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "cot_acct_for",
+    "cot_stand",
+    "cot_township",
+    "cot_days"
+   ],
+   "label": "Account for / Stand / Township / Days",
+   "scope": "document",
+   "pattern": "Account for\\s+Stand no\\s+Township\\s+Days\\s*\\n\\s*(\\S+)\\s+(\\S+)\\s+([A-Z][A-Z0-9 ()/-]*?)\\s+(\\d+)\\s*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "cot_end_reading",
+   "label": "End reading (register)",
+   "scope": "section:electricity",
+   "patterns": [
+    "Meter: [\\w-]+\\([^)]*\\) Huidige (\\d+) Vorige \\d+ Verbruik[\\s\\d]*?KWH\\s*\\(\\s*E ?STD(?![\\s\\S]*Huidige \\d+ Vorige \\d+ Verbruik[\\s\\d]*?KWH\\s*\\(\\s*E ?STD)",
+    "Meter: [\\w-]+\\([^)]*\\) Huidige (\\d+) Verbruik[\\s\\d]+?KWH\\s*\\(\\s*E ?STD(?![\\s\\S]*Huidige \\d+ Verbruik[\\s\\d]+?KWH\\s*\\(\\s*E ?STD)",
+    "Meter: [\\w-]+\\([^)]*\\) Huidige (\\d+) Vorige \\d+\\s*$(?![\\s\\S]*Huidige \\d+ Vorige \\d+\\s*$)",
+    "Meter: [\\w-]+\\([^)]*\\) Huidige (\\d+) Vorige\\s+\\d+[\\s\\S]{0,40}?Verbruik[\\s\\d]*?KWH\\b(?!\\s*\\()(?![\\s\\S]*Meter: [\\w-]+\\([^)]*\\) Huidige \\d+ Vorige\\s+\\d+[\\s\\S]{0,40}?Verbruik[\\s\\d]*?KWH\\b(?!\\s*\\())",
+    "Meter: [\\w-]+\\([^)]*\\) Curr (\\d+) Cons[\\s\\d]+?KWH\\s*\\(\\s*E\\s+STD(?![\\s\\S]*Curr \\d+ Cons[\\s\\d]+?KWH\\s*\\(\\s*E\\s+STD)",
+    "Meter: [\\w-]+\\([^)]*\\) Curr (\\d+) Prev\\s+\\d+\\s+Cons[\\s\\d]+?(?:\\(X\\d+\\)\\s*)?KWH\\b(?!\\s*\\()(?![\\s\\S]*Meter: [\\w-]+\\([^)]*\\) Curr \\d+ Prev\\s+\\d+\\s+Cons[\\s\\d]+?(?:\\(X\\d+\\)\\s*)?KWH\\b(?!\\s*\\())",
+    "Meter: [\\w-]+\\([^)]*\\) Curr (\\d+) Cons[\\s\\d]+?KWH\\b(?!\\s*\\()(?![\\s\\S]*Meter: [\\w-]+\\([^)]*\\) Curr \\d+ Cons[\\s\\d]+?KWH\\b(?!\\s*\\())"
+   ],
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "cot_start_reading",
+   "label": "Start reading (register)",
+   "scope": "section:electricity",
+   "patterns": [
+    "Meter: [\\w-]+\\([^)]*\\) Huidige \\d+ Vorige\\s+(\\d+)\\s*Verbruik[\\s\\d]*?KWH\\s*\\(\\s*E ?STD",
+    "Meter: [\\w-]+\\([^)]*\\) Huidige \\d+ Vorige (\\d+)\\s*$",
+    "Meter: [\\w-]+\\([^)]*\\) Huidige \\d+ Vorige\\s+(\\d+)[\\s\\S]{0,40}?Verbruik[\\s\\d]*?KWH\\b(?!\\s*\\()",
+    "Meter: [\\w-]+\\([^)]*\\) Curr \\d+ Prev\\s+(\\d+)\\s+Cons[\\s\\d]+?(?:\\(X\\d+\\)\\s*)?KWH\\b(?!\\s*\\()"
+   ],
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "cot_tariff",
+   "label": "Tariff wording",
+   "scope": "section:electricity",
+   "patterns": [
+    "Charge\\s+(E[A-Z_]*\\w*\\s+Time [Oo]f Use)",
+    "((?:laevolt|lae volt|l/volt)\\s+(?:aanvraagskaal|gebruiktyd))",
+    "Energy charge\\s+((?:non ?)?domestic|farms)(?:\\s*-\\s*M/O)?",
+    "Energy Charge\\s+(L/?V\\s+Demand Scale)",
+    "Energieheffing\\s+((?:nie)?huishoudelik|plase|11\\s?kV\\s+aanbodskaal)"
+   ],
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "township",
+   "label": "Township",
+   "scope": "header",
+   "pattern": "\\n\\s+\\S+\\s+\\d+\\s+([A-Z][A-Z0-9 ]+?)\\s+\\d+\\s*\\n\\s*Address",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "due_date",
+   "label": "Current Due Date",
+   "scope": "document",
+   "pattern": "CURRENT ACCOUNT\\s+DUE DATE\\s+(\\d{2}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "total_due",
+   "label": "Amount Payable",
+   "scope": "document",
+   "pattern": "CURRENT ACCOUNT\\s+DUE DATE\\s+\\d{2}/\\d{2}/\\d{2}\\s+AMOUNT PAYABLE\\s+(-?[\\d ,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "total_ex_r",
+    "total_vat_r",
+    "total_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Total Payable (ex/vat/inc)",
+   "scope": "document",
+   "pattern": "TOTAL AMOUNT PAYABLE \\(A ?\\+ ?B\\)\\s+(-?[\\d ,]+\\.\\d{2}-?)\\s+(-?[\\d ,]+\\.\\d{2}-?)\\s+(-?[\\d ,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "elec_ex_r",
+    "elec_vat_r",
+    "elec_total_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity ex/vat/inc (summary)",
+   "scope": "document",
+   "pattern": "\\d{2}/\\d{2}/\\d{2}\\s+(?:Elektrisiteit|Electricity)\\s+(-?[\\d ,]+\\.\\d{2}-?)\\s+(-?[\\d ,]+\\.\\d{2}-?)\\s+(-?[\\d ,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "read_end",
+    "read_start",
+    "read_days"
+   ],
+   "label": "Elec Reading Dates/Days",
+   "scope": "section:electricity",
+   "patterns": [
+    "Lesingdatums Huidige (\\d{2}/\\d{2}/\\d{2}) Vorige (\\d{2}/\\d{2}/\\d{2})\\s*\\(\\s*(\\d+)",
+    "Reading dates:\\s*Curr (\\d{2}/\\d{2}/\\d{2}) Prev (\\d{2}/\\d{2}/\\d{2})\\s*\\(\\s*(\\d+)"
+   ],
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "meter",
+   "label": "Elec Meter No",
+   "scope": "section:electricity",
+   "pattern": "Meter:\\s*([\\w-]+?)\\s*\\([^)]*\\)(?:(?!Meter:)[\\s\\S]){0,160}?K(?:WH|VA)\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "reading_type",
+   "label": "Actual/Estimate",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "Meter:\\s*[\\w-]*\\s*\\(\\s*(Werklike|Geskatte|Actual|Est(?:imated?|\\.)?|Final)\\s*\\)(?:(?!Meter:)[\\s\\S]){0,160}?K(?:WH|VA)\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "peak_kwh",
+   "collect": "sum",
+   "label": "Peak kWh (E PK)",
+   "scope": "section:electricity",
+   "type": "number",
+   "required": false,
+   "patterns": [
+    "(?:Verbruik|Cons)\\s*([\\d ]+?)\\s*KWH\\s*\\(\\s*E\\s+PK\\s*\\)",
+    "(?:Verbruik|Cons)\\s*([\\d ]+?)\\s*KWH\\s*\\(\\s*E[\\s_]+PK(?:_PP)?\\s*\\)"
+   ]
+  },
+  {
+   "field": "offpeak_kwh",
+   "collect": "sum",
+   "label": "Off-Peak kWh (E OFF PK)",
+   "scope": "section:electricity",
+   "type": "number",
+   "required": false,
+   "patterns": [
+    "(?:Verbruik|Cons)\\s*([\\d ]+?)\\s*KWH\\s*\\(\\s*E\\s+OFF\\s+PK\\s*\\)",
+    "(?:Verbruik|Cons)\\s*([\\d ]+?)\\s*KWH\\s*\\(\\s*E[\\s_]+(?:OFF[\\s_]+PK|OP)(?:_PP)?\\s*\\)"
+   ]
+  },
+  {
+   "field": "standard_kwh",
+   "label": "Standard kWh (E STD)",
+   "collect": "sum",
+   "scope": "section:electricity",
+   "type": "number",
+   "required": false,
+   "patterns": [
+    "(?:Verbruik|Cons)\\s*([\\d ]+?)\\s*KWH\\s*\\(\\s*E\\s+STD\\s*\\)",
+    "(?:Verbruik|Cons)\\s*([\\d ]+?)\\s*KWH\\s*\\(\\s*E[\\s_]+STD(?:_PP)?\\s*\\)"
+   ]
+  },
+  {
+   "fields": [
+    "peak_ex_r",
+    "peak_vat_r",
+    "peak_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Spits (Peak) ex/vat/inc",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "patterns": [
+    "(?<!Nie)(?<!nie)Spits energ?\\s*heff[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)",
+    "(?<!Off )Peak Energy Charge[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "offpeak_ex_r",
+    "offpeak_vat_r",
+    "offpeak_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Niespits (Off-Peak) ex/vat/inc",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "patterns": [
+    "Niespits energ?\\s*heff[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)",
+    "Off Peak Energy Charge[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "standard_ex_r",
+    "standard_vat_r",
+    "standard_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Standard ex/vat/inc",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "patterns": [
+    "Standard Energieheff[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)",
+    "Standard Energy Charge[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "fixed_ex_r",
+    "fixed_vat_r",
+    "fixed_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Vaste Heffing (Fixed) ex/vat/inc",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "patterns": [
+    "Vaste Heffing[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)",
+    "Fixed Charge[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "demand_ex_r",
+    "demand_vat_r",
+    "demand_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Demand ex/vat/inc (Aanvraagheff / Vraag. Hef)",
+   "collect": "sum",
+   "scope": "section:electricity",
+   "patterns": [
+    "Aanvraagheff[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)",
+    "Vraag\\.?\\s*Hef[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)",
+    "Demand Charge[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)",
+    "Dem\\.\\s*Charge[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "cot_flat_ex_r",
+    "cot_flat_vat_r",
+    "cot_flat_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Flat Energy (ex/vat/inc)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "patterns": [
+    "(?<!Standard )Energieheffing\\s+(?:laevolt|(?:nie)?huishoudelik|plase|11\\s?kV\\s+aanbodskaal)[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)",
+    "Energy charge\\s+(?:(?:non ?)?domestic|farms)(?:\\s*-\\s*M/O)?[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)",
+    "Energy Charge\\s+L/?V\\s+Demand Scale[^\\n]*?(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)\\s+(-?[\\d ]+\\.\\d{2}-?)"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "cot_adj_kwh",
+   "label": "Electricity ADJ kWh (signed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "patterns": [
+    "ADJ Cons\\.:[\\s\\S]{0,200}?([\\d ,.]+-?)\\s*KWH\\)",
+    "REGST\\s*VERB:[\\s\\S]{0,200}?([\\d ,.]+-?)\\s*KWH\\)"
+   ],
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "cot_flat_kwh",
+   "label": "Flat kWh (untagged registers)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "patterns": [
+    "(?<!Totale )(?:Verbruik|Cons)\\b\\s*([\\d ]+?)\\s*KWH\\b(?!\\s*\\()",
+    "Totale verbruik\\s*([\\d ]+?)\\s*KWH"
+   ],
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "cot_mult_cons",
+   "label": "CT-register Cons (pre-multiplier)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?:Verbruik|Cons)\\s*([\\d ]+?)\\s*\\(X\\d+\\)\\s*KWH",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "cot_mult_factor",
+   "label": "CT-register multiplier",
+   "scope": "section:electricity",
+   "pattern": "(?:Verbruik|Cons)\\s*[\\d ]+?\\s*\\(X(\\d+)\\)\\s*KWH",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "demand_kva",
+   "label": "Demand kVA",
+   "scope": "section:electricity",
+   "pattern": "(?:Verbruik|Cons)\\s*([\\d ]+?)\\s*KVA\\b",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "w_ex_r",
+    "w_vat_r",
+    "w_total_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Water ex/vat/inc (summary)",
+   "scope": "document",
+   "pattern": "\\d{2}/\\d{2}/\\d{2}\\s+Water\\s+(-?[\\d ,]+\\.\\d{2}-?)\\s+(-?[\\d ,]+\\.\\d{2}-?)\\s+(-?[\\d ,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "w_meter",
+    "w_reading_type",
+    "w_curr",
+    "w_cons"
+   ],
+   "types": [
+    "text",
+    "text",
+    "number",
+    "number"
+   ],
+   "label": "Water Meter/Type/Curr/Cons",
+   "scope": "section:water",
+   "pattern": "Meter:\\s*(\\w+?)\\s*\\(\\s*(Werklike|Geskatte)\\s*\\)\\s*Huidige\\s*([\\d ]+?)\\s*(?:Vorige\\s*[\\d ]+?\\s*)?Verbruik\\s*([\\d ]+?)\\s*KL",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "s_ex_r",
+    "s_vat_r",
+    "s_total_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Sanitasie ex/vat/inc (summary)",
+   "scope": "document",
+   "pattern": "\\d{2}/\\d{2}/\\d{2}\\s+(?:Sanitasie|Sanitation|Sewer)\\s+(-?[\\d ,]+\\.\\d{2}-?)\\s+(-?[\\d ,]+\\.\\d{2}-?)\\s+(-?[\\d ,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "cot_levy_ex_r",
+   "label": "Total Current Levy (B) excl. VAT — the bill's own total",
+   "scope": "document",
+   "pattern": "Total Current Levy \\(B\\)\\s+(-?[\\d ]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_out",
+   "op": "prefer",
+   "of": [
+    "account_holder",
+    "cot_township"
+   ]
+  },
+  {
+   "field": "total_kwh_sum",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "peak_kwh",
+    "standard_kwh",
+    "offpeak_kwh"
+   ]
+  },
+  {
+   "field": "std_ex_out",
+   "op": "prefer",
+   "of": [
+    "standard_ex_r",
+    "cot_flat_ex_r"
+   ]
+  },
+  {
+   "field": "cot_mult_kwh",
+   "op": "mul",
+   "as": "number",
+   "of": [
+    "cot_mult_cons",
+    "cot_mult_factor"
+   ]
+  },
+  {
+   "field": "std_kwh_out",
+   "op": "prefer",
+   "of": [
+    "standard_kwh",
+    "cot_mult_kwh",
+    "cot_flat_kwh"
+   ]
+  },
+  {
+   "field": "total_kwh_base",
+   "op": "prefer",
+   "of": [
+    "total_kwh_sum",
+    "cot_mult_kwh",
+    "cot_flat_kwh"
+   ]
+  },
+  {
+   "field": "total_kwh_out",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "total_kwh_base",
+    "cot_adj_kwh"
+   ]
+  },
+  {
+   "field": "elec_ex_parts",
+   "op": "sum",
+   "of": [
+    "peak_ex_r",
+    "std_ex_out",
+    "offpeak_ex_r",
+    "fixed_ex_r",
+    "demand_ex_r"
+   ]
+  },
+  {
+   "field": "elec_ex_out",
+   "op": "prefer",
+   "of": [
+    "elec_ex_r",
+    "elec_ex_parts"
+   ]
+  },
+  {
+   "field": "cot_other_r",
+   "op": "sub",
+   "of": [
+    "elec_ex_out",
+    "peak_ex_r",
+    "std_ex_out",
+    "offpeak_ex_r",
+    "demand_ex_r"
+   ]
+  }
+ ],
+ "recon": {
+  "prev_balance": "Balance Brought Forward\\s+(-?[\\d, ]+\\.\\d{2}-?)",
+  "incoming_payment": "Payment \\(Thank You\\)\\s+(-?[\\d, ]+\\.\\d{2}-?)",
+  "current_ex": "Total Current Levy \\(B\\)\\s+([\\d, ]+\\.\\d{2})",
+  "vat": "Total Current Levy \\(B\\)\\s+[\\d, ]+\\.\\d{2}\\s+([\\d, ]+\\.\\d{2})",
+  "total_due": "CURRENT ACCOUNT[^\\n]*AMOUNT PAYABLE\\s+(-?[\\d, ]+\\.\\d{2}-?)",
+  "due_date": "CURRENT ACCOUNT\\s+DUE DATE\\s+(\\d{2}/\\d{2}/\\d{2})"
+ }
+}

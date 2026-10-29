@@ -1,0 +1,243 @@
+{
+ "profile_id": "ray_nkonyeni",
+ "profile_name": "Ray Nkonyeni Local Municipality (Port Shepstone, KwaZulu-Natal)",
+ "short_name": "Ray Nkonyeni",
+ "_doc": "Ray Nkonyeni Local Municipality (Port Shepstone) Emunsoft 'TAX INVOICE/STATEMENT OF ACCOUNT': masthead with the municipality's own VAT No. 4400275071, Account Number / Account Date / Tax Invoice No / ERF / Street / Deposit block, a METER READINGS table in two print variants (older: OLD | NEW | flag | CONSUMPTION | LEVIED AMOUNT | 'dd/mm/yyyy - dd/mm/yyyy'; newer: OLD | NEW | READING DATE | READING TYPE A/E/I | CONSUMPTION), an ACCOUNT DETAILS ledger ('date code DESCRIPTION units @ tariff * value', credits with trailing '-'), a VAT line and an aging strip ending CLOSING BALANCE / TOTAL DUE THIS MONTH. Values are ex VAT. Electricity lines = 'ELECTRICITY <amps>' (energy, single flat band -> standard) and '<type> (<amps>) BASIC CHARGE' (-> other_r); total_ex_vat_r = their sum. total_kwh / readings / meter / reading type come from the meter table (the ledger units equal the table consumption on 12/12). read_start only exists on the older variant. Fingerprint: VAT 4400275071 + 'RAY NKONYENI'. IDENTITY ray_ident_ex = closing balance - opening balance - every non-electricity ledger line (payments, VAT, interest): 0.00 on 12/12; VAT line = 15% of total_ex on 12/12. Checked on 12 bills.",
+ "fingerprint": {
+  "all": [
+   "4400275071"
+  ],
+  "any": [
+   "RAY NKONYENI"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*ACCOUNT DETAILS[ \\t]*$",
+   "require": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+(?=[^\\n]*?(?:ELECTRICITY|AMPS\\)[ \\t]+BASIC CHARGE))"
+  },
+  "sundry": {
+   "start": "^[ \\t]*REMITTANCE ADVICE\\b"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "^[ \\t]*Account Number:[ \\t]*(\\d{6,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2}[ \\t]+[A-Za-z]{3}[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "ray_tax_invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.?:[ \\t]*(\\d{6,})",
+   "type": "text"
+  },
+  {
+   "field": "ray_due_date",
+   "label": "Total due on or before",
+   "scope": "document",
+   "pattern": "TOTAL DUE ON OR BEFORE:?[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "ray_street",
+   "label": "Street (site)",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]*([\\d,]*\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "ray_opening_r",
+   "label": "Opening balance",
+   "scope": "document",
+   "pattern": "^[ \\t]*OPENING BALANCE[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ray_closing_r",
+   "label": "Closing balance / total due (last aging column)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d+\\+[ \\t]*DAYS[^\\n]*(?:CLOSING BALANCE|TOTAL DUE)[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(?:\\S+[ \\t]+){5}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ray_current_r",
+   "label": "Aging CURRENT",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d+\\+[ \\t]*DAYS[^\\n]*(?:CLOSING BALANCE|TOTAL DUE)[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(?:\\S+[ \\t]+){4}(-?[\\d,]*\\.\\d{2}-?)[ \\t]+\\S+[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "ray_vat_r",
+   "label": "VAT line",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\w{6}[ \\t]+VAT[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ray_nonelec_r",
+   "label": "Every ledger line that is not electricity (payments, VAT, interest, other services)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+(?=\\S)(?![^\\n]*?(?:ELECTRICITY|AMPS\\)[ \\t]+BASIC CHARGE))[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "ray_elec_lines_r",
+   "label": "Electricity ledger lines (sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+(?=[^\\n]*?(?:ELECTRICITY|AMPS\\)[ \\t]+BASIC CHARGE))[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "ray_meter",
+    "ray_old_reading",
+    "ray_new_reading",
+    "ray_read_type",
+    "ray_cons_kwh",
+    "ray_levied_r",
+    "ray_read_from",
+    "ray_read_to"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "text",
+    "number",
+    "money",
+    "date",
+    "date"
+   ],
+   "label": "Meter row, layout with READING DATES range",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+ELECTRICITY[ \\t]+([\\d.]+)[ \\t]+([\\d.]+)[ \\t]+([AEIN])[ \\t]+([\\d.]+)[ \\t]+([\\d,]*\\.\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})"
+  },
+  {
+   "fields": [
+    "ray_meter",
+    "ray_old_reading",
+    "ray_new_reading",
+    "ray_read_to",
+    "ray_read_type",
+    "ray_cons_kwh"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "date",
+    "text",
+    "number"
+   ],
+   "label": "Meter row, layout with one READING DATE",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+ELECTRICITY[ \\t]+([\\d.]+)[ \\t]+([\\d.]+)[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+([AEIN])[ \\t]+([\\d.]+)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ray_tariff",
+    "ray_energy_kwh",
+    "ray_energy_r"
+   ],
+   "types": [
+    "text",
+    "number",
+    "money"
+   ],
+   "label": "Energy line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+(ELECTRICITY[^\\n]*?)[ \\t]{2,}(-?[\\d.]+)[ \\t]*@[ \\t]*[\\d,]*\\.\\d+[ \\t]*\\*?[ \\t]+(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "field": "ray_basic_r",
+   "label": "Basic charge line",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+[^\\n]*?AMPS\\)[ \\t]+BASIC CHARGE[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "ray_interest_r",
+   "label": "Interest lines (not in total)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+[^\\n]*?INTEREST[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "ray_ident_ex",
+   "op": "sub",
+   "of": [
+    "ray_closing_r",
+    "ray_opening_r",
+    "ray_nonelec_r"
+   ]
+  },
+  {
+   "field": "ray_other_r",
+   "op": "sub",
+   "of": [
+    "ray_elec_lines_r",
+    "ray_energy_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "ray_street",
+  "billing_date": "billing_date",
+  "tariff_name": "ray_tariff",
+  "account_number": "account_number",
+  "meter": "ray_meter",
+  "reading_type": "ray_read_type",
+  "read_start": "ray_read_from",
+  "read_end": "ray_read_to",
+  "start_reading_kwh": "ray_old_reading",
+  "end_reading_kwh": "ray_new_reading",
+  "total_kwh": "ray_cons_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "ray_energy_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "ray_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "ray_other_r",
+  "total_ex_vat_r": "ray_elec_lines_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

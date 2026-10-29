@@ -1,0 +1,273 @@
+{
+ "profile_id": "inxuba_yethemba",
+ "profile_name": "Inxuba Yethemba Local Municipality (Cradock / Middelburg, Eastern Cape)",
+ "short_name": "Inxuba Yethemba",
+ "_doc": "Pre-printed stationery statement: the text layer carries only the data (no municipality name, no municipal VAT number, no address of the biller) - a compact ledger of the same statement engine as the King Sabata Dalindyebo / Knysna family but WITHOUT the aging header text that KSD keys on. One bulk HV commercial supply per bill: three ledger lines (energy 'ELEC BULK ...', demand 'ELEC CONS KVA ...', 'ELEC BASIC') each with a VAT column and an amount-incl-VAT column, followed by READINGS / CONSUM / READ DATE and TIER (units @ rate = Rand ex VAT) sub-lines. Readings are register values with a CT multiplier (CONSUM = diff x 100), so the flat energy is mapped to standard_kwh/standard_r (as KSD does). FINGERPRINT: the biller prints no own marker, so the profile keys on its tariff descriptions 'HIGH COMMERCIAL' + 'ELEC BULK/CONS KVA HIGH COMMERCIAL' (unique to this folder across the corpus) plus the engine's 'READ DATE:' and 'TOTAL VAT:', and rejects '120 DAYS PLUS' (KSD). total_ex_vat_r = sum of (amount - VAT) over the three electricity ledger lines; identity iy_check_tiers_r = printed TIER energy Rand + printed TIER demand Rand + basic ex VAT (energy and demand verified independently, basic only circularly). Checked on 10 bills.",
+ "fingerprint": {
+  "all": [
+   "READ DATE:",
+   "TOTAL VAT:",
+   "HIGH COMMERCIAL"
+  ],
+  "any": [
+   "ELEC BULK HIGH COMMERCIAL",
+   "ELEC CONS KVA HIGH COMMERCIAL"
+  ],
+  "reject_if_text": [
+   "120 DAYS PLUS",
+   "Please wait..."
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+(?:[ \\t]\\S+)?[ \\t]{2,}ELEC[ \\t]",
+   "require": "READINGS:[^\\n]*KWH"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number (account-period line)",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]{20,}(\\d{6,})-\\d{2}-\\d{2}[ \\t]*$",
+    "REFERENCE:[ \\t]+(\\d{6,})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "iy_statement_month",
+   "label": "Statement period MM-YY",
+   "scope": "document",
+   "pattern": "^[ \\t]{20,}\\d{6,}-(\\d{2}-\\d{2})[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "iy_print_date",
+    "billing_date"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Header dates (print date / account date)",
+   "scope": "document",
+   "pattern": "^[ \\t]{20,}\\d{6,}[ \\t]{2,}(\\d{2}/\\d{2}/\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Property description (above the addressee)",
+   "scope": "document",
+   "pattern": "^[ \\t]{30,}(?:\\d+[ \\t]+)?(\\S[^\\n]*?)[ \\t]*\\n(?:[ \\t]*\\n)?[ \\t]*TFMC\\b",
+   "type": "text"
+  },
+  {
+   "field": "iy_total_vat_r",
+   "label": "TOTAL VAT (whole statement)",
+   "scope": "document",
+   "pattern": "TOTAL VAT:[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "iy_amount_due_r",
+    "iy_due_date"
+   ],
+   "types": [
+    "money",
+    "date"
+   ],
+   "label": "Aging strip: current + due date",
+   "scope": "document",
+   "pattern": "((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]{2,}-?[\\d ]+\\.\\d{2}-?[ \\t]*$"
+  },
+  {
+   "fields": [
+    "tariff_name",
+    "iy_kwh_vat_r",
+    "iy_kwh_inc_r"
+   ],
+   "types": [
+    "text",
+    "money",
+    "money"
+   ],
+   "label": "Energy ledger line (description, VAT, amount incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+(?:[ \\t]\\S+)?[ \\t]{2,}(ELEC[^\\n]*?)[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*\\n[ \\t]*READINGS:[^\\n]*KWH",
+   "required": true
+  },
+  {
+   "fields": [
+    "iy_kva_vat_r",
+    "iy_kva_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Demand ledger line (VAT, amount incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+(?:[ \\t]\\S+)?[ \\t]{2,}ELEC[^\\n]*?[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*\\n[ \\t]*READINGS:[^\\n]*KVA"
+  },
+  {
+   "fields": [
+    "iy_basic_vat_r",
+    "iy_basic_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "ELEC BASIC ledger line (VAT, amount incl VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+(?:[ \\t]\\S+)?[ \\t]{2,}ELEC BASIC[^\\n]*?[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$"
+  },
+  {
+   "fields": [
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "iy_consum_kwh"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "kWh READINGS line (start-end, CONSUM)",
+   "scope": "section:electricity",
+   "pattern": "READINGS:[ \\t]*((?<![\\d.,])\\d+(?:\\.\\d+)?)(?![\\d])[ \\t]*-[ \\t]*((?<![\\d.,])\\d+(?:\\.\\d+)?)(?![\\d])[ \\t]+CONSUM:[ \\t]*((?<![\\d.,])\\d+(?:\\.\\d+)?)(?![\\d])[ \\t]+KWH",
+   "required": true
+  },
+  {
+   "field": "iy_read_date",
+   "label": "kWh read date",
+   "scope": "section:electricity",
+   "pattern": "CONSUM:[^\\n]*KWHs?[ \\t]+READ DATE:[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "demand_kva",
+   "label": "kVA CONSUM",
+   "scope": "section:electricity",
+   "pattern": "CONSUM:[ \\t]*((?<![\\d.,])\\d+(?:\\.\\d+)?)(?![\\d])[ \\t]+KVA",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "iy_tier_kwh",
+    "iy_tier_kwh_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Energy TIER line (kWh = R, ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "KWHs?[^\\n]*\\n[ \\t]*TIER\\d+:[ \\t]*((?<![\\d.,])\\d+(?:\\.\\d+)?)(?![\\d])[ \\t]*@[ \\t]*[\\d.]+[ \\t]*=[ \\t]*((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])"
+  },
+  {
+   "field": "iy_tier_kva_r",
+   "label": "Demand TIER line R (ex VAT)",
+   "type": "money",
+   "scope": "section:electricity",
+   "pattern": "KVAs?[^\\n]*\\n[ \\t]*TIER\\d+:[ \\t]*[\\d.]+[ \\t]*@[ \\t]*[\\d.]+[ \\t]*=[ \\t]*((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])"
+  }
+ ],
+ "computes": [
+  {
+   "field": "iy_kwh_ex_r",
+   "op": "sub",
+   "of": [
+    "iy_kwh_inc_r",
+    "iy_kwh_vat_r"
+   ]
+  },
+  {
+   "field": "iy_kva_ex_r",
+   "op": "sub",
+   "of": [
+    "iy_kva_inc_r",
+    "iy_kva_vat_r"
+   ]
+  },
+  {
+   "field": "iy_basic_ex_r",
+   "op": "sub",
+   "of": [
+    "iy_basic_inc_r",
+    "iy_basic_vat_r"
+   ]
+  },
+  {
+   "field": "iy_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "iy_kwh_ex_r",
+    "iy_kva_ex_r",
+    "iy_basic_ex_r"
+   ]
+  },
+  {
+   "field": "iy_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "iy_kwh_vat_r",
+    "iy_kva_vat_r",
+    "iy_basic_vat_r"
+   ]
+  },
+  {
+   "field": "iy_check_tiers_r",
+   "op": "sum",
+   "of": [
+    "iy_tier_kwh_r",
+    "iy_tier_kva_r",
+    "iy_basic_ex_r"
+   ]
+  },
+  {
+   "field": "iy_total_kwh",
+   "op": "prefer",
+   "as": "number",
+   "of": [
+    "iy_consum_kwh",
+    "iy_tier_kwh"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "iy_read_date",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "iy_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "iy_total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "iy_kwh_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "iy_kva_ex_r",
+  "nmd_r": "_none",
+  "other_r": "iy_basic_ex_r",
+  "total_ex_vat_r": "iy_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

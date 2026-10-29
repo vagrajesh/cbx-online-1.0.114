@@ -1,0 +1,107 @@
+{
+  "title": "page.team.title",
+  "intro": "page.team.intro",
+  "menu": true,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_board",
+                "type": "board",
+                "title": "w.w_board.title",
+                "source": {
+                  "data": "tasks"
+                },
+                "lane": "status",
+                "card": "title",
+                "fields": [
+                  "who",
+                  "size",
+                  "due"
+                ],
+                "where": [
+                  {
+                    "field": "kind",
+                    "op": "equals",
+                    "value": "Team"
+                  }
+                ],
+                "preset": {
+                  "kind": "Team",
+                  "who": ""
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_open",
+                "type": "table",
+                "title": "w.w_open.title",
+                "source": {
+                  "data": "tasks"
+                },
+                "columns": [
+                  {
+                    "key": "title",
+                    "label": "col.title"
+                  },
+                  {
+                    "key": "size",
+                    "label": "col.size"
+                  },
+                  {
+                    "key": "due",
+                    "label": "col.due"
+                  }
+                ],
+                "where": [
+                  {
+                    "field": "kind",
+                    "op": "equals",
+                    "value": "Team"
+                  },
+                  {
+                    "field": "who",
+                    "op": "empty"
+                  },
+                  {
+                    "field": "status",
+                    "op": "not_equals",
+                    "value": "Done"
+                  }
+                ],
+                "search": false,
+                "preset": {
+                  "kind": "Team"
+                },
+                "actions": [
+                  {
+                    "label": "w.w_open.a0",
+                    "flow": "take"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "order": 2
+}

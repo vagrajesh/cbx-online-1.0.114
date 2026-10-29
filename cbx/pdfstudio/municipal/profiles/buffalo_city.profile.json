@@ -1,0 +1,644 @@
+{
+ "profile_id": "buffalo_city",
+ "profile_name": "Buffalo City Metropolitan Municipality (East London / Bhisho)",
+ "short_name": "Buffalo City",
+ "_doc": "BCMM (MIDAS-family ledger, same engine as Emfuleni/Mbombela but with NO service headings). One flat charge ledger: ChargeDate / Service / Details / Charge(excl VAT) / VAT / Charge(incl VAT), every amount prefixed 'R'. Sections are therefore synthesised from the charge lines themselves (FIRE LEVY -> sundry, STANDARD REFUSE -> refuse, electricity meter line -> electricity, water meter line -> water, dated SEWERAGE COMMERCIAL line -> sewerage), in ledger order. THREE FILE SHAPES in the Telkom Buffalo City set, all handled: (A1) old masthead 'BUFFALO CITY METROPOLITAN MUNICIPALITY ... www.buffalocity.gov.za', Statement Date as YYYY/MM/DD, 'Due Date for payment', compact ledger, meter blocks written 'METER-NO <n> TARIFF: ELECTRICITY LARGE PO' / 'Curr = x Prev = y Cons = z' / 'Reading dates: Curr .. Prev ..' / '<n>.000 kWh', no Notified Max Demand; these files are also wrapped by a mailer control line '<![number removed]|[address removed]|...!>' at the top of every page - the full bill body sits underneath unchanged, so they are matched normally, not rejected. (A2) new masthead 'TAX INVOICE / BCMM VAT Registration No. 4240193492', Statement Date as DD/MM/YYYY, 'Due Date', blank-line-spaced ledger, but STILL the old METER-NO wording. (B) new masthead plus new meter wording 'METER NUMBER: <n>' / 'TARIFF: EL0300 ELECTRICITY LARGE POWER U' / 'READING DATES: Curr .. Prev ..' / 'READINGS: Curr .. Prev ..' / 'CONSUMPTION: <n>.000 kWh', and 'Demand = d Notified Max Demand = 0'; some of these carry a '[address removed]' sender line at the top. Every meter/reading/consumption rule carries both wordings as 'patterns' fallbacks with identical group order. ELECTRICITY IS TWO REGISTERS OF ONE PHYSICAL METER: [number removed] (kWh energy) and [number removed]K (kVa demand), plus a separate 'ELECTRICITY BASIC CHARGE LARGE POWER USER SCALE 3A' line. block_anchor was deliberately NOT used: it would emit two rows per bill (one kWh-only, one kVa-only) and orphan the basic charge, which is wrong for the one-row-per-meter canonical template. Instead each register has its own collect:'sum' rule and the row is assembled by computes - the proven path used by every shipped profile. Water uses the identical block shape ('TARIFF: WA0200 WATER COMMERCIAL BULK' / 'INTERIM 100.000 Kl'); the kWh/kVa/Kl unit words plus section scoping keep water out of every electricity column. IDENTITY / RULE ZERO: the bill prints NO independent ex-VAT electricity subtotal, so buf_elec_ex_r is the sum of its own three parts and the harness reconcile on this profile is structurally circular - stated plainly in the report. Two genuinely independent printed identities are used instead: (1) 'TOTAL CURRENT LEVY' is the INCL-VAT sum of the current-period charge lines ONLY (it excludes the SUB TOTAL brought-forward residue) - e.g. 24/05/26 bill: levy 192368.16, Total Charge (incl. VAT) 192297.36, SUB TOTAL -70.80, and 192368.16 - 70.80 = 192297.36 exactly; that is the whole 192368.16 vs 192297.36 discrepancy. (2) end reading minus start reading equals the printed kWh consumption, and printed VAT equals 15% of printed ex-VAT on every charge line.",
+ "fingerprint": {
+  "all": [
+   "BCMM VAT Registration No",
+   "4240193492"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "Please wait... \n \nIf this message is not eventually replaced",
+   "The document you are trying to load requires Adobe Reader"
+  ]
+ },
+ "sections": {
+  "sundry": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+FIRE LEVY\\b"
+  },
+  "refuse": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+STANDARD REFUSE\\b"
+  },
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+METER[- ]N(?:O|UMBER):?[ \\t]+\\d+[ \\t]*(?:TARIFF:[ \\t]*ELECTRICITY|$[\\s\\S]{0,160}?TARIFF:[ \\t]*EL\\d+[ \\t]+ELECTRICITY)",
+   "require": "kWh|kVa|ELECTRICITY BASIC CHARGE"
+  },
+  "water": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+METER[- ]N(?:O|UMBER):?[ \\t]+\\d+[ \\t]*(?:TARIFF:[ \\t]*WATER|$[\\s\\S]{0,160}?TARIFF:[ \\t]*WA\\d+)",
+   "require": "Kl\\b"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+SEWERAGE COMMERCIAL\\b"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "header",
+   "pattern": "Account Number[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Name (site)",
+   "scope": "header",
+   "pattern": "\\bName[ \\t]{2,}([A-Z][A-Z0-9&'./ -]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "header",
+   "pattern": "Statement Date[ \\t]+(\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "customer_vat_reg",
+   "label": "Customer VAT Reg. No.",
+   "scope": "header",
+   "pattern": "Customer VAT Reg\\. No\\.[ \\t]+(\\S+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "property_address",
+   "label": "Physical Address",
+   "scope": "header",
+   "patterns": [
+    "Physical[ \\t]+(\\S[^\\n]*?)[ \\t]{2,}Suburb",
+    "Physical[\\s\\S]{0,160}?Address[ \\t]+(\\S[^\\n]*?)[ \\t]{2,}Suburb"
+   ],
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "suburb",
+   "label": "Suburb",
+   "scope": "header",
+   "pattern": "Suburb[ \\t]+([A-Z][A-Z0-9 ]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "erf_no",
+   "label": "Erf no.",
+   "scope": "header",
+   "pattern": "Erf no\\.[ \\t]+(\\S+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "portion",
+   "label": "Portion",
+   "scope": "header",
+   "pattern": "Portion[ \\t]+(\\S+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "area_m2",
+   "label": "Area",
+   "scope": "header",
+   "pattern": "\\bArea[ \\t]+(\\d[\\d ,]*)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "unit_no",
+   "label": "Unit No.",
+   "scope": "header",
+   "pattern": "Unit [Nn]o\\.[ \\t]+(\\S+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "ward",
+   "label": "Ward",
+   "scope": "header",
+   "patterns": [
+    "\\bWard[ \\t]{2,}(\\d{1,3})[ \\t]{2,}Deposit",
+    "\\bWard[\\s\\S]{0,120}?number[ \\t]+(\\d{1,3})\\b"
+   ],
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "header",
+   "pattern": "Deposit[ \\t]+R[ \\t]*(-?[\\d, ]*\\d\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "guarantee_r",
+   "label": "Guarantee",
+   "scope": "header",
+   "pattern": "Guarantee[ \\t]+R[ \\t]*(-?[\\d, ]*\\d\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "market_value_r",
+   "label": "Market Value",
+   "scope": "header",
+   "patterns": [
+    "Market[ \\t]+R[ \\t]*(\\d[\\d,]*(?:\\.\\d{2})?)",
+    "\\bMarket[^\\n]*$[\\s\\S]{0,200}?^[ \\t]*R[ \\t]*(\\d[\\d,]*(?:\\.\\d{2})?)[ \\t]{2,}Rebate"
+   ],
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "rebate_r",
+   "label": "Rebate Value",
+   "scope": "header",
+   "pattern": "Rebate[ \\t]+R[ \\t]*(\\d[\\d,]*(?:\\.\\d{2})?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "exempt_value_r",
+   "label": "Exempt Value",
+   "scope": "header",
+   "pattern": "Exempt ?Value[ \\t]+R[ \\t]*(\\d[\\d,]*(?:\\.\\d{2})?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "buf_meter",
+   "label": "Electricity meter (kWh register)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+METER NUMBER:[ \\t]*(\\d+)[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+METER-NO[ \\t]+(\\d+)[ \\t]+TARIFF:[ \\t]*ELECTRICITY"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "buf_demand_meter",
+   "label": "Electricity meter (kVa demand register)",
+   "scope": "section:electricity",
+   "pattern": "METER[- ]N(?:O|UMBER):?[ \\t]+(\\d+K)\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "tariff_name",
+   "label": "Electricity Tariff",
+   "scope": "section:electricity",
+   "patterns": [
+    "TARIFF:[ \\t]*(EL\\d+[ \\t]+ELECTRICITY[^\\n]*?)[ \\t]*$",
+    "TARIFF:[ \\t]*(ELECTRICITY[^\\n]*?)[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_end",
+    "read_start"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Electricity reading dates (Curr/Prev)",
+   "scope": "section:electricity",
+   "pattern": "READING[ \\t]*DATES?:[ \\t]*Curr[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+Prev[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "buf_end_read",
+    "buf_start_read"
+   ],
+   "types": [
+    "number",
+    "number"
+   ],
+   "label": "Electricity kWh register readings (Curr/Prev)",
+   "scope": "section:electricity",
+   "patterns": [
+    "READINGS:[ \\t]*Curr[ \\t]+(\\d+)[ \\t]+Prev[ \\t]+(\\d+)",
+    "Curr[ \\t]*=[ \\t]*(\\d+)[ \\t]+Prev[ \\t]*=[ \\t]*(\\d+)[ \\t]+Cons[ \\t]*="
+   ],
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "buf_printed_cons",
+   "label": "Printed 'Cons =' (old layout only)",
+   "scope": "section:electricity",
+   "pattern": "Curr[ \\t]*=[ \\t]*\\d+[ \\t]+Prev[ \\t]*=[ \\t]*\\d+[ \\t]+Cons[ \\t]*=[ \\t]*(\\d+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "total_kwh",
+   "label": "Total kWh",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?<![\\d.])([\\d,]+\\.\\d{3})[ \\t]*kWh(?![a-z])",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "buf_energy_ex_r",
+    "buf_energy_vat_r",
+    "buf_energy_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity energy charge (kWh line)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?<![\\d.])[\\d,]+\\.\\d{3}[ \\t]*kWh[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "demand_kva",
+   "label": "Demand kVA",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Demand[ \\t]*=[ \\t]*([\\d,]+(?:\\.\\d+)?)",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "nmd_kva",
+   "label": "Notified Max Demand kVA",
+   "scope": "section:electricity",
+   "pattern": "Notified Max Demand[ \\t]*=[ \\t]*([\\d,]+(?:\\.\\d+)?)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "buf_kva_billed",
+   "label": "Billed kVa (CONSUMPTION line)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?<![\\d.])([\\d,]+\\.\\d{3})[ \\t]*kVa(?![a-z])",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "buf_demand_ex_r",
+    "buf_demand_vat_r",
+    "buf_demand_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity demand charge (kVa line)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?<![\\d.])[\\d,]+\\.\\d{3}[ \\t]*kVa[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "buf_basic_ex_r",
+    "buf_basic_vat_r",
+    "buf_basic_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity basic charge",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "ELECTRICITY BASIC CHARGE[^\\n]*?[ \\t]R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "buf_basic_scale",
+   "label": "Basic charge scale",
+   "scope": "section:electricity",
+   "pattern": "ELECTRICITY BASIC CHARGE[ \\t]+([A-Z0-9 ]*?SCALE[ \\t]*\\S+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "buf_kwh_rate",
+   "label": "Tariff rate c/kWh (footnote)",
+   "scope": "document",
+   "pattern": "kWh@[ \\t]*([\\d.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "buf_kva_rate",
+   "label": "Tariff rate R/kVa (footnote)",
+   "scope": "document",
+   "pattern": "kVa@[ \\t]*([\\d.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "buf_water_meter",
+   "label": "Water meter",
+   "scope": "section:water",
+   "patterns": [
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+METER NUMBER:[ \\t]*(\\d+)[ \\t]*$",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+METER-NO[ \\t]+(\\d+)[ \\t]+TARIFF:[ \\t]*WATER"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "buf_water_tariff",
+   "label": "Water Tariff",
+   "scope": "section:water",
+   "pattern": "TARIFF:[ \\t]*((?:WA\\d+[ \\t]+)?WATER[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "buf_water_read_type",
+   "label": "Water reading basis",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(INTERIM|ACTUAL)[ \\t]+[\\d,]+\\.\\d{3}[ \\t]*Kl\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "buf_water_kl",
+   "label": "Water kL",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "(?<![\\d.])([\\d,]+\\.\\d{3})[ \\t]*Kl\\b",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "buf_water_ex_r",
+    "buf_water_vat_r",
+    "buf_water_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Water charge",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "(?<![\\d.])[\\d,]+\\.\\d{3}[ \\t]*Kl[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "buf_sewer_ex_r",
+    "buf_sewer_vat_r",
+    "buf_sewer_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Sewerage charges (summed)",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+SEWERAGE COMMERCIAL[^\\n]*?[ \\t]R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "buf_sewer_detail",
+   "label": "Sewerage basis",
+   "scope": "section:sewerage",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+(SEWERAGE COMMERCIAL[A-Z0-9 ]*?)[ \\t]{2,}R[ \\t]*-?[\\d,]",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "buf_refuse_ex_r",
+    "buf_refuse_vat_r",
+    "buf_refuse_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Refuse charge",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+STANDARD REFUSE[^\\n]*?[ \\t]R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "buf_fire_ex_r",
+    "buf_fire_vat_r",
+    "buf_fire_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Fire levy",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+FIRE LEVY[^\\n]*?[ \\t]R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "buf_adjust_ex_r",
+    "buf_adjust_vat_r",
+    "buf_adjust_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "PANS_ adjustment lines (netted)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+PANS_[^\\n]*?[ \\t]R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "buf_bfwd_ex_r",
+    "buf_bfwd_vat_r",
+    "buf_bfwd_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "BALANCE BROUGHT FORWARD[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "buf_payment_r",
+   "label": "Payment received",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "PAYMENT - THANK YOU[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "buf_subtotal_r",
+   "label": "SUB TOTAL (carried residue)",
+   "scope": "document",
+   "pattern": "SUB TOTAL[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "buf_levy_inc_r",
+   "label": "TOTAL CURRENT LEVY (incl VAT)",
+   "scope": "document",
+   "pattern": "TOTAL CURRENT LEVY[ \\t]+R?[ \\t]*(-?[\\d,]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "buf_bill_ex_r",
+    "buf_bill_vat_r",
+    "buf_bill_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Total Charge excl VAT / Total VAT / incl VAT",
+   "scope": "document",
+   "pattern": "^[ \\t]*R[ \\t]*-?[\\d,]+\\.\\d{2}(?:[ \\t]+R[ \\t]*-?[\\d,]+\\.\\d{2})*[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due Date",
+   "scope": "document",
+   "pattern": "^[ \\t]*Due Date[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "total_due",
+   "label": "Amount Payable on this Account",
+   "scope": "document",
+   "pattern": "Amount Due[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "buf_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "buf_energy_ex_r",
+    "buf_demand_ex_r",
+    "buf_basic_ex_r"
+   ]
+  },
+  {
+   "field": "buf_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "buf_energy_vat_r",
+    "buf_demand_vat_r",
+    "buf_basic_vat_r"
+   ]
+  },
+  {
+   "field": "buf_elec_inc_r",
+   "op": "sum",
+   "of": [
+    "buf_energy_inc_r",
+    "buf_demand_inc_r",
+    "buf_basic_inc_r"
+   ]
+  },
+  {
+   "field": "buf_read_diff_kwh",
+   "op": "diff",
+   "as": "number",
+   "of": [
+    "buf_end_read",
+    "buf_start_read"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "buf_meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "buf_start_read",
+  "end_reading_kwh": "buf_end_read",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "nmd_kva",
+  "peak_r": "_none",
+  "standard_r": "buf_energy_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "buf_demand_ex_r",
+  "nmd_r": "_none",
+  "other_r": "buf_basic_ex_r",
+  "total_ex_vat_r": "buf_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "guarantee_r",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "balance_bfwd_incl": "BALANCE BROUGHT FORWARD[ \\t]+R[ \\t]*-?[\\d,]+\\.\\d{2}[ \\t]+R[ \\t]*-?[\\d,]+\\.\\d{2}[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})",
+  "payment": "PAYMENT - THANK YOU[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})",
+  "subtotal": "SUB TOTAL[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})",
+  "current_levy_incl": "TOTAL CURRENT LEVY[ \\t]+R?[ \\t]*(-?[\\d,]+\\.\\d{2})",
+  "total_incl": "Amount Due[ \\t]+R[ \\t]*(-?[\\d,]+\\.\\d{2})",
+  "due_date": "^[ \\t]*Due Date[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2}|\\d{2}/\\d{2}/\\d{4})"
+ }
+}

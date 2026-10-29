@@ -1,0 +1,37 @@
+{
+  "title": "flow.finished.title",
+  "enabled": true,
+  "trigger": {
+    "type": "row_changed",
+    "data": "tasks"
+  },
+  "run_as": "starter",
+  "start": "if1",
+  "steps": {
+    "s1": {
+      "type": "update_row",
+      "data": "tasks",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "finished": "{{today}}",
+        "done_by": "{{person.id}}"
+      }
+    },
+    "if1": {
+      "type": "if",
+      "match": "all",
+      "when": [
+        {
+          "left": "{{trigger.row.status}}",
+          "op": "equals",
+          "value": "Done"
+        },
+        {
+          "left": "{{trigger.row.finished}}",
+          "op": "empty"
+        }
+      ],
+      "yes": "s1"
+    }
+  }
+}

@@ -1,0 +1,308 @@
+{
+ "profile_id": "george_amptera",
+ "profile_name": "George Municipality - Amptera open-access portal HV bill (Telkom HV)",
+ "short_name": "George",
+ "_doc": "SIBLING DOCUMENT TYPE to profile 'george', NOT a duplicate of it. Six files 'Amptera _ George _ bills.view_saved_bill_Telkom_HV_<Mon>2026.pdf' (Jan-Jun 2026), each a 1-page browser print-to-PDF (~2 820 chars) of https://george.secure.amptera.openaccess.energy/bills/saved/<id>, complete with the browser header '7/27/26, 2:39 PM  Amptera | George | bills.view _saved_bill', the portal nav bar and the URL footer. Fingerprinted on that George-specific portal host, which occurs in exactly these 6 of the 219 PDFs in the tree; profile 'george' rejects the same marker so the two document types can never cross-fire.\nWHY IT GETS ITS OWN PROFILE: it is a FULL time-of-use HV bill for meter [number removed] on tariff '3B: Medium voltage consumers (Time of Use)' and it carries the exact data the 2026 George municipal statement layout does NOT print at all - Peak / Standard / Off-Peak kWh and Rands, Maximum Demand kVA, Network Access (notified) kVA, excess reactive kvarh, Total kWh, cost per kWh and the timestamps of the max-demand and network-access peaks. Its figures do NOT equal the municipal statement's electricity lines (see the report): the statement's 'Electricity Metered' also carries three small non-TOU 'Elec Cons 3Phase' meters, so it runs about R4 289/month higher. Keeping it in its own profile means the statement profile's patterns never fire here and vice versa, while the spreadsheet Munic column still reads 'George' via the shared short_name.\nCharge table is 10 numbered rows, 'No | Description | Quantity | Unit Cost | Total Cost'; amounts are printed 'R4,077.26' with no space after the R. 'Peak Rate Energy' must be anchored (?<![-\\w]) because row 6 is 'Off-Peak Rate Energy' and would otherwise be captured twice.\nRECONCILE IS GENUINE: total_ex_vat_r is the independently printed 'SUB TOTAL' row, and peak+standard+offpeak+demand+nmd+other equals it to the cent on all 6 bills. peak+standard+offpeak kWh equals the separately printed 'Total kWh' exactly on all 6 bills.\nONE FIELD THE PAGE PRINTS BUT REGEX CANNOT REASSEMBLE: the period end date is hard-wrapped by the browser print ('Dates: 2026-01-01 00:00:00 - 2026-' / newline / '02-01 00:00:00'). read_start is the exact printed start; read_end is left blank rather than fabricated, and the two halves are kept in amp_end_year / amp_end_monthday. The period is always the calendar month named in amp_bill_name.\nThe page prints no municipal account number and no meter register readings, so account_number, start_reading_kwh and end_reading_kwh are '_none' by design.",
+ "fingerprint": {
+  "all": [
+   "george.secure.amptera.openaccess.energy"
+  ],
+  "any": [],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*No[ \\t]{2,}Description[ \\t]{2,}Quantity",
+   "require": "SUB TOTAL"
+  }
+ },
+ "fields": [
+  {
+   "field": "site_name",
+   "label": "Site",
+   "scope": "document",
+   "pattern": "^[ \\t]*Site:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "amp_meter",
+   "label": "Meter number(s)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Meter Numbers:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "amp_bill_name",
+   "label": "Bill name (consumption month)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Name:[ \\t]*([A-Za-z]+[ \\t]+\\d{4})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "amp_read_start",
+   "label": "Period start",
+   "scope": "document",
+   "pattern": "Dates:[ \\t]*(\\d{4}-\\d{2}-\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "amp_end_year",
+    "amp_end_monthday"
+   ],
+   "label": "Period end (wrapped across two lines)",
+   "scope": "document",
+   "pattern": "Dates:[ \\t]*\\d{4}-\\d{2}-\\d{2}[^\\n]*?-[ \\t]*(\\d{4})-[ \\t]*\\n[ \\t]*(\\d{2}-\\d{2})",
+   "type": "text"
+  },
+  {
+   "field": "amp_tariff",
+   "label": "Tariff",
+   "scope": "document",
+   "pattern": "^[ \\t]*Tariff[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "amp_bill_url",
+   "label": "Portal bill URL",
+   "scope": "document",
+   "pattern": "(https://george\\.secure\\.amptera\\.openaccess\\.energy/bills/saved/\\d+)",
+   "type": "text"
+  },
+  {
+   "field": "amp_basic_r",
+   "label": "Basic charge (service charge)",
+   "scope": "section:electricity",
+   "pattern": "Basic Charge[^\\n]*?[ \\t]R([\\d, ]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "amp_nmd_kva",
+    "amp_nmd_r"
+   ],
+   "label": "Network access charge (notified demand)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Network Access Charge[ \\t]+(?<![\\d.])([\\d]+\\.?\\d*)[ \\t]*kVA[ \\t]+[\\d.]+[ \\t]+R([\\d, ]+\\.\\d{2})",
+   "types": [
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "amp_demand_kva",
+    "amp_demand_r"
+   ],
+   "label": "Maximum demand",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Maximum Demand[ \\t]+(?<![\\d.])([\\d]+\\.?\\d*)[ \\t]*kVA[ \\t]+[\\d.]+[ \\t]+R([\\d, ]+\\.\\d{2})",
+   "types": [
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "amp_peak_kwh",
+    "amp_peak_r"
+   ],
+   "label": "Peak rate energy",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?<![-\\w])Peak Rate Energy[ \\t]+(?<![\\d.])([\\d]+\\.?\\d*)[ \\t]*kWh[ \\t]+[\\d.]+[ \\t]+R([\\d, ]+\\.\\d{2})",
+   "types": [
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "amp_std_kwh",
+    "amp_std_r"
+   ],
+   "label": "Standard rate energy",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Standard Rate Energy[ \\t]+(?<![\\d.])([\\d]+\\.?\\d*)[ \\t]*kWh[ \\t]+[\\d.]+[ \\t]+R([\\d, ]+\\.\\d{2})",
+   "types": [
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "amp_off_kwh",
+    "amp_off_r"
+   ],
+   "label": "Off-peak rate energy",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Off-?[ \\t]*Peak Rate Energy[ \\t]+(?<![\\d.])([\\d]+\\.?\\d*)[ \\t]*kWh[ \\t]+[\\d.]+[ \\t]+R([\\d, ]+\\.\\d{2})",
+   "types": [
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "amp_react_kvarh",
+    "amp_react_r"
+   ],
+   "label": "Excess reactive power",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Excess Reactive Power[ \\t]+(?<![\\d.])([\\d]+\\.?\\d*)[ \\t]*kvarh[ \\t]+[\\d.]+[ \\t]+R([\\d, ]+\\.\\d{2})",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "field": "amp_subtotal_r",
+   "label": "SUB TOTAL (printed, ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "SUB TOTAL[ \\t]+R([\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "amp_vat_pct",
+    "amp_vat_r"
+   ],
+   "label": "VAT % / VAT amount",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d+[ \\t]+VAT[ \\t]+(\\d+)[ \\t]*%[ \\t]+R([\\d, ]+\\.\\d{2})",
+   "types": [
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "amp_total_r",
+   "label": "TOTAL (incl VAT, printed)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d+[ \\t]+TOTAL[ \\t]+R([\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "amp_total_kwh",
+   "label": "Total kWh (printed)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Total kWh[ \\t]{2,}([\\d, ]+\\.?\\d*)[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "amp_cost_per_kwh",
+   "label": "Cost per kWh excl VAT (printed)",
+   "scope": "section:electricity",
+   "pattern": "Cost per kWh \\(excl VAT\\)[ \\t]+R([\\d.]+)",
+   "type": "number"
+  },
+  {
+   "field": "amp_md_time",
+   "label": "Time and date of max demand",
+   "scope": "section:electricity",
+   "pattern": "Time and date of Max Demand[ \\t]{2,}(\\d{4}-\\d{2}-\\d{2}[ \\t]+\\d{2}:\\d{2})",
+   "type": "text"
+  },
+  {
+   "field": "amp_na_time",
+   "label": "Time and date of network access peak",
+   "scope": "section:electricity",
+   "pattern": "Time and date of Netw[ \\t]*ork Access[ \\t]{2,}(\\d{4}-\\d{2}-\\d{2}[ \\t]+\\d{2}:\\d{2})",
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "amp_other_r",
+   "op": "sum",
+   "of": [
+    "amp_basic_r",
+    "amp_react_r"
+   ]
+  },
+  {
+   "field": "amp_band_kwh",
+   "op": "sum",
+   "of": [
+    "amp_peak_kwh",
+    "amp_std_kwh",
+    "amp_off_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "amp_parts_r",
+   "op": "sum",
+   "of": [
+    "amp_peak_r",
+    "amp_std_r",
+    "amp_off_r",
+    "amp_demand_r",
+    "amp_nmd_r",
+    "amp_other_r"
+   ]
+  },
+  {
+   "field": "amp_incl_check_r",
+   "op": "sum",
+   "of": [
+    "amp_subtotal_r",
+    "amp_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "amp_bill_name",
+  "tariff_name": "amp_tariff",
+  "account_number": "_none",
+  "meter": "amp_meter",
+  "reading_type": "_none",
+  "read_start": "amp_read_start",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "amp_total_kwh",
+  "peak_kwh": "amp_peak_kwh",
+  "standard_kwh": "amp_std_kwh",
+  "offpeak_kwh": "amp_off_kwh",
+  "demand_kva": "amp_demand_kva",
+  "nmd_kva": "amp_nmd_kva",
+  "peak_r": "amp_peak_r",
+  "standard_r": "amp_std_r",
+  "offpeak_r": "amp_off_r",
+  "demand_r": "amp_demand_r",
+  "nmd_r": "amp_nmd_r",
+  "other_r": "amp_other_r",
+  "total_ex_vat_r": "amp_subtotal_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "current_ex": "SUB TOTAL[ \\t]+R([\\d, ]+\\.\\d{2})",
+  "vat": "VAT[ \\t]+\\d+[ \\t]*%[ \\t]+R([\\d, ]+\\.\\d{2})",
+  "total_due": "^[ \\t]*\\d+[ \\t]+TOTAL[ \\t]+R([\\d, ]+\\.\\d{2})"
+ }
+}

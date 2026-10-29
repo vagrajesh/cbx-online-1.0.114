@@ -1,0 +1,64 @@
+{
+  "slug": "entity-compliance",
+  "title": "tool.title",
+  "icon": "shield",
+  "menu": {
+    "section": "My tools",
+    "order": 31
+  },
+  "access": {
+    "roles": [
+      "owner",
+      "admin"
+    ],
+    "tool": "doc-watch"
+  },
+  "home": "grid",
+  "owner": "edwin.botha@cbreexcellerate.com",
+  "version": 2,
+  "note": "Since 1.0.63 Entity Compliance lives in this folder: companies, document types, documents and who may see which company are its own tables — change any of it in the Builder. The old built-in screens are read-only.",
+  "canvas": {
+    "menu": {
+      "x": 730,
+      "y": 60
+    },
+    "pages": {
+      "grid": {
+        "x": 490,
+        "y": 60
+      },
+      "company": {
+        "x": 490,
+        "y": 220
+      },
+      "documents": {
+        "x": 490,
+        "y": 380
+      },
+      "settings": {
+        "x": 490,
+        "y": 540
+      }
+    },
+    "data": {
+      "companies": {
+        "x": 24,
+        "y": 60
+      },
+      "doc_types": {
+        "x": 24,
+        "y": 220
+      },
+      "documents": {
+        "x": 24,
+        "y": 380
+      },
+      "company_people": {
+        "x": 24,
+        "y": 540
+      }
+    },
+    "sources": {},
+    "parked": []
+  }
+}

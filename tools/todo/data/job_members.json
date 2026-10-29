@@ -1,0 +1,49 @@
+{
+  "kind": "table",
+  "title": "data.job_members.title",
+  "scope": "members",
+  "write": "managers",
+  "unique": [
+    [
+      "job",
+      "person"
+    ]
+  ],
+  "members": {
+    "table": "job_members",
+    "person": "person",
+    "link": "job",
+    "through": "job",
+    "only": {
+      "status": "Active"
+    }
+  },
+  "columns": [
+    {
+      "key": "job",
+      "label": "col.job",
+      "type": "link",
+      "table": "jobs",
+      "show": "title",
+      "required": true
+    },
+    {
+      "key": "person",
+      "label": "col.person",
+      "type": "person",
+      "required": true
+    },
+    {
+      "key": "status",
+      "label": "col.status",
+      "type": "choice",
+      "options": [
+        "Requested",
+        "Active",
+        "Declined",
+        "Released"
+      ],
+      "default": "Requested"
+    }
+  ]
+}

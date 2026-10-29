@@ -1,0 +1,174 @@
+{
+ "profile_id": "nkomazi",
+ "profile_name": "Nkomazi Local Municipality (Malelane, Mpumalanga)",
+ "short_name": "Nkomazi",
+ "fingerprint": {
+  "all": [
+   "4300102938"
+  ],
+  "any": [
+   "NKOMAZI MUNICIPALITY",
+   "nkomazi.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*ACCOUNT DETAILS[ \\t]+AMOUNT",
+   "require": "^ELEC (?:BASIC|CONSUMPTION)"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "ACCOUNT NUMBER",
+   "scope": "document",
+   "pattern": "ACCOUNT NUMBER[ \\t]+(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "ACCOUNT DATE",
+   "scope": "document",
+   "pattern": "ACCOUNT DATE[ \\t]+(\\d{4}/\\d\\d/\\d\\d)",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "STAND ADDRESS",
+   "scope": "document",
+   "type": "text",
+   "pattern": "STAND ADDRESS[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(\\S+(?: \\S+)*)[ \\t]{2,}MARKET VALUE"
+  },
+  {
+   "field": "deposit_r",
+   "label": "DEPOSIT",
+   "scope": "document",
+   "type": "money",
+   "pattern": "MARKET VALUE[ \\t]+AREA[ \\t]+DEPOSIT[ \\t]*\\n(?:[ \\t]*\\n)*[^\\n]*?(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "field": "read_end",
+   "label": "METER READINGS - date",
+   "scope": "document",
+   "type": "date",
+   "pattern": "METER READINGS - (\\d{4}/\\d\\d/\\d\\d)"
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meters ME.. (joined)",
+   "scope": "document",
+   "collect": "join_unique",
+   "type": "text",
+   "pattern": "^[ \\t]*(\\d+)[ \\t]+ME\\d+[ \\t]"
+  },
+  {
+   "field": "nko_kwh",
+   "label": "kWh = sum of ME.. meter CONSUMPTION",
+   "scope": "document",
+   "collect": "sum",
+   "type": "number",
+   "pattern": "^[ \\t]*\\d+[ \\t]+ME\\d+[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+([\\d.]+)[ \\t]+\\d+[ \\t]*$"
+  },
+  {
+   "field": "tariff_name",
+   "label": "ELEC BASIC description",
+   "scope": "section:electricity",
+   "type": "text",
+   "pattern": "^(ELEC BASIC\\b[^\\n]*?)[ \\t]{2,}(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nko_basic_r",
+    "nko_basic_vat_r",
+    "nko_basic_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "ELEC BASIC line(s)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "required": true,
+   "pattern": "^ELEC BASIC\\b[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nko_energy_r",
+    "nko_energy_vat_r",
+    "nko_energy_inc_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "ELEC CONSUMPTION line(s)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "required": true,
+   "pattern": "^ELEC CONSUMPTION\\b[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]+(-?(?:\\d{1,3}(?:,\\d{3})+|\\d*)\\.\\d{2}-?)[ \\t]*$"
+  }
+ ],
+ "computes": [
+  {
+   "field": "nko_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "nko_basic_r",
+    "nko_energy_r"
+   ]
+  },
+  {
+   "field": "nko_elec_inc_r",
+   "op": "sum",
+   "of": [
+    "nko_basic_inc_r",
+    "nko_energy_inc_r"
+   ]
+  },
+  {
+   "field": "nko_elec_check_r",
+   "op": "sub",
+   "of": [
+    "nko_elec_inc_r",
+    "nko_basic_vat_r",
+    "nko_energy_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "read_end",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "nko_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "nko_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "nko_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "nko_basic_r",
+  "total_ex_vat_r": "nko_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "_doc": "Nkomazi Local Municipality (Malelane) 'STATEMENT/INVOICE': header (ACCOUNT NUMBER, ACCOUNT DATE, STAND ADDRESS = site_name, DEPOSIT), a METER READINGS - date table (read_end) with three ME.. electricity meters and one MW.. water meter, and ACCOUNT DETAILS lines with AMOUNT / VAT / TOTAL columns. Electricity = 'ELEC BASIC > n A(3 PH)' (other_r, also tariff_name) + 'ELEC CONSUMPTION' (standard_r); total_kwh = sum of the ME meters' CONSUMPTION (readings not mapped: three meters, and one print shows zero readings with consumption only). The stand address printed changes between bills (two descriptions of the same account). Fingerprint: the municipality's VAT number + name/web domain. Identity (--identity nko_elec_check_r): TOTAL column - VAT column for the electricity lines vs the AMOUNT column: 0.00 on 10/10; checks 0. Checked on all 10 bills."
+}

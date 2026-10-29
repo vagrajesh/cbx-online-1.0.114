@@ -1,0 +1,253 @@
+{
+  "profile_id": "kwadukuza",
+  "profile_name": "KwaDukuza Municipality (KZN)",
+  "short_name": "KwaDukuza",
+  "fingerprint": {
+    "all": [
+      "KWADUKUZA MUNICIPALITY"
+    ]
+  },
+  "sections": {
+    "electricity": {
+      "start": "METER READINGS|ACCOUNT DETAILS",
+      "require": "ELEC KVA|ELECTRICITY BASIC|\\d{10,}\\s+ELECTRICITY\\s"
+    }
+  },
+  "fields": [
+    {
+      "field": "account_number",
+      "label": "Account Number",
+      "scope": "document",
+      "pattern": "Account Number:\\s*(\\d+)",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "site_name",
+      "label": "Consumer Name",
+      "scope": "document",
+      "pattern": "Consumer Name:\\s*(.+?)\\s{2,}",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "billing_date",
+      "label": "Account Date",
+      "scope": "document",
+      "pattern": "Account Date:\\s*(\\d{2} [A-Z]{3} \\d{4})",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "invoice_number",
+      "label": "Tax Invoice No",
+      "scope": "document",
+      "pattern": "Tax Invoice No\\.:\\s*(\\d+)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "deposit",
+      "label": "Deposit",
+      "scope": "document",
+      "pattern": "Deposit:\\s*([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "due_date",
+      "label": "Due Date",
+      "scope": "document",
+      "pattern": "TOTAL DUE ON OR BEFORE:\\s*(\\d{2}/\\d{2}/\\d{4})",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "total_due",
+      "label": "Total Due",
+      "scope": "document",
+      "pattern": "TOTAL DUE:\\s*(-?[\\d,]+\\.\\d{2}-?)",
+      "type": "money",
+      "required": true
+    },
+    {
+      "fields": [
+        "meter",
+        "start_reading_kwh",
+        "end_reading_kwh",
+        "read_date",
+        "reading_type",
+        "total_kwh"
+      ],
+      "label": "Electricity meter row",
+      "scope": "section:electricity",
+      "pattern": "^\\s*(\\d{10,})\\s+ELECTRICITY\\s+([\\d.]+)\\s+([\\d.]+)\\s+(\\d{2}/\\d{2}/\\d{4})\\s+([A-Z])\\s+([\\d.]+)\\s*$",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "demand_kva",
+      "label": "Demand kVA (meter row)",
+      "scope": "section:electricity",
+      "pattern": "^\\s*\\d{10,}\\s+KVA\\s+[\\d.]+\\s+[\\d.]+\\s+\\d{2}/\\d{2}/\\d{4}\\s+[A-Z]\\s+([\\d.]+)\\s*$",
+      "type": "number",
+      "required": false
+    },
+    {
+      "fields": [
+        "energy_kwh",
+        "energy_rate",
+        "energy_r"
+      ],
+      "types": [
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "ELEC KVA UNIT (energy)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "ELEC KVA UNIT[^\\n]*?([\\d,.]+)\\s+@\\s+([\\d,.]+)\\s+\\*?\\s*(-?[\\d,]+\\.\\d{2}-?)",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "demand_kva_billed",
+        "demand_rate",
+        "demand_r"
+      ],
+      "types": [
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "ELEC KVA (demand)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "ELEC KVA (?!UNIT)[^\\n]*?([\\d,.]+)\\s+@\\s+([\\d,.]+)\\s+\\*?\\s*(-?[\\d,]+\\.\\d{2}-?)",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "basic_units",
+        "basic_rate",
+        "basic_r"
+      ],
+      "types": [
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "Electricity basic charge",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "ELECTRICITY BASIC CHARGE\\s+([\\d,.]+)\\s+@\\s+([\\d,.]+)\\s+\\*?\\s*(-?[\\d,]+\\.\\d{2}-?)",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "vat_r",
+      "label": "VAT",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "^\\s*\\d{6}\\s+VAT\\s+(-?[\\d,]+\\.\\d{2}-?)\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "age_120",
+        "age_90",
+        "age_60",
+        "age_30",
+        "current_r"
+      ],
+      "types": [
+        "money",
+        "money",
+        "money",
+        "money",
+        "money"
+      ],
+      "label": "Aging row",
+      "scope": "document",
+      "pattern": "120\\+ DAYS[^\\n]*\\n\\s*(-?[\\d,]+\\.\\d{2}-?)\\s+(-?[\\d,]+\\.\\d{2}-?)\\s+(-?[\\d,]+\\.\\d{2}-?)\\s+(-?[\\d,]+\\.\\d{2}-?)\\s+(-?[\\d,]+\\.\\d{2}-?)",
+      "type": "money",
+      "required": true
+    },
+    {
+      "field": "rates_r",
+      "label": "Rates",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "^\\d{2}/\\d{2}/\\d{4}\\s+\\d{6}\\s+RATES[^\\n]*?(-?[\\d,]+\\.\\d{2}-?)\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "kd_acct_elec_r",
+      "label": "Electricity (account-details table)",
+      "scope": "section:electricity",
+      "collect": "sum",
+      "pattern": "\\d{2}/\\d{2}/\\d{4}\\s+\\w{6}\\s+ELEC[^\\n]*?\\*\\s+((?<![\\d.,])-?\\d{1,3}(?:[ ,]\\d{3})*\\.\\d{2}-?)",
+      "type": "money",
+      "required": false
+    }
+  ],
+  "computes": [
+    {
+      "field": "kd_elec_ex",
+      "op": "sum",
+      "of": [
+        "energy_r",
+        "demand_r",
+        "basic_r"
+      ]
+    },
+    {
+      "field": "kd_elec_ex",
+      "op": "prefer",
+      "of": [
+        "kd_elec_ex",
+        "kd_acct_elec_r"
+      ]
+    },
+    {
+      "field": "other_out_r",
+      "op": "prefer",
+      "of": [
+        "basic_r",
+        "kd_acct_elec_r"
+      ]
+    }
+  ],
+  "canonical": {
+    "site_name": "site_name",
+    "tariff_name": "_none",
+    "reading_type": "reading_type",
+    "meter": "meter",
+    "read_start": "_none",
+    "read_end": "read_date",
+    "start_reading_kwh": "start_reading_kwh",
+    "end_reading_kwh": "end_reading_kwh",
+    "total_kwh": "total_kwh",
+    "standard_kwh": "energy_kwh",
+    "standard_r": "energy_r",
+    "demand_kva": [
+      "demand_kva",
+      "demand_kva_billed"
+    ],
+    "demand_r": "demand_r",
+    "other_r": "other_out_r",
+    "total_ex_vat_r": "kd_elec_ex"
+  },
+  "recon": {
+    "prev_balance": "Opening Balance\\s+(-?[\\d,]+\\.\\d{2})",
+    "incoming_payment": "PAYMENT - THANK YOU[^\\n]*?([\\d,]+\\.\\d{2}-?)\\s*$",
+    "deposit": "Deposit:\\s+([\\d,]+\\.\\d{2})",
+    "total_due": "TOTAL DUE:\\s+(-?[\\d,]+\\.\\d{2})",
+    "due_date": "TOTAL DUE ON OR BEFORE:\\s+(\\d{2}/\\d{2}/\\d{4})"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "title": "flow.take.title",
+  "enabled": true,
+  "trigger": {
+    "type": "button",
+    "data": "tasks"
+  },
+  "run_as": "starter",
+  "start": "if1",
+  "steps": {
+    "s1": {
+      "type": "update_row",
+      "data": "tasks",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "who": "{{person.id}}",
+        "status": "Doing"
+      }
+    },
+    "if1": {
+      "type": "if",
+      "match": "all",
+      "when": [
+        {
+          "left": "{{trigger.row.who}}",
+          "op": "empty"
+        }
+      ],
+      "yes": "s1"
+    }
+  }
+}

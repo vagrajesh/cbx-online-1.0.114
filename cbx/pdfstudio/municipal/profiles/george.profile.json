@@ -1,0 +1,548 @@
+{
+ "profile_id": "george",
+ "profile_name": "George Municipality (Western Cape) - municipal tax invoice",
+ "short_name": "George",
+ "_doc": "TWO STATEMENT LAYOUTS in one folder, both genuine George municipal tax invoices, fingerprinted on George's OWN VAT registration 4630193664 + the masthead 'George Municipality'. NEVER fingerprint on 4680101146 - that is Telkom's own 'Client VAT Number / VAT Reg Number' and it is printed on bills from 16 other folders in this tree. No cbreexcellerate address is used.\nLAYOUT A - legacy detail ('Computer Generated Tax Invoice For : <Month> - <Year>'), files GEO_OCT 2025 (8 pages) and GEO_NOV 2025 (4 pages). Full per-meter detail. Every charge block is\n    Reading dates: Cur dd/mm/yyyy Prev dd/mm/yyyy (n days)\n    Cur <reading> Prev <reading> Cons <qty> KWH|KVA|KL\n    Meter <no> [(Estimate)]\n    <qty> x <rate> = <amount>\n    Tariff: <tariff name>\n  and the ex-VAT / VAT / incl-VAT money TRIPLE sits at the END of the block in the Oct file but in the MIDDLE (right after 'Dwelling Units') in the Nov file, so amounts are taken from the '<qty> x <rate> = <amount>' line, which is in the same place in both. Every pattern that walks from a Cons line to a Tariff line uses the tempered token (?:(?!Reading dates:)[\\s\\S])*? so it can never run past its own block into the next meter (blocks are separated by whole repeated page headers/footers, which the guard also survives). Oct spaces its thousands (R 32 437.91) and writes dates dd-mm-yyyy; Nov commas them (R 29,281.95) and writes yyyy-mm-dd. Nov's PDF also kerns words apart - 'Dw elling', 'Netw ork', 'Sew er', 'Ow ner', 'Swif t' - so 'Netw ?ork' is spelled defensively and no pattern relies on 'Dwelling'.\n  TOU tariff 3B: 'Time Of Use Peak/Standard/Off Peak 3B' are the kWh bands; 'Time Of Use Basic And Kva 3B' on a KVA meter is the MAXIMUM DEMAND charge (-> demand_kva/demand_r) while the same wording with 'Basic:' and no readings is the fixed monthly service charge (-> other); 'Time Of Use Netw ork Access 3B' is the NOTIFIED maximum demand, a constant 194.407 kVA (-> nmd); 'Reactive Energy Charge' is billed as KVA on the statement but is really kvarh (-> other); 'Elec Cons 3Phase' are three small non-TOU kWh meters on the same account (-> geo_a_flat_*, other).\n  Reading registers self-check: summing Cur and Prev over EVERY 'Cons ... KWH' block and subtracting gives exactly the summed Cons (Oct 78 588.000, Nov 76 786.360).\n  total_ex_vat_r is the INDEPENDENTLY PRINTED electricity 'Sub Total', so reconcile on Layout A is a real check, not a circular one.\nLAYOUT B - new ERP summary ('Tax Invoice Number 2026NN/[number removed]', masthead 'VAT No. 4630193664 George Municipality / P.O. Box 19, George, 6530'), files GEO_DEC 2025 and GEO_JAN..APR 2026, 2 pages each. IT PRINTS NO ELECTRICITY CONSUMPTION AT ALL: no readings, no kWh, no kVA, no TOU band split, no reading dates. All that exists is the per-service ledger table (Opening | Receipts | Billed Amount | Billed VAT | Interest | Journals | Closing) with rows 'Electricity Basic' and 'Electricity Metered', plus an 'Electricity Details:' table at the foot that lists only Type / Tariff code / Meter Number / Connection Size (TOUPM TOUSD TOUSM TOUOS TOUSA REACT + three '1508' meters). Blank kWh / band / reading columns on Layout B are the bill's silence, not a missed regex. On Layout B total_ex_vat_r is the sum of the two printed Electricity rows and other_r is the same two figures, so reconcile there IS circular - declared openly. The genuine Layout B checks are (a) elec Billed VAT == 15% of elec Billed Amount and (b) the eight service Billed Amounts == the printed 'Total' row. On Layout A the genuine check is the five section Sub Totals == 'Total Levies for the Month'.\nSizes are artwork, not scans: GEO_DEC 2025 is 3.2 MB yet 2 pages / 6 907 chars of real text. All 7 statements have a text layer (read_pdf ocr=auto reports ocr:False scanned:False) - nothing needs Tesseract.\nSIBLING DOCUMENT TYPE: the same folder holds six 'Amptera _ George _ bills.view_saved_bill_Telkom_HV_<Mon>2026.pdf' browser print-outs of the Amptera open-access billing portal. They are NOT municipal statements, so reject_if_text disqualifies this profile on them and profile 'george_amptera' (same short_name 'George') owns them.",
+ "fingerprint": {
+  "all": [
+   "4630193664",
+   "George Municipality"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "amptera.openaccess.energy",
+   "bills.view _saved_bill",
+   "bills.view_saved_bill"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity[ \\t]*$|^[ \\t]*Electricity Basic[ \\t]{2,}\\(?-?R"
+  },
+  "water": {
+   "start": "^[ \\t]*Water[ \\t]*$|^[ \\t]*Water Basic[ \\t]{2,}\\(?-?R"
+  },
+  "rates": {
+   "start": "^[ \\t]*Property Rates[ \\t]*$|^[ \\t]*Property Rates[ \\t]{2,}\\(?-?R"
+  },
+  "refuse": {
+   "start": "^[ \\t]*Waste Disposal[ \\t]*$|^[ \\t]*Waste Disposal[ \\t]{2,}\\(?-?R"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*Sanitation[ \\t]*$|^[ \\t]*Sanitation Basic[ \\t]{2,}\\(?-?R"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "pattern": "(?<!Old )Account Number[ \\t]{2,}(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "geo_old_account",
+   "label": "Old account code",
+   "scope": "document",
+   "pattern": "Old Account (?:Number|Code)[ \\t]{2,}(\\d{6,})",
+   "type": "text"
+  },
+  {
+   "field": "site_name",
+   "label": "Account holder / site",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]*Name[ \\t]{2,}([A-Za-z][^\\n]*?)[ \\t]{2,}Account Number",
+    "Account Number[ \\t]{2,}\\d{6,}[ \\t]*\\n[ \\t]*([A-Za-z][^\\n]*?)[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "geo_property",
+   "label": "Property physical address",
+   "scope": "document",
+   "patterns": [
+    "Property Physical Address[ \\t]{2,}(?![ \\t]*Cash\\b)(\\S[^\\n]*?)[ \\t]*$",
+    "Property Ph[a-z]*al Address[\\s\\S]{0,250}?^[ \\t]*([A-Za-z][^\\n]*?)[ \\t]{2,}(?:R[ \\t]*\\d|-)"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement date / levy month",
+   "scope": "document",
+   "patterns": [
+    "Statement Date[ \\t]{2,}(\\d{4}-\\d{2}-\\d{2})",
+    "Computer Generated Tax Invoice For[ \\t]*:[ \\t]*([A-Za-z]+[ \\t]*-[ \\t]*\\d{4})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "geo_invoice_no",
+   "label": "Invoice number",
+   "scope": "document",
+   "pattern": "(\\d{6}/\\d{6,})",
+   "type": "text"
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "document",
+   "patterns": [
+    "Final Date for Payment[ \\t]{2,}(\\d{4}-\\d{2}-\\d{2}|\\d{2}-\\d{2}-\\d{4})",
+    "Final Date for Payment[^\\n]*\\n+[^\\n]*?[ \\t]{2,}(\\d{4}-\\d{2}-\\d{2}|\\d{2}-\\d{2}-\\d{4})[ \\t]{2,}\\d{6,}",
+    "Due Date[\\s\\S]{0,300}?[ \\t]{2,}(\\d{4}-\\d{2}-\\d{2}|\\d{2}-\\d{2}-\\d{4})[ \\t]*$",
+    "R[ \\t]*[\\d ,]+\\.\\d{2}[ \\t]{2,}R[ \\t]*[\\d ,]+\\.\\d{2}[ \\t]{2,}R[ \\t]*[\\d ,]+\\.\\d{2}[ \\t]{2,}(\\d{4}-\\d{2}-\\d{2})"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "geo_deposit_r",
+   "label": "Guarantee / deposit",
+   "scope": "document",
+   "pattern": "Guarantee/Deposit[ \\t]{2,}(R[ \\t]*[\\d ,]+(?:\\.\\d{2})?)",
+   "type": "money"
+  },
+  {
+   "field": "geo_sg_number",
+   "label": "SG number",
+   "scope": "document",
+   "pattern": "(C\\d{3}/\\d{4}/\\d{8}/\\d{5})",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "geo_a_cur_date",
+    "geo_a_prev_date"
+   ],
+   "label": "A: TOU reading dates (Cur, Prev)",
+   "scope": "section:electricity",
+   "pattern": "Reading dates:[ \\t]*Cur[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*Prev[ \\t]*(\\d{2}/\\d{2}/\\d{4})(?:(?!Reading dates:)[\\s\\S])*?Tariff:[ \\t]*Time Of Use Peak",
+   "type": "date"
+  },
+  {
+   "field": "geo_a_days",
+   "label": "A: TOU reading days",
+   "scope": "section:electricity",
+   "pattern": "Reading dates:[^\\n]*\\((\\d+)[ \\t]*days\\)(?:(?!Reading dates:)[\\s\\S])*?Tariff:[ \\t]*Time Of Use Peak",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "geo_a_end_read",
+    "geo_a_start_read"
+   ],
+   "label": "A: kWh registers (Cur, Prev) summed",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Cur[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Prev[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH",
+   "type": "number"
+  },
+  {
+   "field": "geo_a_total_kwh",
+   "label": "A: total kWh (all KWH meters)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KWH",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "geo_a_peak_kwh",
+    "geo_a_peak_r"
+   ],
+   "label": "A: Peak (TOU Peak 3B)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KWH(?:(?!Reading dates:)[\\s\\S])*?=[ \\t]*([\\d ,]+\\.\\d{2})(?:(?!Reading dates:)[\\s\\S])*?Tariff:[ \\t]*Time Of Use Peak",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "geo_a_std_kwh",
+    "geo_a_std_r"
+   ],
+   "label": "A: Standard (TOU Standard 3B)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KWH(?:(?!Reading dates:)[\\s\\S])*?=[ \\t]*([\\d ,]+\\.\\d{2})(?:(?!Reading dates:)[\\s\\S])*?Tariff:[ \\t]*Time Of Use Standard",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "geo_a_off_kwh",
+    "geo_a_off_r"
+   ],
+   "label": "A: Off-peak (TOU Off Peak 3B)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KWH(?:(?!Reading dates:)[\\s\\S])*?=[ \\t]*([\\d ,]+\\.\\d{2})(?:(?!Reading dates:)[\\s\\S])*?Tariff:[ \\t]*Time Of Use Off[ \\t]*Peak",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "geo_a_demand_kva",
+    "geo_a_demand_r"
+   ],
+   "label": "A: Maximum demand (TOU Basic And Kva 3B)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KVA(?:(?!Reading dates:)[\\s\\S])*?=[ \\t]*([\\d ,]+\\.\\d{2})(?:(?!Reading dates:)[\\s\\S])*?Tariff:[ \\t]*Time Of Use Basic And Kva",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "geo_a_nmd_kva",
+    "geo_a_nmd_r"
+   ],
+   "label": "A: Notified demand (TOU Network Access 3B)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KVA(?:(?!Reading dates:)[\\s\\S])*?=[ \\t]*([\\d ,]+\\.\\d{2})(?:(?!Reading dates:)[\\s\\S])*?Tariff:[ \\t]*Time Of Use Netw[ \\t]*ork Access",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "geo_a_react_kvarh",
+    "geo_a_react_r"
+   ],
+   "label": "A: Reactive energy charge",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KVA(?:(?!Reading dates:)[\\s\\S])*?=[ \\t]*([\\d ,]+\\.\\d{2})(?:(?!Reading dates:)[\\s\\S])*?Tariff:[ \\t]*Reactive",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "geo_a_flat_kwh",
+    "geo_a_flat_r"
+   ],
+   "label": "A: non-TOU 3-phase kWh meters",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KWH(?:(?!Reading dates:)[\\s\\S])*?=[ \\t]*([\\d ,]+\\.\\d{2})(?:(?!Reading dates:)[\\s\\S])*?Tariff:[ \\t]*Elec Cons",
+   "types": [
+    "number",
+    "money"
+   ]
+  },
+  {
+   "field": "geo_a_basic_r",
+   "label": "A: fixed monthly service charge",
+   "scope": "section:electricity",
+   "pattern": "Basic:[ \\t]*Time Of Use[^\\n]*(?:(?!Reading dates:)[\\s\\S])*?R[ \\t]*([\\d ,]+\\.\\d{2})[ \\t]{2,}R[ \\t]*[\\d ,]+\\.\\d{2}[ \\t]{2,}R[ \\t]*[\\d ,]+\\.\\d{2}",
+   "type": "money"
+  },
+  {
+   "field": "geo_a_meters",
+   "label": "A: electricity meters",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Meter[ \\t]+([A-Z]{0,3}\\d{6,}[A-Z0-9]*)",
+   "type": "text"
+  },
+  {
+   "field": "geo_a_est_meters",
+   "label": "A: meters flagged (Estimate)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Meter[ \\t]+([A-Z]{0,3}\\d{6,}[A-Z0-9]*)[ \\t]*\\(Estimate\\)",
+   "type": "text"
+  },
+  {
+   "field": "geo_a_tariff",
+   "label": "A: TOU tariff code",
+   "scope": "section:electricity",
+   "pattern": "Tariff:[ \\t]*Time Of Use[^\\n]*?(\\d[A-Z])\\b",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "geo_a_elec_ex_r",
+    "geo_a_elec_vat_r"
+   ],
+   "label": "A: electricity Sub Total (printed)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Sub Total[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?|-)",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "geo_b_basic_r",
+    "geo_b_basic_vat"
+   ],
+   "label": "B: Electricity Basic billed / VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity Basic(?:[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?){2}[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "geo_b_metered_r",
+    "geo_b_metered_vat"
+   ],
+   "label": "B: Electricity Metered billed / VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity Metered(?:[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?){2}[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)",
+   "type": "money"
+  },
+  {
+   "field": "geo_b_meter",
+   "label": "B: electricity meters (Electricity Details table)",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "(?:^|[ \\t])([A-Z]{0,3}\\d{6,}[A-Z0-9]*)[ \\t]{2,}\\d+[ \\t]*Amps",
+   "type": "text"
+  },
+  {
+   "field": "geo_b_tariff",
+   "label": "B: electricity tariff codes",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "(?:^|[ \\t])(TOU[A-Z]{2}|REACT|\\d{4})[ \\t]{2,}[A-Z]{0,3}\\d{6,}[A-Z0-9]*[ \\t]{2,}\\d+[ \\t]*Amps",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "geo_water_ex_r",
+    "geo_water_vat_r"
+   ],
+   "label": "Water sub total / rows",
+   "scope": "section:water",
+   "collect": "sum",
+   "patterns": [
+    "^[ \\t]*Sub Total[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?|-)",
+    "^[ \\t]*Water (?:Basic|Metered)(?:[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?){2}[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)"
+   ],
+   "type": "money"
+  },
+  {
+   "fields": [
+    "geo_sewer_ex_r",
+    "geo_sewer_vat_r"
+   ],
+   "label": "Sanitation sub total / rows",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "patterns": [
+    "^[ \\t]*Sub Total[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?|-)",
+    "^[ \\t]*Sanitation Basic(?:[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?){2}[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)"
+   ],
+   "type": "money"
+  },
+  {
+   "fields": [
+    "geo_rates_ex_r",
+    "geo_rates_vat_r"
+   ],
+   "label": "Property rates sub total / row",
+   "scope": "section:rates",
+   "collect": "sum",
+   "patterns": [
+    "^[ \\t]*Sub Total[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?|-)",
+    "^[ \\t]*Property Rates(?:[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?){2}[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)"
+   ],
+   "type": "money"
+  },
+  {
+   "fields": [
+    "geo_refuse_ex_r",
+    "geo_refuse_vat_r"
+   ],
+   "label": "Waste disposal sub total / row",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "patterns": [
+    "^[ \\t]*Sub Total[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?|-)",
+    "^[ \\t]*Waste Disposal(?:[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?){2}[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)"
+   ],
+   "type": "money"
+  },
+  {
+   "fields": [
+    "geo_a_water_new_read",
+    "geo_a_water_prev_read",
+    "geo_a_water_kl"
+   ],
+   "label": "Water meter readings (A)",
+   "scope": "section:water",
+   "pattern": "Cur[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Prev[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KL",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "geo_water_prev_read",
+    "geo_water_new_read",
+    "geo_water_kl"
+   ],
+   "label": "Water meter readings (B)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Water[ \\t]{2,}\\S+[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d+)[ \\t]{2,}\\d+[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "field": "geo_total_levies_txt",
+   "label": "A: Total Levies for the Month (as printed)",
+   "scope": "document",
+   "pattern": "Total Levies for the Month[ \\t]{2,}(R?[ \\t]*[\\d ,]+[.,]\\d{2})",
+   "type": "text"
+  },
+  {
+   "field": "geo_total_levies_ex_r",
+   "label": "A: Total Levies for the Month (ex VAT)",
+   "scope": "document",
+   "pattern": "Total Levies for the Month[ \\t]{2,}(R[ \\t]*[\\d ,]+\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "geo_b_total_billed_r",
+    "geo_b_total_billed_vat"
+   ],
+   "label": "B: ledger Total row (billed / VAT)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Total(?:[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?){2}[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "geo_amount_due_ex_r",
+    "geo_vat_due_r",
+    "geo_total_due_r"
+   ],
+   "label": "Amount Due / VAT Due / Total Amount Due",
+   "scope": "document",
+   "pattern": "(?:Total Amount Due|Water Details:)[\\s\\S]{0,600}?(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "geo_b_elec_total_r",
+   "op": "sum",
+   "of": [
+    "geo_b_basic_r",
+    "geo_b_metered_r"
+   ]
+  },
+  {
+   "field": "geo_b_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "geo_b_basic_vat",
+    "geo_b_metered_vat"
+   ]
+  },
+  {
+   "field": "geo_other_r",
+   "op": "sum",
+   "of": [
+    "geo_a_basic_r",
+    "geo_a_react_r",
+    "geo_a_flat_r",
+    "geo_b_basic_r",
+    "geo_b_metered_r"
+   ]
+  },
+  {
+   "field": "geo_elec_ex_r",
+   "op": "prefer",
+   "of": [
+    "geo_a_elec_ex_r",
+    "geo_b_elec_total_r"
+   ]
+  },
+  {
+   "field": "geo_elec_vat_r",
+   "op": "prefer",
+   "of": [
+    "geo_a_elec_vat_r",
+    "geo_b_elec_vat_r"
+   ]
+  },
+  {
+   "field": "geo_a_band_kwh",
+   "op": "sum",
+   "of": [
+    "geo_a_peak_kwh",
+    "geo_a_std_kwh",
+    "geo_a_off_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "geo_a_read_diff_kwh",
+   "op": "diff",
+   "of": [
+    "geo_a_end_read",
+    "geo_a_start_read"
+   ],
+   "as": "number"
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "tariff_name": [
+   "geo_a_tariff",
+   "geo_b_tariff"
+  ],
+  "meter": [
+   "geo_a_meters",
+   "geo_b_meter"
+  ],
+  "reading_type": "_none",
+  "read_start": "geo_a_prev_date",
+  "read_end": "geo_a_cur_date",
+  "start_reading_kwh": "geo_a_start_read",
+  "end_reading_kwh": "geo_a_end_read",
+  "total_kwh": "geo_a_total_kwh",
+  "peak_kwh": "geo_a_peak_kwh",
+  "standard_kwh": "geo_a_std_kwh",
+  "offpeak_kwh": "geo_a_off_kwh",
+  "demand_kva": "geo_a_demand_kva",
+  "nmd_kva": "geo_a_nmd_kva",
+  "peak_r": "geo_a_peak_r",
+  "standard_r": "geo_a_std_r",
+  "offpeak_r": "geo_a_off_r",
+  "demand_r": "geo_a_demand_r",
+  "nmd_r": "geo_a_nmd_r",
+  "other_r": "geo_other_r",
+  "total_ex_vat_r": "geo_elec_ex_r",
+  "deposit_r": "geo_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "(?:Opening Balance|^[ \\t]*Total)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)",
+  "incoming_payment": "(?:Payments|^[ \\t]*Total[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)",
+  "current_ex": "(?:Total Amount Due|Water Details:)[\\s\\S]{0,600}?(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?",
+  "vat": "(?:Total Amount Due|Water Details:)[\\s\\S]{0,600}?\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?",
+  "total_due": "(?:Total Amount Due|Water Details:)[\\s\\S]{0,600}?\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}(\\(?-?R[ \\t]*[\\d ,]+\\.\\d{2}\\)?)",
+  "due_date": "(?:Final Date for Payment[^\\n]*\\n+[^\\n]*?[ \\t]{2,}|Final Date for Payment[ \\t]{2,}|R[ \\t]*[\\d ,]+\\.\\d{2}[ \\t]{2,}R[ \\t]*[\\d ,]+\\.\\d{2}[ \\t]{2,}R[ \\t]*[\\d ,]+\\.\\d{2}[ \\t]{2,})(\\d{4}-\\d{2}-\\d{2}|\\d{2}-\\d{2}-\\d{4})",
+  "guarantee": "Guarantee/Deposit[ \\t]{2,}(R[ \\t]*[\\d ,]+(?:\\.\\d{2})?)"
+ }
+}

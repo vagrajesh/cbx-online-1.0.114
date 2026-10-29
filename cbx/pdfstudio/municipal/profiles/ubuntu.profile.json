@@ -1,0 +1,536 @@
+{
+ "profile_id": "ubuntu",
+ "profile_name": "Ubuntu Local Municipality (Victoria West, Northern Cape)",
+ "short_name": "Ubuntu",
+ "_doc": "ONE bill shape, 9 PDFs, one account. Ubuntu Local Municipality (Victoria West,\nNorthern Cape) bills Telkom TFMC account [number removed] (old account 050321/002321) for\nELECTRICITY and WATER on the same \"Sebata\" ledger statement, Sep 2025 - Jul 2026.\n\nFINGERPRINT: \"4870197581\" - Ubuntu's OWN municipality VAT registration, printed in the\nmasthead as \"Municipality VAT Nr: 4870197581\". Checked against all 487 PDFs in the\nTelkom tree: it occurs in exactly 9 files, all of them this folder, and in no other\nfolder. Four other folders share this identical print stream (Joe Gqabi 15 files,\nTokologo 10, Nama Khoi 4, George 2) and every one of them carries a DIFFERENT\nmunicipality VAT number (4280128101 / 4000846479 / 4890198585 / 4630193664), so the VAT\nnumber is the one marker that cannot cross-route. Do NOT fingerprint on the shared\nstrings \"Computer Generated Tax Invoice for\", \"Municipality VAT Nr\", \"Total Amount(B)\"\nor \"Tariff: ...\" (40 files across 5 municipalities), nor on the addressee block\n(Tfmc / Private Bag X 137 / Centurion / Telkom's own VAT 4680101146).\n\nFILE NAMING / \"UBU_388\": the folder holds six UBU_3280_3280*.pdf, two\nUBU_3280_AccountStatement - <ISO>.pdf and one UBU_388_AccountStatement - <ISO>.pdf.\nThe UBU_388_ prefix is a FILENAME ERROR, not a second account: inside that PDF the\nprinted identifiers are Account No. [number removed], Invoice No. 3280/2026/03/05, Old\nAccount No. 050321/002321, Property Id [number removed], Reference Nr [number removed] -\nbyte-for-byte the same account as the other eight, and it is simply the February-2026\nstatement that is otherwise missing from the monthly sequence. No \"388\" appears anywhere\nin its text. All 9 files therefore extract with account_number [number removed].\n\nLAYOUT. Page 1: masthead (\"Ubuntu Municipality\", Tel [number removed], [address removed],\nCHURCH STREET Victoria West 7070) + \"Computer Generated Tax Invoice for: <Month>\n<Year>\" + Account/Invoice/Old-Account block + addressee + a Property Id / SG Number /\nTown/Suburb / Days grid + a per-service summary table with three money columns\nAmount(excl.Vat) | Vat | Amount(Incl.Vat). Service rows actually used:\n\"Electricity Basic\", \"Electricity Metered\", \"Water Basic\", \"Water Metered\" and\nsometimes \"Journals\" (a system reversal of a previous estimate). Then\n\"VAT Services <base>\", \"Total Amount(B)\", \"Total Amount Payable(A+B)\", an aging strip\n(90+ Days / 30-90 Days / Total charge (excluding VAT) / Total VAT / Total Charge\n(including VAT)), Due Date + Amount Payable, and the payment stub.\nPages 2..n: the transaction detail. Each charge is a block\n    <dd/mm/yyyy> <description>                       R ex     R vat     R incl\n                 [Cur <reading> Prev <reading> Cons <qty> KWH|KL]\n                 [Meter *01*050321*40 [(Estimate)]]\n                   Factor / Levy Estimate Reason / Dwelling Units\n                 <qty> x <rate> = <amount>            (one line per tariff step)\n                 [Meter Transaction / Meter Connection Size: 1 - 1]\n                     Tariff: ELEC BASIC-COMMERCIAL | COMMERCIAL-USEAGE ONLY |\n                             WATER BASIC-RESIDENTIAL | WATER BASIC-COMMERCIAL |\n                             WATER RESIDENTIAL\nThe trailing \"Tariff:\" line is the ONLY reliable service discriminator in the detail, so\nevery detail rule walks from its charge line to its own Tariff line through the tempered\ntoken (?:(?!^[ \\t]*\\d{2}/\\d{2}/\\d{4})[\\s\\S])*? - it can never run past its own\nblock into the next transaction, and it survives the repeated page header/footer\n(\"Date Details (R)Amount(excl.Vat)...\" / \"Print Date: ... Page:n of m\") that sits between\nblocks. Meter rules use the same trick against ^Meter (and tolerate the \"Meter\nTransaction\" / \"Meter Connection Size\" lines, which start with the same word).\n\nSECTIONS. \"electricity\" starts at the page-1 \"Electricity Basic\" summary row; \"water\" is\ndeclared as an OVERLAY starting at the page-1 \"Water Basic\" row. Both spans therefore run\nto the end of the document and overlap - deliberate, because the elec and water detail\nblocks are INTERLEAVED on pages 2..n and a contiguous-span split would put every\nelectricity reading inside the water section. Cross-contamination is prevented by the\nrules themselves: electricity rules require KWH / Tariff: ELEC / Tariff: COMMERCIAL,\nwater rules require KL / Tariff: WATER.\n\nMONEY. Space thousands + dot decimal (R 22 802.52), credits in accountant parentheses\n((R 9 693.32)), a bare \"-\" where a column is nil. There is NO comma-decimal money\nanywhere in this folder, so the _to_decimal comma-as-thousands 100x trap does not apply\nhere. clean_value/_to_decimal handles both the parentheses and the \"-\".\n\nELECTRICITY MAPPING AND RULE ZERO. The bill prints no independent electricity-only\nex-VAT subtotal. total_ex_vat_r is therefore the SUM of the three printed electricity\nsummary rows (Electricity Basic + Electricity Metered + Journals) and other_r is\nElectricity Basic + Journals, so the reconcile check (parts == total) is STRUCTURALLY\nCIRCULAR on this profile and proves nothing on its own. Stated openly, as Rule Zero\nrequires. The genuine checks used instead are:\n (1) elec Basic + elec Metered + Journals + water Basic + water Metered == the\n     independently printed \"Total Amount(B)\" ex-VAT column  (exact on 9/9 bills);\n (2) the printed \"Total Amount(B)\" VAT column == 15% of the printed \"VAT Services\"\n     base                                                    (max 1c on 9/9 bills);\n (3) the DETAIL charge lines summed per tariff == the page-1 summary rows, the residue\n     being exactly the \"Interest - Interest on Overdue Balance/Late Payment\" lines the\n     municipality books against each tariff (natives ubu_energy_r / ubu_basic_levy_r /\n     ubu_water_levy_r / ubu_water_usage_r / ubu_interest_r) - this is a real, non-circular\n     test of the detail extraction;\n (4) sum(end readings) - sum(start readings) == sum(Cons ... KWH)  (exact on 9/9).\n\nstandard_r is the printed \"Electricity Metered\" row, which is the municipality's own\nattribution and therefore INCLUDES the interest it books against the usage tariff\n(e.g. UBU_3280_3280-TFMC: 7 284.29 energy + 1 473.74 interest = 8 758.03). The pure\nenergy figure is available separately as ubu_energy_r. Interest cannot be split by\nservice from the text: the interest lines carry no Tariff line of their own and are not\npositionally adjacent to the tariff they belong to (in UBU_3280_3280-TFMC the R1 473.74\ninterest line sits between the ELEC BASIC levy and the WATER BASIC levy yet belongs to\nElectricity Metered), so no rule attempts it.\n\nSingle-band tariff: \"COMMERCIAL-USEAGE ONLY\" is a flat kWh tariff with a stepped rate\n(2 000 kWh @ 3.7939 then the balance @ 3.7056 on the July 2026 bill), NOT time-of-use.\nIts consumption and Rands route to the STANDARD band, the same single-band convention\nCoJ flat-rate / Ekurhuleni / KwaDukuza use. peak/offpeak/nmd and demand columns are\nmapped \"_none\": Ubuntu prints NO kVA anywhere in this folder (zero occurrences of \"KVA\"\nin all 9 files) and no TOU split.\n\nMULTI-PERIOD BILLS. Several statements bill two consecutive KWH periods at once\n(UBU_3280_3280: 30/06->15/07 and 19/05->30/06; the Nov statement: 30/09->10/10 and\n15/08->30/09). Readings, Cons, days and detail Rands are all collect:\"sum\"; the reading\nregisters self-check (e.g. 51969.000+50427.158 - 50427.158-46110.000 = 5 859.000 =\n1 541.842+4 317.158). The detail blocks are printed NEWEST FIRST, so read_end takes the\nFIRST \"Cur\" date and read_start takes the LAST \"Prev\" date (its pattern uses a greedy\n^[\\s\\S]* prefix to land on the last KWH block); on the Nov statement that yields\n15/08/2025 -> 10/10/2025, exactly the 56 days the two blocks' day counts add up to.\n\nESTIMATES. Meter lines carry an optional \"(Estimate)\" suffix -> reading_type. It is\nprinted on the electricity meter on 1 of 9 bills (UBU_3280_3280-TFMC, Sep 2025) and on\nthe water meter on 9 of 9, so blank electricity reading_type on the other 8 is the\nbill's silence. Estimates are later reversed as the \"Journals\" row (\"System Reversal\n(Estimation of nnnn.000000 KWH)\"), which is negative and is captured with its\nparentheses.\nSome electricity usage is billed WITHOUT reading dates (\"<date> Dwelling Units: 1\nR 6 238.29 ... 1,439.052533 x 4.335000 = 6238.29\" under COMMERCIAL-USEAGE ONLY) - that\nis the estimated slice of a period whose remainder is billed on the following\nreading-dated line, and the kWh is ALREADY inside that line's \"Cons\" figure\n(1 439.052533 + 102.789467 = 1 541.842), so it must NOT be added to total_kwh. Its Rands\nARE part of Electricity Metered and are captured by the generic charge rule.\n\nWATER. Water is billed on meter *01*050321*41 in KL with a stepped residential tariff and\nhas been on estimate since 12/03/2024 (\"Levy Estimate Reason: Meter clocked over\",\n871-day period, a constant 47.000 KL). Water fields are native (ubu_water_*) and land on\nthe water row; the canonical 28-column template is electricity-only.\n\nDeposit / Guarantee: printed as literal 0.00 / 0 in the page-1 \"Cycle, Meter book &\nRoute\" grid, i.e. no security is held - deposit_r/cash_r/guarantee_r/security_held_r are\nmapped \"_none\".\nNo scans: read_pdf(ocr=\"auto\") reports ocr:False scanned:False on all 9 files (2-7 pages,\n8.8k-34k chars of real text), so ocr stays at the app default.",
+ "fingerprint": {
+  "all": [
+   "4870197581"
+  ],
+  "any": [],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity Basic[ \\t]{2,}\\(?R"
+  },
+  "water": {
+   "start": "^[ \\t]*Water Basic[ \\t]{2,}\\(?R",
+   "overlay": true
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "pattern": "(?<!Old )Account No\\.[ \\t]{2,}(\\d{9,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ubu_old_account",
+   "label": "Old account number",
+   "scope": "document",
+   "pattern": "Old Account No\\.[ \\t]{2,}(\\S+)",
+   "type": "text"
+  },
+  {
+   "field": "ubu_invoice_no",
+   "label": "Invoice number",
+   "scope": "document",
+   "pattern": "Invoice No\\.[ \\t]{2,}(\\S+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Addressee / site",
+   "scope": "document",
+   "pattern": "Old Account No\\.[ \\t]{2,}\\S+[ \\t]*\\n[ \\t]*\\n[ \\t]*([A-Za-z][^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement month",
+   "scope": "document",
+   "pattern": "Computer Generated Tax Invoice for:[ \\t]*([A-Za-z]+[ \\t]+\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "document",
+   "pattern": "^[ \\t]*Due Date[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "ubu_print_date",
+   "label": "Print date",
+   "scope": "document",
+   "pattern": "Print Date:[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "ubu_property_id",
+   "label": "Property id",
+   "scope": "document",
+   "pattern": "^[ \\t]*(\\d{12})[ \\t]{2,}C\\d{3}/",
+   "type": "text"
+  },
+  {
+   "field": "ubu_sg_number",
+   "label": "SG number",
+   "scope": "document",
+   "pattern": "(C\\d{3}/\\d{4}/\\d+)",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "ubu_town",
+    "ubu_days_billed"
+   ],
+   "label": "Town/suburb + days",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{12}[ \\t]{2,}C\\d{3}/\\d{4}/\\d+[ \\t]{2,}(\\S[^\\n]*?)[ \\t]{2,}(\\d+)[ \\t]*$",
+   "types": [
+    "text",
+    "number"
+   ]
+  },
+  {
+   "field": "ubu_physical",
+   "label": "Physical address",
+   "scope": "document",
+   "pattern": "^Physical Address[^\\n]*\\n[ \\t]*([A-Za-z0-9*][^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "ubu_vat_base",
+   "label": "VAT Services base",
+   "scope": "document",
+   "pattern": "^[ \\t]*VAT Services[ \\t]+([\\d ,]+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "ubu_total_b_ex",
+    "ubu_total_b_vat",
+    "ubu_total_b_incl"
+   ],
+   "label": "Total Amount(B)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Total Amount\\(B\\)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ubu_payable_ex",
+    "ubu_payable_vat",
+    "ubu_payable_incl"
+   ],
+   "label": "Total Amount Payable(A+B)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Total Amount Payable\\(A\\+B\\)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "ubu_interest_r",
+   "label": "Interest lines (whole bill)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Interest[ \\t]*-[^\\n]*?[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "ubu_basic_r",
+    "ubu_basic_vat"
+   ],
+   "label": "Electricity Basic",
+   "scope": "document",
+   "pattern": "^[ \\t]*Electricity Basic[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ubu_metered_r",
+    "ubu_metered_vat"
+   ],
+   "label": "Electricity Metered",
+   "scope": "document",
+   "pattern": "^[ \\t]*Electricity Metered[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "ubu_journal_r",
+   "label": "Journals (estimate reversal)",
+   "scope": "document",
+   "pattern": "^[ \\t]*Journals[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "type": "money"
+  },
+  {
+   "field": "ubu_read_cur",
+   "label": "kWh reading date - current (newest block)",
+   "scope": "section:electricity",
+   "pattern": "Reading dates:[ \\t]*Cur[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*Prev[ \\t]*\\d{2}/\\d{2}/\\d{4}[^\\n]*\\n[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b",
+   "type": "date"
+  },
+  {
+   "field": "ubu_read_prev",
+   "label": "kWh reading date - previous (oldest block)",
+   "scope": "section:electricity",
+   "pattern": "^[\\s\\S]*Reading dates:[ \\t]*Cur[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]*Prev[ \\t]*(\\d{2}/\\d{2}/\\d{4})[^\\n]*\\n[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b",
+   "type": "date"
+  },
+  {
+   "field": "ubu_days_kwh",
+   "label": "kWh billed days (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Reading dates:[^\\n]*\\((\\d+) days\\)[^\\n]*\\n[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b",
+   "type": "number"
+  },
+  {
+   "field": "ubu_end_reading",
+   "label": "kWh end register (newest block)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Cur[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b",
+   "type": "number"
+  },
+  {
+   "field": "ubu_start_reading",
+   "label": "kWh start register (oldest block)",
+   "scope": "section:electricity",
+   "pattern": "^[\\s\\S]*^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KWH\\b",
+   "type": "number"
+  },
+  {
+   "field": "ubu_total_kwh",
+   "label": "kWh consumption (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KWH\\b",
+   "type": "number"
+  },
+  {
+   "field": "ubu_energy_r",
+   "label": "Energy charges from the detail (audit)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?!EFT)(?!Interest)(?!System Reversal)[^\\n]*?[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,}\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]*$(?:(?!^[ \\t]*\\d{2}/\\d{2}/\\d{4})[\\s\\S])*?Tariff:[ \\t]*COMMERCIAL",
+   "type": "money"
+  },
+  {
+   "field": "ubu_basic_levy_r",
+   "label": "Basic levy from the detail (audit)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?!EFT)(?!Interest)(?!System Reversal)[^\\n]*?[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,}\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]*$(?:(?!^[ \\t]*\\d{2}/\\d{2}/\\d{4})[\\s\\S])*?Tariff:[ \\t]*ELEC BASIC",
+   "type": "money"
+  },
+  {
+   "field": "ubu_meters",
+   "label": "Electricity meter number(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Meter[ \\t]+((?:\\*|\\d)[^\\s|]*)(?:(?!^[ \\t]*(?:Meter[ \\t]+(?:\\*|\\d)|Tariff:))[\\s\\S])*?^[ \\t]*Tariff:[ \\t]*(?:ELEC|COMMERCIAL)"
+  },
+  {
+   "field": "ubu_tariffs",
+   "label": "Electricity tariff name(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Tariff:[ \\t]*((?:ELEC|COMMERCIAL)[^\\n]*?)[ \\t]*$"
+  },
+  {
+   "field": "ubu_reading_type",
+   "label": "Electricity reading type",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Meter[ \\t]+(?:\\*|\\d)[^\\s|]*[ \\t]*\\((Estimate)\\)(?:(?!^[ \\t]*(?:Meter[ \\t]+(?:\\*|\\d)|Tariff:))[\\s\\S])*?^[ \\t]*Tariff:[ \\t]*(?:ELEC|COMMERCIAL)"
+  },
+  {
+   "fields": [
+    "ubu_water_basic_r",
+    "ubu_water_basic_vat"
+   ],
+   "label": "Water Basic",
+   "scope": "document",
+   "pattern": "^[ \\t]*Water Basic[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ubu_water_metered_r",
+    "ubu_water_metered_vat"
+   ],
+   "label": "Water Metered",
+   "scope": "document",
+   "pattern": "^[ \\t]*Water Metered[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ubu_water_read_cur",
+    "ubu_water_read_prev",
+    "ubu_water_days"
+   ],
+   "label": "Water reading dates",
+   "scope": "section:water",
+   "pattern": "Reading dates:[ \\t]*Cur[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*Prev[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*\\((\\d+) days\\)[^\\n]*\\n[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KL\\b",
+   "types": [
+    "date",
+    "date",
+    "number"
+   ]
+  },
+  {
+   "field": "ubu_water_end_reading",
+   "label": "Water end register (newest block)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*Cur[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KL\\b",
+   "type": "number"
+  },
+  {
+   "field": "ubu_water_start_reading",
+   "label": "Water start register (oldest block)",
+   "scope": "section:water",
+   "pattern": "^[\\s\\S]*^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+([\\d ,]+\\.\\d+)[ \\t]+Cons[ \\t]+[\\d ,]+\\.\\d+[ \\t]*KL\\b",
+   "type": "number"
+  },
+  {
+   "field": "ubu_water_kl",
+   "label": "Water consumption (summed)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*Cur[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Prev[ \\t]+[\\d ,]+\\.\\d+[ \\t]+Cons[ \\t]+([\\d ,]+\\.\\d+)[ \\t]*KL\\b",
+   "type": "number"
+  },
+  {
+   "field": "ubu_water_usage_r",
+   "label": "Water usage from the detail (audit)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?!EFT)(?!Interest)(?!System Reversal)[^\\n]*?[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,}\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]*$(?:(?!^[ \\t]*\\d{2}/\\d{2}/\\d{4})[\\s\\S])*?Tariff:[ \\t]*WATER RESIDENTIAL",
+   "type": "money"
+  },
+  {
+   "field": "ubu_water_levy_r",
+   "label": "Water basic levy from the detail (audit)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?!EFT)(?!Interest)(?!System Reversal)[^\\n]*?[ \\t]{2,}(\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,}\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]*$(?:(?!^[ \\t]*\\d{2}/\\d{2}/\\d{4})[\\s\\S])*?Tariff:[ \\t]*WATER BASIC",
+   "type": "money"
+  },
+  {
+   "field": "ubu_water_meter",
+   "label": "Water meter number(s)",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Meter[ \\t]+((?:\\*|\\d)[^\\s|]*)(?:(?!^[ \\t]*(?:Meter[ \\t]+(?:\\*|\\d)|Tariff:))[\\s\\S])*?^[ \\t]*Tariff:[ \\t]*WATER"
+  },
+  {
+   "field": "ubu_water_tariffs",
+   "label": "Water tariff name(s)",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Tariff:[ \\t]*(WATER[^\\n]*?)[ \\t]*$"
+  },
+  {
+   "field": "ubu_water_reading_type",
+   "label": "Water reading type",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*Meter[ \\t]+(?:\\*|\\d)[^\\s|]*[ \\t]*\\((Estimate)\\)(?:(?!^[ \\t]*(?:Meter[ \\t]+(?:\\*|\\d)|Tariff:))[\\s\\S])*?^[ \\t]*Tariff:[ \\t]*WATER"
+  },
+  {
+   "field": "ubu_water_est_reason",
+   "label": "Water estimate reason",
+   "scope": "section:water",
+   "pattern": "Levy Estimate Reason:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "ubu_other_r",
+   "op": "sum",
+   "of": [
+    "ubu_basic_r",
+    "ubu_journal_r"
+   ]
+  },
+  {
+   "field": "ubu_elec_total_ex_r",
+   "op": "sum",
+   "of": [
+    "ubu_basic_r",
+    "ubu_metered_r",
+    "ubu_journal_r"
+   ]
+  },
+  {
+   "field": "ubu_elec_total_vat_r",
+   "op": "sum",
+   "of": [
+    "ubu_basic_vat",
+    "ubu_metered_vat"
+   ]
+  },
+  {
+   "field": "ubu_water_total_ex_r",
+   "op": "sum",
+   "of": [
+    "ubu_water_basic_r",
+    "ubu_water_metered_r"
+   ]
+  },
+  {
+   "field": "ubu_water_total_vat_r",
+   "op": "sum",
+   "of": [
+    "ubu_water_basic_vat",
+    "ubu_water_metered_vat"
+   ]
+  },
+  {
+   "field": "ubu_all_services_ex_r",
+   "op": "sum",
+   "of": [
+    "ubu_basic_r",
+    "ubu_metered_r",
+    "ubu_journal_r",
+    "ubu_water_basic_r",
+    "ubu_water_metered_r"
+   ]
+  },
+  {
+   "field": "ubu_read_diff_kwh",
+   "op": "diff",
+   "of": [
+    "ubu_end_reading",
+    "ubu_start_reading"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "ubu_water_read_diff_kl",
+   "op": "diff",
+   "of": [
+    "ubu_water_end_reading",
+    "ubu_water_start_reading"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "ubu_elec_detail_r",
+   "op": "sum",
+   "of": [
+    "ubu_energy_r",
+    "ubu_basic_levy_r",
+    "ubu_journal_r"
+   ]
+  },
+  {
+   "field": "ubu_elec_summary_gap_r",
+   "op": "sub",
+   "of": [
+    "ubu_elec_total_ex_r",
+    "ubu_elec_detail_r"
+   ]
+  },
+  {
+   "field": "ubu_water_detail_r",
+   "op": "sum",
+   "of": [
+    "ubu_water_usage_r",
+    "ubu_water_levy_r"
+   ]
+  },
+  {
+   "field": "ubu_water_summary_gap_r",
+   "op": "sub",
+   "of": [
+    "ubu_water_total_ex_r",
+    "ubu_water_detail_r"
+   ]
+  },
+  {
+   "field": "ubu_services_vs_totalB_r",
+   "op": "sub",
+   "of": [
+    "ubu_all_services_ex_r",
+    "ubu_total_b_ex"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "ubu_tariffs",
+  "account_number": "account_number",
+  "meter": "ubu_meters",
+  "reading_type": "ubu_reading_type",
+  "read_start": "ubu_read_prev",
+  "read_end": "ubu_read_cur",
+  "start_reading_kwh": "ubu_start_reading",
+  "end_reading_kwh": "ubu_end_reading",
+  "total_kwh": "ubu_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "ubu_total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "ubu_metered_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "ubu_other_r",
+  "total_ex_vat_r": "ubu_elec_total_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "Opening Balance[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,})?\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2}\\)?)",
+  "incoming_payment": "(?:Receipts|Last Paid Payment)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,})?\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2})",
+  "subtotal": "Sub Totals\\(A\\)[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}(?:\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?|-)[ \\t]{2,})?\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2})",
+  "current_ex": "Total Amount\\(B\\)[ \\t]{2,}\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2}\\)?)",
+  "vat": "Total Amount\\(B\\)[ \\t]{2,}\\(?R[ \\t]*-?[\\d ,]+\\.\\d{2}\\)?[ \\t]{2,}\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2}\\)?)",
+  "total_due": "Amount Payable[ \\t]{2,}\\(?R[ \\t]*(-?[\\d ,]+\\.\\d{2}\\)?)",
+  "due_date": "^[ \\t]*Due Date[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})"
+ }
+}

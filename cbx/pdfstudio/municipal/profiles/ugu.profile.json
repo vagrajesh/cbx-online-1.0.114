@@ -1,0 +1,190 @@
+{
+  "profile_id": "ugu",
+  "profile_name": "Ugu District Municipality (KZN)",
+  "short_name": "Ugu",
+  "fingerprint": {
+    "all": [
+      "UGU DISTRICT MUNICIPALITY"
+    ]
+  },
+  "sections": {
+    "water": {
+      "start": "^ ?Water\\s*$"
+    },
+    "sewerage": {
+      "start": "^ ?Sanitation\\s*$"
+    }
+  },
+  "fields": [
+    {
+      "fields": [
+        "billing_date",
+        "account_number"
+      ],
+      "label": "Bill Date + Account",
+      "scope": "document",
+      "pattern": "(\\d{2}/\\d{2}/\\d{4})\\s+(\\d{7,})\\s+INV",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "invoice_number",
+      "label": "Invoice No",
+      "scope": "document",
+      "pattern": "(INV\\d+ ?\\d*)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "site_name",
+      "label": "Reference address",
+      "scope": "document",
+      "pattern": "Reference address\\s+(.+?)\\s{2,}",
+      "type": "text",
+      "required": true
+    },
+    {
+      "fields": [
+        "serv_start",
+        "serv_end"
+      ],
+      "label": "Service period",
+      "scope": "document",
+      "pattern": "Service from\\s+(\\d{4}/\\d{2}/\\d{2})\\s+To\\s+(\\d{4}/\\d{2}/\\d{2})",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "days",
+      "label": "No of Days",
+      "scope": "document",
+      "pattern": "No of Days:\\s*(\\d+)",
+      "type": "number",
+      "required": false
+    },
+    {
+      "field": "due_date",
+      "label": "Payment Due Date",
+      "scope": "document",
+      "pattern": "Payment Due Date On\\s+(\\d{4}/\\d{2}/\\d{2})",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "balance_r",
+      "label": "Balance Amount",
+      "scope": "document",
+      "pattern": "Balance Amount\\s+(\\(?-?[\\d, ]+\\.\\d{2}\\)?-?)",
+      "type": "money",
+      "required": true
+    },
+    {
+      "field": "vat_r",
+      "label": "VAT raised",
+      "scope": "document",
+      "pattern": "Vat raised[^\\n]*\\)\\s*([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": true
+    },
+    {
+      "field": "w_basic_r",
+      "label": "Water Basic",
+      "scope": "section:water",
+      "collect": "sum",
+      "pattern": "Water Basic[^\\n]*?([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "water_kl",
+        "w_start_read",
+        "w_end_read",
+        "water_usage_r"
+      ],
+      "types": [
+        "number",
+        "number",
+        "number",
+        "money"
+      ],
+      "label": "KL usage ledger line",
+      "scope": "section:water",
+      "collect": "sum",
+      "pattern": "([\\d.]+)\\s+KL\\s+\\(Start:\\s*([\\d.]+)\\s+End:\\s*([\\d.]+)\\)\\s+(-?[\\d ,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "fields": [
+        "w_read_prev",
+        "w_read_curr",
+        "w_meter"
+      ],
+      "label": "Water meter + reading dates",
+      "scope": "section:water",
+      "pattern": "(\\d{4}/\\d{2}/\\d{2})\\s+(\\d{4}/\\d{2}/\\d{2})\\s+(\\d{6,})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "w_reading_type",
+      "label": "Reading type",
+      "scope": "section:water",
+      "pattern": "Meter Number:\\s*\\n\\s*([A-Za-z]+)\\s*\\n",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "san_fixed_r",
+      "label": "Sanitation Fixed",
+      "scope": "section:sewerage",
+      "collect": "sum",
+      "pattern": "Sanitation Fixed Charges[^\\n]*?([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "san_kl_r",
+      "label": "Sanitation per KL",
+      "scope": "section:sewerage",
+      "collect": "sum",
+      "pattern": "Sanitation - Charge Per Kilolitre[^\\n]*?([\\d,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    }
+  ],
+  "computes": [
+    {
+      "field": "water_total_r",
+      "op": "sum",
+      "of": [
+        "w_basic_r",
+        "water_usage_r"
+      ]
+    },
+    {
+      "field": "san_total_r",
+      "op": "sum",
+      "of": [
+        "san_fixed_r",
+        "san_kl_r"
+      ]
+    }
+  ],
+  "canonical": {
+    "site_name": "site_name",
+    "tariff_name": "_none",
+    "reading_type": "w_reading_type",
+    "read_start": "serv_start",
+    "read_end": "serv_end",
+    "total_ex_vat_r": "_none"
+  },
+  "recon": {
+    "prev_balance": "Balance Brought Forward\\s+(-?[\\d, ]+\\.\\d{2})",
+    "incoming_payment": "Payment - Thank You\\s+(-?[\\d, ]+\\.\\d{2})",
+    "vat": "Vat raised @15[^\\n]*?([\\d, ]+\\.\\d{2})",
+    "total_due": "Balance Amount\\s+(-?[\\d, ]+\\.\\d{2})",
+    "due_date": "Payment Due Date On\\s+(\\d{4}/\\d{2}/\\d{2})"
+  }
+}

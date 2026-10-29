@@ -1,0 +1,145 @@
+{
+ "profile_id": "csir",
+ "profile_name": "Council for Scientific and Industrial Research (CSIR)",
+ "short_name": "CSIR",
+ "_doc": "CSIR (Council for Scientific and Industrial Research) electricity recharge tax invoice (Facilities Management and Security Services). Each file holds an Original and a Duplicate copy of the same invoice; first-match rules read the Original only. One invoice line 'Electricity' (quantity 1 EA, lump sum, no kWh, no meter); some bills print the consumption month and one prints a date range on the line (read_start/read_end). The lump sum is the electricity total ex VAT and is placed in other_r (no energy/demand split is printed). Account = Customer Number; site = 'Your Reference' (building / site id). Fingerprint: CSIR's own (seller) VAT number + csir.co.za / Brummeria address; the buyer VAT on the bill is never used. Identity csir_total_less_vat_r = TOTAL AMOUNT DUE - VAT: 10/10 exact. Checked on 10 bills, 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "4470114283"
+  ],
+  "any": [
+   "www.csir.co.za",
+   "Meiring Naude Road Brummeria"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Line[ \\t]+Description[ \\t]",
+   "require": "^[ \\t]*\\d+[ \\t]+Electricity[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Customer Number",
+   "scope": "header",
+   "pattern": "\\bCustomer Number:[ \\t]*(\\d{3,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice Date",
+   "scope": "header",
+   "pattern": "\\bInvoice Date:[ \\t]*(\\d{4}/\\d{2}/\\d{2})\\b",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "csir_invoice_no",
+   "label": "Invoice No",
+   "scope": "header",
+   "pattern": "\\bInvoice No:[ \\t]*([A-Z]{2}\\d+)\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Your Reference (building / site id)",
+   "scope": "header",
+   "pattern": "^[ \\t]*Your Reference:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "csir_period_text",
+   "label": "Consumption month text",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity consumption for ([A-Za-z]+[ \\t]+\\d{4})",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Period on the Electricity line (some bills)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d+[ \\t]+Electricity[ \\t]+(\\d{4}-\\d{2}-\\d{2}) to (\\d{4}-\\d{2}-\\d{2})"
+  },
+  {
+   "field": "csir_elec_line_r",
+   "label": "Electricity line Net Amount (last column)",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "^[ \\t]*\\d+[ \\t]+Electricity\\b[^\\n]*?[ \\t]EA[ \\t]+\\w+[ \\t]+-?[\\d,]+\\.\\d{2}[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "field": "csir_subtotal_r",
+   "label": "SUBTOTAL",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*SUBTOTAL:[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "csir_vat_base_r",
+    "csir_vat_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "VAT summary: Net Amount / VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Net Amount:[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]+STD[ \\t]+[\\d.]+[ \\t]*%[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "csir_total_r",
+   "label": "TOTAL AMOUNT DUE",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*TOTAL AMOUNT DUE :[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]+ZAR",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "csir_total_less_vat_r",
+   "op": "sub",
+   "of": [
+    "csir_total_r",
+    "csir_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "total_ex_vat_r": "csir_elec_line_r",
+  "tariff_name": "_none",
+  "meter": "_none",
+  "reading_type": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "csir_elec_line_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

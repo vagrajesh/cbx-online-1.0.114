@@ -1,0 +1,199 @@
+{
+  "title": "page.owner.title",
+  "intro": "page.owner.intro",
+  "menu": false,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "today",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "owner_today",
+                "type": "metrics",
+                "title": "w.owner_today.title",
+                "items": [
+                  {
+                    "metric": "system.attention"
+                  },
+                  {
+                    "metric": "flows.waiting_for_me"
+                  },
+                  {
+                    "metric": "requests.new"
+                  },
+                  {
+                    "metric": "compliance.due"
+                  },
+                  {
+                    "metric": "signin.failed_24h"
+                  },
+                  {
+                    "metric": "people.no_two_step"
+                  },
+                  {
+                    "metric": "system.versions_waiting"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "people",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "owner_people",
+                "type": "metrics",
+                "title": "w.owner_people.title",
+                "items": [
+                  {
+                    "metric": "people.active"
+                  },
+                  {
+                    "metric": "people.seen_7d"
+                  },
+                  {
+                    "metric": "people.locked"
+                  },
+                  {
+                    "metric": "people.ending_30d"
+                  },
+                  {
+                    "metric": "signin.unregistered_7d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "work",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "owner_work",
+                "type": "metrics",
+                "title": "w.owner_work.title",
+                "items": [
+                  {
+                    "metric": "pdf.to_check"
+                  },
+                  {
+                    "metric": "sheets.exceptions"
+                  },
+                  {
+                    "metric": "requests.open"
+                  },
+                  {
+                    "metric": "build.tickets_open"
+                  },
+                  {
+                    "metric": "flows.failed_7d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "lists",
+        "columns": [
+          {
+            "width": 7,
+            "widgets": [
+              {
+                "id": "owner_attention",
+                "type": "table",
+                "title": "w.owner_attention.title",
+                "source": {
+                  "provider": "core.attention"
+                },
+                "columns": [
+                  {
+                    "key": "level",
+                    "label": "col.level"
+                  },
+                  {
+                    "key": "text",
+                    "label": "col.text"
+                  }
+                ],
+                "search": false,
+                "row_link": true,
+                "limit": 8
+              }
+            ]
+          },
+          {
+            "width": 5,
+            "widgets": [
+              {
+                "id": "owner_requests",
+                "type": "table",
+                "title": "w.owner_requests.title",
+                "source": {
+                  "provider": "core.my_requests"
+                },
+                "columns": [
+                  {
+                    "key": "number",
+                    "label": "col.number"
+                  },
+                  {
+                    "key": "title",
+                    "label": "col.title"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  }
+                ],
+                "search": false,
+                "row_link": true,
+                "limit": 6
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "canvas": {
+    "widgets": {
+      "owner_today": {
+        "x": 250,
+        "y": 60
+      },
+      "owner_people": {
+        "x": 250,
+        "y": 150
+      },
+      "owner_work": {
+        "x": 250,
+        "y": 240
+      },
+      "owner_attention": {
+        "x": 250,
+        "y": 330
+      },
+      "owner_requests": {
+        "x": 250,
+        "y": 420
+      }
+    }
+  }
+}

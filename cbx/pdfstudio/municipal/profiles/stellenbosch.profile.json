@@ -1,0 +1,801 @@
+{
+ "profile_id": "stellenbosch",
+ "profile_name": "Stellenbosch Municipality (Western Cape)",
+ "short_name": "Stellenbosch",
+ "_doc": "STELLENBOSCH MUNICIPALITY - Telkom account [number removed], PLOT 'SENT 11125 00001', LOCATION/BUILDING 'OUTOMATIESE SENTRALE' (the Stellenbosch automatic exchange). 10 usable bills, Nov-2025 .. Aug-2026 (an 11th PDF in the folder carries a broken font encoding - see MOJIBAKE below).\n\nPAGE STRUCTURE - measured, not assumed. Every bill is ONE PDF page, 7.2k-7.6k chars, 88-91 lines, ZERO '\\f' breaks, longest line 725 chars (the 'Send this portion back with your payment please' remittance strapline). There is NO reverse-side terms page inside the PDF at all - the bill prints 'Sien agterkant vir belangrike inligting / See reverse side for important information' and 'Page 1 / 1', i.e. the reverse is a separate physical sheet that was never scanned in. So the Breede Valley whitespace-soup problem (BV page 2 alone = ~176,000 chars with single lines of 29k/35k/58k) DOES NOT OCCUR here, and neither does a newsletter insert. File byte size (0.74MB / 0.89MB) is 78-82% embedded raster artwork (10 images, 0.58MB vs 0.73MB) - it carries no information about text volume, exactly as on Drakenstein. read_pdf reports ocr:False scanned:False on all 10; no OCR is used.\nThe Breede Valley discipline is still applied because it costs nothing: NO rule uses 'document' scope, and a RULES-FREE 'sundry' boundary section at '^ Please do not use this bank account number' terminates the electricity span. Electricity therefore spans the meter table -> that last line, which conveniently also contains the balance block, the charges table, '** Total monthly:', the due date and the aging line.\n\nMAILER WRAPPER: every bill starts '<![number removed]|[address removed]|true|17|08|2026|1|1|1234|294366.49|...!>' - the same e-delivery envelope as Breede Valley / Drakenstein / Dihlabeng. '[address removed]' is exactly what shipped-mangaung fingerprints on, which is why these bills HIJACKED mangaung before the mangaung fix. NOTHING in this profile touches any cbreexcellerate address. FINGERPRINT is '4700102181' = STELLENBOSCH'S OWN VAT registration, printed 'BTW Reg Nr./ VAT Reg No. 4700102181'; scanned over all 487 PDFs in /mnt/user-data/uploads/Telkom it appears in these 10 bills and nowhere else. '4680101146' printed lower down is labelled 'DEBT VAT REG No.' - that is TELKOM's (the debtor's) VAT number and it appears in 17 folders / 136 files; never fingerprint on it (kept as ste_debt_vat_no for information). The word 'STELLENBOSCH' alone also appears on Breede Valley bills (20 files), so it is only an 'any' marker behind the VAT 'all' gate.\n\nMOJIBAKE FILE: 'STE_[number removed]_[number removed].pdf' (207KB, 4,106 chars) has a text layer built from a subset font with no usable ToUnicode map - PyMuPDF returns pure mojibake ('...ACCOUNT NUMBER...' comes out as '¸¹ª«¨...'). It contains no readable digits, no '4700102181', and cannot be fingerprinted or extracted by any regex. It stays UNRECOGNIZED, which is the correct outcome; it is a duplicate re-render of a month already present in a good copy. Nothing was bent to catch it.\n\nTWO METERS, ONE ROW. Each bill bills TWO electricity supply points on one account:\n  E [number removed]  89942 -> 90673   731 units      17/06-17/07   (small non-TOU meter, units printed WITHOUT decimals)\n  E [number removed]  885620 -> 890222   4602.000     01/07-01/08   (TOU register 1 = Peak)\n  E [number removed]  [number removed] -> [number removed]  11519.000   01/07-01/08   (TOU register 2 = Standard)\n  E [number removed]  [number removed] -> [number removed]  13747.000   01/07-01/08   (TOU register 3 = Off Peak)\n  K [number removed]           48         48.000      01/07-01/08   (measured maximum demand kVA)\n  K [number removed]          200        200.000      01/07-01/08   (contracted access/capacity kVA)\nThe K lines print NOTHING in PREVIOUS READING (single value in the CURRENT column) exactly like Breede Valley's K line, so their pattern expects one reading, not two. NO block_anchor is used: the charge table carries no meter numbers, so the charge lines cannot be attributed to a meter, and splitting per meter would emit half-empty rows with the Rand totals duplicated (the experiment Breede Valley already ran). One electricity row per PDF. 'meter' is a join_unique of both meter numbers ('[number removed]/[number removed]'). start_reading_kwh / end_reading_kwh are the SUM of all four E-line readings (the CoJ multi-register convention); end - start == total_kwh exactly on all 10 bills, which is what makes that sum self-checking.\nPERIODS: the two supply points are read on DIFFERENT cycles (17/06-17/07 vs 01/07-01/08) and print with NO YEAR. read_start/read_end carry the TOU (main, ~97% of the energy) meter's cycle - identified structurally by its '.000' units formatting - with a prefer() fallback to any E line, and are kept EXACTLY as printed ('01/07','01/08') per the 'date == as printed' rule. The small meter's cycle is kept as ste_alt_period_start/end.\n\nCHARGE TABLE: 'Service Type / Consum. / Tariff/Cost / VAT / Amount'. Tariff/Cost is a UNIT RATE (cents/kWh on the energy lines - 873.60 = R8.7360/kWh; Rands/unit on the levy/demand/access lines), VAT is the per-line VAT, and AMOUNT IS VAT-INCLUSIVE (= ex-VAT + VAT). THERE IS NO EX-VAT AMOUNT COLUMN. So - the Drakenstein trap in a different dress - every canonical ex-VAT Rand column here is DERIVED as (printed AMOUNT - printed VAT) on the same line: 46233.53 - 6030.46 = 40203.07 = 4602 kWh x R8.7360. Verified line by line on all 10 bills; never point a canonical Rand column at an _incl_r native.\nLABEL DRIFT between months: 'Elekt/Elect Cons/Verbr' (Nov-Jul) vs 'Elekt/Elect Consumption' (Aug); 'Elekt/Elect Serv.Levy' vs 'Electricity Service Levy'; 'Elekt/Elect Demand Charge' vs 'Electricity Demand Charge'; likewise Access Charge and Reactive Chg. Every charge pattern therefore alternates '(?:Elekt/Elect|Electricity)'. The Aug-2026 bill splits the non-TOU energy into TWO block lines (341.133 @ 365.00c + 389.866 @ 397.31c) so all charge rules use collect:'sum'; the unit-rate column is deliberately NOT captured inside a summed rule (summing rates is meaningless).\nBAND ROUTING: the TOU meter's Peak / Standard / Off Peak lines map straight to peak/standard/offpeak. The non-TOU meter's energy ('Cons/Verbr' / 'Consumption', a single/inclining-block flat tariff) is ADDED INTO STANDARD following the CoJ-flat / Ekurhuleni / Breede Valley single-band convention - that is why standard_kwh = 12249.999 rather than 11519 on the Aug bill, and it is what makes peak+standard+offpeak == total_kwh exactly. 'Electricity Demand Charge' (48 kVA, varies 48-70) -> demand_kva/demand_r. 'Electricity Access Charge' (200 kVA, constant on all 10 bills) is the contracted-capacity charge -> nmd_kva/nmd_r. 'Basic/Basies' + 'Service Levy' (+ 'Reactive Chg' if it ever bills) -> other_r. tariff_name comes from the bill's own bare 'Electricity TOU' continuation lines (no tariff code or tariff name is printed anywhere).\n\nRULE ZERO - STATED PLAINLY. Stellenbosch prints NO independent ex-VAT electricity total: there is no per-service subtotal and no CHARGE column. total_ex_vat_r is therefore the SUM OF ITS OWN PARTS and the harness's 'reconcile OK' on this profile is WORTHLESS - it would reconcile on all-blank output. The real checks, all of which use figures this extraction does not construct, are:\n  (a) CLOSING-BALANCE IDENTITY: Balance brought forward + Interest/penalties + Journals + Receipts + Transfers + SUM(all electricity AMOUNT) + refuse AMOUNT == '** Total monthly:'. Computed inside the profile as ste_closing_gap_r, which reads 0.00 on all 10 bills and would break by the value of any silently-missed charge line. This is the substitute for a genuine reconcile. The balance block has SIX possible line types and they were all found the hard way: 'Balance brought forward:' (always), 'Interest/penalties:' (4 bills), 'Journals:' (4 bills, one or TWO journal references before the VAT/amount pair), 'Receipts:' (7 bills, leading minus, up to three receipt numbers on one line), 'Transfers' (6 bills, 0.00 on five of them and -120097.59 on [number removed] - that one bill is why this line exists) and the informational pair 'Allocated Credit Balances' / '** Total unallocated balances:'. THE ALLOCATED-CREDIT LINE IS NOT PART OF THE RUNNING BALANCE - including it breaks the identity by exactly its own value on 6 bills; it is captured as a native and deliberately excluded from the sum.\n  (b) VAT IDENTITY: SUM(9 electricity VAT columns) + refuse VAT + journal VAT == the header's printed 'VAT.' total (ste_vat_gap_r == 0.00 on all 10).\n  (c) kWh IDENTITY: SUM(E-line CURRENT) - SUM(E-line PREVIOUS) == SUM(E-line units) == the charge table's own consumption columns (ste_kwh_from_readings vs total_kwh vs ste_bands_kwh, all equal on all 10).\n  (d) The closing balance is printed TWICE - '** Total monthly:' and the last figure on the 'Nou Verskuldig / Toekomstig:' aging line - captured by two different rules (ste_total_monthly_r vs ste_total_now_due_r, ste_total_print_gap_r == 0.00).\nThe refuse charge line is captured a SECOND time inside section:electricity (ste_refuse_*_audit_r) purely so identities (a) and (b) can be computed on the electricity row; those natives are audit fields and are NOT mapped to any canonical electricity column.\n\nREADING TYPE IS NOT PRINTED. The meter table's columns are Service Type / Meter nr / Previous / Current / Factor / Consum. / Period / Day Average - there is no Actual/Estimate flag column anywhere on the bill, and the Factor column is blank on all 10 bills. reading_type is therefore DERIVED as 'Actual' by label_present, exactly as on Breede Valley, and flagged as an inference. Supporting evidence: every bill's PREVIOUS reading equals the previous bill's CURRENT reading on both meters (an unbroken chain across all 10 months on all four registers). A defensive ste_est_flag rule is in place and will flip the value to 'Estimated' the moment an A/E letter is printed after the Current reading.\n\nNEVER PRINTED by Stellenbosch: a tariff code or tariff name (only the bare 'Electricity TOU' marker), any ex-VAT charge figure, a current-charges total (ex or inc VAT), a period year, a notified-maximum-demand label (the 200 kVA Access Charge is the closest and is mapped to NMD), any deposit or guarantee figure (the 'DEPOSIT / GUARANTEE' label is printed but blank on all 10 bills -> deposit/cash/guarantee/security are '_none'), a valuation, and a reading-type flag. RECON: current_ex is deliberately left BLANK - the only inclusive current-charges figure on the bill is the aging line's 'Annual' column, which on 3 of the 10 bills differs from the real current charges by a journal posting (e.g. [number removed]: annual 121137.44 vs charges 121127.44) and collapses to two columns when monthly arrears are zero; putting that in a charges column would repeat the Breede Valley mistake.",
+ "fingerprint": {
+  "all": [
+   "4700102181"
+  ],
+  "any": [
+   "Stellenbosch Municipality Debtors",
+   "BELASTINGFAKTUUR MAANDELIKSE REKENING",
+   "P.O.Box / Posbus 17, Stellenbosch",
+   "Stellenbosch Municipality drinking water quality compliance"
+  ],
+  "reject_if_text": [
+   "Please wait... If this message is not eventually replaced",
+   "requires Adobe Reader 8 or higher",
+   "Prepayment Account Update",
+   "PREPAID ELECTRICITY PURCHASE SLIP"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Service Type[ \\t]{2,}Meter nr\\b",
+   "require": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+\\S"
+  },
+  "refuse": {
+   "start": "^[ \\t]*Refuse[ \\t]+Refuse removal\\b",
+   "overlay": true,
+   "end": "^[ \\t]*Refuse[ \\t]+Refuse removal[^\\n]*$"
+  },
+  "sundry": {
+   "start": "^[ \\t]*Please do not use this bank account number"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "header",
+   "pattern": "^[ \\t]*ACCOUNT NUMBER[ \\t]{2,}(\\d{6,})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ste_tax_invoice_no",
+   "label": "Tax invoice number",
+   "scope": "header",
+   "pattern": "^[ \\t]*TAX INVOICE[ \\t]{2,}(\\d{5,})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account (statement) date",
+   "scope": "header",
+   "pattern": "^[ \\t]*ACCOUNT DATE[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "ste_munic_vat_no",
+   "label": "Stellenbosch VAT registration (fingerprint anchor)",
+   "scope": "header",
+   "pattern": "^[ \\t]*BTW Reg Nr\\./[ \\t]*VAT Reg No\\.[ \\t]*(\\d{9,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ste_debt_vat_no",
+   "label": "DEBT VAT REG No. (Telkom's, NOT the municipality's)",
+   "scope": "header",
+   "pattern": "^[ \\t]*DEBT VAT REG No\\.[ \\t]{2,}(\\d{9,})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ste_receipts_posted",
+   "label": "Receipts posted to",
+   "scope": "header",
+   "pattern": "^[ \\t]*RECEIPTS POSTED[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "ste_total_vat_r",
+   "label": "Printed total VAT for the account (header 'VAT.')",
+   "scope": "header",
+   "pattern": "^[ \\t]*VAT\\.[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ste_plot",
+   "label": "Plot",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bPLOT[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ste_building",
+   "label": "Building",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bBUILDING[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ste_location",
+   "label": "Location (site)",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bLOCATION[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ste_deposit_guarantee_r",
+   "label": "Deposit / guarantee (label printed, blank on every bill seen)",
+   "scope": "header",
+   "pattern": "^[ \\t]*DEPOSIT / GUARANTEE[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "ste_valuation_r",
+   "label": "Valuation (label printed, blank on every bill seen)",
+   "scope": "header",
+   "pattern": "^[ \\t]*VALUATION[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meter numbers (both supply points)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[EK][ \\t]{2,}(\\d{6,})[ \\t]{2,}",
+   "type": "text",
+   "collect": "join_unique",
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_e_prev_sum",
+    "ste_e_curr_sum",
+    "ste_e_kwh_sum"
+   ],
+   "label": "E lines: previous / current / units summed over all kWh registers",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*E[ \\t]{2,}\\d{6,}[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d+)[ \\t]{2,}([\\d,]+(?:\\.\\d{3})?)[ \\t]{2,}\\d{2}/\\d{2}-\\d{2}/\\d{2}[ \\t]{2,}[\\d.]+[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_tou_period_start",
+    "ste_tou_period_end"
+   ],
+   "label": "Reading period of the TOU meter (units printed with .000)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*E[ \\t]{2,}\\d{6,}[ \\t]{2,}\\d+[ \\t]{2,}\\d+[ \\t]{2,}[\\d,]+\\.\\d{3}[ \\t]{2,}(\\d{2}/\\d{2})-(\\d{2}/\\d{2})[ \\t]{2,}[\\d.]+[ \\t]*$",
+   "types": [
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_alt_period_start",
+    "ste_alt_period_end"
+   ],
+   "label": "Reading period of the first E line (fallback / non-TOU meter cycle)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*E[ \\t]{2,}\\d{6,}[ \\t]{2,}\\d+[ \\t]{2,}\\d+[ \\t]{2,}[\\d,]+(?:\\.\\d{3})?[ \\t]{2,}(\\d{2}/\\d{2})-(\\d{2}/\\d{2})[ \\t]{2,}[\\d.]+[ \\t]*$",
+   "types": [
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "ste_est_flag",
+   "label": "Reading estimate flag on an E line (never printed on any bill seen)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*E[ \\t]{2,}\\d{6,}[ \\t]{2,}\\d+[ \\t]{2,}\\d+[ \\t]*([AE])[ \\t]{2,}[\\d,]+",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "ste_k_reading_sum",
+    "ste_k_units_sum"
+   ],
+   "label": "K lines: kVA reading / units summed (audit cross-check)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*K[ \\t]{2,}\\d{6,}[ \\t]{2,}(\\d+)[ \\t]{2,}([\\d,]+\\.\\d{3})[ \\t]{2,}\\d{2}/\\d{2}-\\d{2}/\\d{2}[ \\t]*$",
+   "types": [
+    "number",
+    "number"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "tariff_name",
+   "label": "Tariff marker (the bill's own bare 'Electricity TOU' lines)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+(TOU)[ \\t]*$",
+   "type": "text",
+   "collect": "join_unique",
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_basic_qty",
+    "ste_basic_vat_r",
+    "ste_basic_incl_r"
+   ],
+   "label": "Basic charge line (qty / VAT / AMOUNT inc VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+Basic(?:/Basies)?[ \\t]{2,}([\\d,]+(?:\\.\\d+)?)[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_cons_kwh",
+    "ste_cons_vat_r",
+    "ste_cons_incl_r"
+   ],
+   "label": "Non-TOU energy line(s) 'Cons/Verbr' / 'Consumption' (kWh / VAT / AMOUNT inc VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+(?:Cons/Verbr|Consumption)[ \\t]{2,}([\\d,]+(?:\\.\\d+)?)[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_peak_kwh",
+    "ste_peak_vat_r",
+    "ste_peak_incl_r"
+   ],
+   "label": "TOU Peak line (kWh / VAT / AMOUNT inc VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+Peak[ \\t]{2,}([\\d,]+(?:\\.\\d+)?)[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_standard_kwh",
+    "ste_standard_vat_r",
+    "ste_standard_incl_r"
+   ],
+   "label": "TOU Standard line (kWh / VAT / AMOUNT inc VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+Standard[ \\t]{2,}([\\d,]+(?:\\.\\d+)?)[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_offpeak_kwh",
+    "ste_offpeak_vat_r",
+    "ste_offpeak_incl_r"
+   ],
+   "label": "TOU Off Peak line (kWh / VAT / AMOUNT inc VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+Off[ \\t]+Peak[ \\t]{2,}([\\d,]+(?:\\.\\d+)?)[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_levy_qty",
+    "ste_levy_vat_r",
+    "ste_levy_incl_r"
+   ],
+   "label": "Service levy line (qty / VAT / AMOUNT inc VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+(?:Serv\\.Levy|Service[ \\t]+Levy)[ \\t]{2,}([\\d,]+(?:\\.\\d+)?)[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_demand_kva",
+    "ste_demand_vat_r",
+    "ste_demand_incl_r"
+   ],
+   "label": "Demand charge line (measured max demand kVA / VAT / AMOUNT inc VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+Demand[ \\t]+Charge[ \\t]{2,}([\\d,]+(?:\\.\\d+)?)[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_nmd_kva",
+    "ste_nmd_vat_r",
+    "ste_nmd_incl_r"
+   ],
+   "label": "Access charge line (contracted capacity kVA / VAT / AMOUNT inc VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+Access[ \\t]+Charge[ \\t]{2,}([\\d,]+(?:\\.\\d+)?)[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "ste_reactive_rate",
+   "label": "Reactive energy charge rate (rate only, no amount billed on any bill seen)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+Reactive[ \\t]+Chg[ \\t]{2,}([\\d,]+\\.\\d{2,5})[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "ste_reactive_vat_r",
+    "ste_reactive_incl_r"
+   ],
+   "label": "Reactive energy charge if ever billed (VAT / AMOUNT inc VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:Elekt/Elect|Electricity)[ \\t]+Reactive[ \\t]+Chg[ \\t]{2,}[\\d,]+(?:\\.\\d+)?[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "ste_refuse_vat_audit_r",
+    "ste_refuse_incl_audit_r"
+   ],
+   "label": "Refuse charge line seen from the electricity span (AUDIT ONLY - never a canonical electricity column)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Refuse[ \\t]+Refuse removal[ \\t]+\\S+[ \\t]{2,}[\\d,]+(?:\\.\\d+)?[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "ste_prev_balance_r",
+   "label": "Balance brought forward",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Balance brought forward:[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ste_interest_r",
+   "label": "Interest / penalties (absent on most bills)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Interest/penalties:[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "ste_journal_vat_r",
+    "ste_journal_r"
+   ],
+   "label": "Journals line (VAT / amount; one or two journal references)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Journals:[^\\n]*?[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "field": "ste_receipts_r",
+   "label": "Receipts (leading minus; one or more receipt numbers)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Receipts:[^\\n]*?[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "ste_transfers_r",
+   "label": "Transfers (part of the running balance; 0.00 on most bills)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Transfers[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "ste_allocated_credit_r",
+   "label": "Allocated credit balances (informational - NOT part of the running balance)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Allocated Credit Balances[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "ste_unallocated_r",
+   "label": "Total unallocated balances",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\*\\*[ \\t]*Total unallocated balances:[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "ste_total_monthly_r",
+   "label": "** Total monthly (closing balance)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\*\\*[ \\t]*Total monthly:[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ste_total_now_due_r",
+   "label": "Total now due (last figure of the aging line - second print of the closing balance)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Nou Verskuldig / Toekomstig:[^\\n]*?[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due date (Datum Verskuldig line)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Datum Verskuldig[^\\n]*?[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_customer_name",
+    "ste_billing_period",
+    "ste_slip_date"
+   ],
+   "label": "Remittance slip: name / billing period / date",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\S[^\\n]*?)[ \\t]{2,}\\d{6,}[ \\t]{2,}(\\d{4}/\\d{2})[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]*$",
+   "types": [
+    "text",
+    "text",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "ste_refuse_tariff",
+    "ste_refuse_qty",
+    "ste_refuse_vat_r",
+    "ste_refuse_incl_r"
+   ],
+   "label": "Refuse removal charge line",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*Refuse[ \\t]+Refuse removal[ \\t]+(\\S+)[ \\t]{2,}([\\d,]+(?:\\.\\d+)?)[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "text",
+    "number",
+    "money",
+    "money"
+   ],
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "label": "Site = LOCATION (BUILDING is identical and de-duplicated by concat)",
+   "op": "concat",
+   "of": [
+    "ste_location",
+    "ste_building"
+   ]
+  },
+  {
+   "field": "ste_read_start_out",
+   "label": "Start date - TOU meter cycle, fallback any E line (as printed, no year)",
+   "op": "prefer",
+   "of": [
+    "ste_tou_period_start",
+    "ste_alt_period_start"
+   ]
+  },
+  {
+   "field": "ste_read_end_out",
+   "label": "End date - TOU meter cycle, fallback any E line (as printed, no year)",
+   "op": "prefer",
+   "of": [
+    "ste_tou_period_end",
+    "ste_alt_period_end"
+   ]
+  },
+  {
+   "field": "reading_type",
+   "label": "Actual/Estimate (DERIVED - no flag column exists on this bill)",
+   "op": "label_present",
+   "of": [
+    "ste_est_flag",
+    "ste_e_curr_sum"
+   ],
+   "labels": [
+    "Estimated",
+    "Actual"
+   ]
+  },
+  {
+   "field": "ste_kwh_from_readings",
+   "label": "SUM(current) - SUM(previous) over all kWh registers (independent kWh check)",
+   "op": "diff",
+   "of": [
+    "ste_e_curr_sum",
+    "ste_e_prev_sum"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "ste_std_kwh_out",
+   "label": "Standard kWh = TOU Standard band + non-TOU (flat/block) energy",
+   "op": "sum",
+   "of": [
+    "ste_standard_kwh",
+    "ste_cons_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "ste_bands_kwh",
+   "label": "Peak + Standard + Off Peak kWh (must equal total_kwh)",
+   "op": "sum",
+   "of": [
+    "ste_peak_kwh",
+    "ste_std_kwh_out",
+    "ste_offpeak_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "ste_peak_r",
+   "label": "Peak EX VAT = printed AMOUNT - printed VAT",
+   "op": "sub",
+   "of": [
+    "ste_peak_incl_r",
+    "ste_peak_vat_r"
+   ]
+  },
+  {
+   "field": "ste_standard_band_r",
+   "label": "TOU Standard EX VAT = printed AMOUNT - printed VAT",
+   "op": "sub",
+   "of": [
+    "ste_standard_incl_r",
+    "ste_standard_vat_r"
+   ]
+  },
+  {
+   "field": "ste_cons_r",
+   "label": "Non-TOU energy EX VAT = printed AMOUNT - printed VAT",
+   "op": "sub",
+   "of": [
+    "ste_cons_incl_r",
+    "ste_cons_vat_r"
+   ]
+  },
+  {
+   "field": "ste_std_r_out",
+   "label": "Standard Rands = TOU Standard + non-TOU energy (single-band convention)",
+   "op": "sum",
+   "of": [
+    "ste_standard_band_r",
+    "ste_cons_r"
+   ]
+  },
+  {
+   "field": "ste_offpeak_r",
+   "label": "Off Peak EX VAT = printed AMOUNT - printed VAT",
+   "op": "sub",
+   "of": [
+    "ste_offpeak_incl_r",
+    "ste_offpeak_vat_r"
+   ]
+  },
+  {
+   "field": "ste_demand_r",
+   "label": "Demand charge EX VAT = printed AMOUNT - printed VAT",
+   "op": "sub",
+   "of": [
+    "ste_demand_incl_r",
+    "ste_demand_vat_r"
+   ]
+  },
+  {
+   "field": "ste_nmd_r",
+   "label": "Access (contracted capacity) charge EX VAT = printed AMOUNT - printed VAT",
+   "op": "sub",
+   "of": [
+    "ste_nmd_incl_r",
+    "ste_nmd_vat_r"
+   ]
+  },
+  {
+   "field": "ste_basic_r",
+   "label": "Basic charge EX VAT = printed AMOUNT - printed VAT",
+   "op": "sub",
+   "of": [
+    "ste_basic_incl_r",
+    "ste_basic_vat_r"
+   ]
+  },
+  {
+   "field": "ste_levy_r",
+   "label": "Service levy EX VAT = printed AMOUNT - printed VAT",
+   "op": "sub",
+   "of": [
+    "ste_levy_incl_r",
+    "ste_levy_vat_r"
+   ]
+  },
+  {
+   "field": "ste_reactive_r",
+   "label": "Reactive charge EX VAT (blank on every bill seen)",
+   "op": "sub",
+   "of": [
+    "ste_reactive_incl_r",
+    "ste_reactive_vat_r"
+   ]
+  },
+  {
+   "field": "ste_other_r",
+   "label": "Other charges EX VAT = basic + service levy + reactive",
+   "op": "sum",
+   "of": [
+    "ste_basic_r",
+    "ste_levy_r",
+    "ste_reactive_r"
+   ]
+  },
+  {
+   "field": "ste_elec_total_ex_r",
+   "label": "Electricity EX VAT (SUM OF ITS OWN PARTS - circular, see _doc Rule Zero)",
+   "op": "sum",
+   "of": [
+    "ste_peak_r",
+    "ste_std_r_out",
+    "ste_offpeak_r",
+    "ste_demand_r",
+    "ste_nmd_r",
+    "ste_other_r"
+   ]
+  },
+  {
+   "field": "ste_elec_vat_r",
+   "label": "Electricity VAT = sum of the printed per-line VAT columns",
+   "op": "sum",
+   "of": [
+    "ste_basic_vat_r",
+    "ste_cons_vat_r",
+    "ste_peak_vat_r",
+    "ste_standard_vat_r",
+    "ste_offpeak_vat_r",
+    "ste_levy_vat_r",
+    "ste_demand_vat_r",
+    "ste_nmd_vat_r",
+    "ste_reactive_vat_r"
+   ]
+  },
+  {
+   "field": "ste_elec_incl_r",
+   "label": "Electricity INC VAT = sum of the printed AMOUNT columns",
+   "op": "sum",
+   "of": [
+    "ste_basic_incl_r",
+    "ste_cons_incl_r",
+    "ste_peak_incl_r",
+    "ste_standard_incl_r",
+    "ste_offpeak_incl_r",
+    "ste_levy_incl_r",
+    "ste_demand_incl_r",
+    "ste_nmd_incl_r",
+    "ste_reactive_incl_r"
+   ]
+  },
+  {
+   "field": "ste_vat_gap_r",
+   "label": "IDENTITY (b): printed 'VAT.' - elec VAT - refuse VAT - journal VAT (must be 0.00)",
+   "op": "sub",
+   "of": [
+    "ste_total_vat_r",
+    "ste_elec_vat_r",
+    "ste_refuse_vat_audit_r",
+    "ste_journal_vat_r"
+   ]
+  },
+  {
+   "field": "ste_closing_sum_r",
+   "label": "Opening + interest + journals + receipts + transfers + all charges inc VAT",
+   "op": "sum",
+   "of": [
+    "ste_prev_balance_r",
+    "ste_interest_r",
+    "ste_journal_r",
+    "ste_receipts_r",
+    "ste_transfers_r",
+    "ste_elec_incl_r",
+    "ste_refuse_incl_audit_r"
+   ]
+  },
+  {
+   "field": "ste_closing_gap_r",
+   "label": "IDENTITY (a): closing-balance chain - '** Total monthly' (must be 0.00)",
+   "op": "sub",
+   "of": [
+    "ste_closing_sum_r",
+    "ste_total_monthly_r"
+   ]
+  },
+  {
+   "field": "ste_total_print_gap_r",
+   "label": "IDENTITY (d): '** Total monthly' - aging-line total now due (must be 0.00)",
+   "op": "sub",
+   "of": [
+    "ste_total_monthly_r",
+    "ste_total_now_due_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "ste_read_start_out",
+  "read_end": "ste_read_end_out",
+  "start_reading_kwh": "ste_e_prev_sum",
+  "end_reading_kwh": "ste_e_curr_sum",
+  "total_kwh": "ste_e_kwh_sum",
+  "peak_kwh": "ste_peak_kwh",
+  "standard_kwh": "ste_std_kwh_out",
+  "offpeak_kwh": "ste_offpeak_kwh",
+  "demand_kva": "ste_demand_kva",
+  "nmd_kva": "ste_nmd_kva",
+  "peak_r": "ste_peak_r",
+  "standard_r": "ste_std_r_out",
+  "offpeak_r": "ste_offpeak_r",
+  "demand_r": "ste_demand_r",
+  "nmd_r": "ste_nmd_r",
+  "other_r": "ste_other_r",
+  "total_ex_vat_r": "ste_elec_total_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "^[ \\t]*Balance brought forward:[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "^[ \\t]*Receipts:[^\\n]*?[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "vat": "^[ \\t]*VAT\\.[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "total_due": "^[ \\t]*\\*\\*[ \\t]*Total monthly:[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "due_date": "^[ \\t]*Datum Verskuldig[^\\n]*?[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})"
+ }
+}

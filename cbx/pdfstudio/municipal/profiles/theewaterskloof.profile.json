@@ -1,0 +1,368 @@
+{
+ "profile_id": "theewaterskloof",
+ "profile_name": "Theewaterskloof Local Municipality (Caledon, Western Cape)",
+ "short_name": "Theewaterskloof",
+ "_doc": "Theewaterskloof LM (Caledon). Two layouts: (a) 9 gyro-printed statements whose header values are UNLABELLED (statement date, street, account no., town, invoice no. in a right-hand column; then stand/valuation/rate/deposit row) and (b) one 'MONTHLY MUNICIPAL ACCOUNT' (WC031) whose date is an unfilled '##DATEACCOUNT##' placeholder (billing_date blank there). Ledger: 'T<meter> Electricity' then registers KVA DEMAND / OFF PEAK / STANDARD / PEAK '(LV D)' 'current-previous=units  amount', 'n x Network Access KVA' (nmd_kva = n, nmd_r) and 'Electricity Basic' (other_r). EVERY AMOUNT IS VAT-INCLUSIVE with no per-line VAT; the statement prints the VAT included ('VAT INCLUSIVE'). Ex-VAT Rand columns are therefore incl x 100/115 (constant via label_present). Fingerprint: the name (only layout b prints the municipal VAT number, kept in 'any'). IDENTITY: tw_elec_ex_check_r = electricity incl - (printed statement VAT - VAT share of the starred non-electricity lines), layout b: printed ELEC. service-summary x 100/115; vs total_ex_vat_r: R0.00 on 7, <=R0.02 on 3. Checked on 10 bills.",
+ "fingerprint": {
+  "all": [
+   "THEEWATERSKLOOF"
+  ],
+  "any": [
+   "4000846248",
+   "Theewaterskloof Municipality",
+   "Theewaterskloof Munisipaliteit"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{2}[ \\t]+)?T\\d+[ \\t]+Electricity\\b",
+   "overlay": true,
+   "end": "Electricity[ \\t]+Basic[^\\n]*\\n"
+  }
+ },
+ "fields": [
+  {
+   "label": "Account number (unlabelled right column / ACCOUNT No.)",
+   "scope": "document",
+   "field": "account_number",
+   "patterns": [
+    "^[ \\t]{40,}(\\d{10})[ \\t]*$",
+    "REKENING No\\.[ \\t]+(\\d{10})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "label": "Statement date (unlabelled, above account no.)",
+   "scope": "document",
+   "field": "billing_date",
+   "pattern": "^[ \\t]{40,}(\\d{2}/\\d{2}/\\d{4})[ \\t]*\\n[^\\n]*\\n[ \\t]{40,}\\d{10}[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "label": "Site street (line above account no.)",
+   "scope": "document",
+   "field": "tw_street",
+   "pattern": "^[ \\t]*(\\S[^\\n]*?)[ \\t]*\\n[ \\t]{40,}\\d{10}[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "label": "Site town (line below account no.)",
+   "scope": "document",
+   "field": "tw_town",
+   "pattern": "^[ \\t]{40,}\\d{10}[ \\t]*\\n[ \\t]*([A-Z][A-Z ]+?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "label": "Deposit",
+   "scope": "document",
+   "field": "deposit_r",
+   "patterns": [
+    "^[ \\t]*\\d{8}[ \\t]+\\d+[ \\t]+\\d+\\.\\d{4}[ \\t]+(\\d+\\.\\d{2})[ \\t]*$",
+    "DEPOSIT/DEPOSITO[ \\t]*\\n[^\\n]*?[ \\t]{2,}(\\d+\\.\\d{2})[ \\t]*$"
+   ],
+   "type": "money"
+  },
+  {
+   "label": "VAT included in current charges (statement)",
+   "scope": "document",
+   "field": "tw_vat_incl_r",
+   "pattern": "VAT INCLUSIVE[ \\t]+(-?\\d+\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "label": "Service charge summary ELEC. (WC031 layout only)",
+   "scope": "document",
+   "field": "tw_elec_summary_incl_r",
+   "pattern": "ELEK\\.[^\\n]*\\n[ \\t]*-?\\d+\\.\\d{2}-?[ \\t]+-?\\d+\\.\\d{2}-?[ \\t]+-?\\d+\\.\\d{2}[ \\t]+(\\d+\\.\\d{2})[ \\t]",
+   "type": "money"
+  },
+  {
+   "label": "Electricity meter (T…)",
+   "scope": "section:electricity",
+   "field": "meter",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{2}[ \\t]+)?(T\\d+)[ \\t]+Electricity\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "label": "Tariff (LV D)",
+   "scope": "section:electricity",
+   "field": "tariff_name",
+   "pattern": "^[ \\t]*KVA DEMAND[ \\t]+\\(([^)]+)\\)",
+   "type": "text"
+  },
+  {
+   "label": "KVA DEMAND (kVA, amount incl.)",
+   "scope": "section:electricity",
+   "fields": [
+    "demand_kva",
+    "tw_demand_incl_r"
+   ],
+   "pattern": "^[ \\t]*KVA DEMAND[ \\t]+\\([^)]+\\)[ \\t]+\\d+-\\d+=(\\d+)[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "OFF PEAK register (current-previous=units, amount incl. VAT)",
+   "scope": "section:electricity",
+   "fields": [
+    "offpeak_start",
+    "offpeak_end",
+    "offpeak_kwh",
+    "tw_offpeak_incl_r"
+   ],
+   "pattern": "^[ \\t]*OFF PEAK[ \\t]+\\([^)]+\\)[ \\t]+(\\d+)-(\\d+)=(\\d+)[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "STANDARD register (current-previous=units, amount incl. VAT)",
+   "scope": "section:electricity",
+   "fields": [
+    "standard_start",
+    "standard_end",
+    "standard_kwh",
+    "tw_standard_incl_r"
+   ],
+   "pattern": "^[ \\t]*STANDARD[ \\t]+\\([^)]+\\)[ \\t]+(\\d+)-(\\d+)=(\\d+)[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "PEAK register (current-previous=units, amount incl. VAT)",
+   "scope": "section:electricity",
+   "fields": [
+    "peak_start",
+    "peak_end",
+    "peak_kwh",
+    "tw_peak_incl_r"
+   ],
+   "pattern": "^[ \\t]*PEAK[ \\t]+\\([^)]+\\)[ \\t]+(\\d+)-(\\d+)=(\\d+)[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "n x Network Access KVA (kVA, amount incl.)",
+   "scope": "document",
+   "fields": [
+    "nmd_kva",
+    "tw_access_incl_r"
+   ],
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{2}[ \\t]+)?(\\d+)[ \\t]*x[ \\t]+Network Access KVA[^\\n]*?[ \\t]{2,}\\*?[ \\t]*(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "All starred (VAT-able) current charge lines, incl. VAT (gyro layout)",
+   "scope": "document",
+   "field": "tw_starred_incl_r",
+   "pattern": "\\*[ \\t]*(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "label": "Electricity Basic (amount incl.)",
+   "scope": "document",
+   "field": "tw_basic_incl_r",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{2}[ \\t]+)?Electricity[ \\t]+Basic[ \\t]{2,}\\*?[ \\t]*(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "tw_k_ex",
+   "op": "label_present",
+   "of": [
+    "account_number"
+   ],
+   "labels": [
+    "869565.217391E-6"
+   ]
+  },
+  {
+   "field": "tw_k_vat",
+   "op": "label_present",
+   "of": [
+    "account_number"
+   ],
+   "labels": [
+    "130434.782609E-6"
+   ]
+  },
+  {
+   "field": "tw_site",
+   "op": "concat",
+   "of": [
+    "tw_street",
+    "tw_town"
+   ]
+  },
+  {
+   "field": "total_kwh",
+   "op": "sum",
+   "of": [
+    "offpeak_kwh",
+    "standard_kwh",
+    "peak_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "tw_elec_incl_r",
+   "op": "sum",
+   "of": [
+    "tw_demand_incl_r",
+    "tw_offpeak_incl_r",
+    "tw_standard_incl_r",
+    "tw_peak_incl_r",
+    "tw_access_incl_r",
+    "tw_basic_incl_r"
+   ]
+  },
+  {
+   "field": "peak_r",
+   "op": "mul",
+   "of": [
+    "tw_peak_incl_r",
+    "tw_k_ex"
+   ]
+  },
+  {
+   "field": "standard_r",
+   "op": "mul",
+   "of": [
+    "tw_standard_incl_r",
+    "tw_k_ex"
+   ]
+  },
+  {
+   "field": "offpeak_r",
+   "op": "mul",
+   "of": [
+    "tw_offpeak_incl_r",
+    "tw_k_ex"
+   ]
+  },
+  {
+   "field": "demand_r",
+   "op": "mul",
+   "of": [
+    "tw_demand_incl_r",
+    "tw_k_ex"
+   ]
+  },
+  {
+   "field": "nmd_r",
+   "op": "mul",
+   "of": [
+    "tw_access_incl_r",
+    "tw_k_ex"
+   ]
+  },
+  {
+   "field": "other_r",
+   "op": "mul",
+   "of": [
+    "tw_basic_incl_r",
+    "tw_k_ex"
+   ]
+  },
+  {
+   "field": "tw_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "peak_r",
+    "standard_r",
+    "offpeak_r",
+    "demand_r",
+    "nmd_r",
+    "other_r"
+   ]
+  },
+  {
+   "field": "tw_nonelec_incl_r",
+   "op": "sub",
+   "of": [
+    "tw_starred_incl_r",
+    "tw_access_incl_r",
+    "tw_basic_incl_r"
+   ]
+  },
+  {
+   "field": "tw_nonelec_vat_r",
+   "op": "mul",
+   "of": [
+    "tw_nonelec_incl_r",
+    "tw_k_vat"
+   ]
+  },
+  {
+   "field": "tw_elec_vat_by_stmt_r",
+   "op": "sub",
+   "of": [
+    "tw_vat_incl_r",
+    "tw_nonelec_vat_r"
+   ]
+  },
+  {
+   "field": "tw_ex_check_vat_r",
+   "op": "sub",
+   "of": [
+    "tw_elec_incl_r",
+    "tw_elec_vat_by_stmt_r"
+   ]
+  },
+  {
+   "field": "tw_ex_check_summary_r",
+   "op": "mul",
+   "of": [
+    "tw_elec_summary_incl_r",
+    "tw_k_ex"
+   ]
+  },
+  {
+   "field": "tw_elec_ex_check_r",
+   "op": "prefer",
+   "of": [
+    "tw_ex_check_summary_r",
+    "tw_ex_check_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "tw_site",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_ex_vat_r": "tw_elec_ex_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

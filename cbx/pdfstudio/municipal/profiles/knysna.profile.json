@@ -1,0 +1,333 @@
+{
+ "profile_id": "knysna",
+ "profile_name": "Knysna Municipality (Western Cape, WC048)",
+ "short_name": "Knysna",
+ "_doc": "COMPACT ACCOUNT-STATEMENT LEDGER (no masthead). Shared compact layout with Swartland and Oudtshoorn (Matlosana and Matzikama use the same ledger body but DO print a masthead and their own municipal VAT number, so they are not at risk here): the text layer opens straight into data with NO municipality name, NO address, NO portal URL and NO municipal VAT number anywhere. The ONLY 4xxxxxxxxx on the page is 4680101146, which is TELKOM's own VAT number (it appears on 136 of the 487 PDFs in this tree, across 17 folders) - fingerprinting on it would hijack the whole portfolio. FINGERPRINT USED: '>>>>>91597', the EasyPay/bill-scan line at the foot of the page. Structure is 9 + 4-digit EasyPay receiver id + 12-digit account + check digit; receiver 1597 is Knysna's. Verified 10/487 hits in the tree, all in the Knysna folder. Swartland is 1587, Newcastle 1001. LAYOUT (per --raw): line 1 = formatted account '1-16434-000-10-4'. Line 3 = an unlabelled header column row '<property key>  <num3>  <stmt date>  <account date>' - num3 (1080.00 here) is UNLABELLED; it is constant across all 10 months and is either the erf size in m2 or the consumer deposit, so it is captured as kyn_hdr_num3 and canonical deposit_r is left _none rather than guess. The property-key column prints 0 on some months. Then the street line ('16434 THESHEN ISLAND') immediately ABOVE the 'TELKOM SA' addressee line, whose own tail carries the suburb ('Thesens Island'); site_name is the concat of the two. Then '<account>-MM-YY'. LEDGER: one line per transaction, 'DD/MM/YY  <meter|code>  <DESCRIPTION> [(dd/mm/yyyy-dd/mm/yyyy)]  <VAT>  <AMOUNT INC VAT>'. THE AMOUNT COLUMN IS VAT-INCLUSIVE and the VAT for that line is printed in its own column immediately to its left, so ex-VAT is derived with 'sub'. Non-VAT lines (BALANCE BROUGHT FORWARD, RECEIPTS, INTEREST ELEC CNS) print only the amount. Under a consumption line: '<end> - <start> = <units> KWH <n> DAYS' (NOTE: END reading is printed FIRST) and inclining-block tier lines '<kWh> KWH @ <rate> = <rand>' (4 tiers, ex VAT), plus 'TAR: <code>' and 'BASIC: = <rand>' (ex VAT). Tiers are a single non-TOU band -> routed to the STANDARD canonical band (same convention as CoJ flat-rate / Ekurhuleni). Some months print an ELEC line with NEGATIVE amounts - that is a reversal of the previous estimate; it is captured separately (kyn_elec_credit_*) and folded into other_r so the reconcile identity holds. Two ELEC lines per bill is normal (basic-only + energy, or reversal + true-up). DATES ARE KEPT EXACTLY AS PRINTED: billing_date reads '31/07/26', read_start/read_end read '08/08/2025'/'24/10/2025' - the app never reformats dates. Money is comma-thousands / period-decimal ('2,686.91') so the standard money cleaner is correct (unlike Oudtshoorn on this same layout, which uses space thousands). Not printed anywhere on this bill: reading type (Actual/Estimate), TOU bands, demand kVA, NMD, tariff NAME (only a numeric tariff code, mapped to tariff_name), consumer securities -> all _none. FILE NAMING: three of the ten PDFs are misnamed at source (SWT_[number removed]_..., KYN_[number removed]_..., KYN_1_...); all three carry account [number removed] and site 'THESHEN ISLAND / Thesens Island' in their text and are genuine Knysna bills. KNOWN LIMIT: all 10 sample bills are electricity-only, so only an electricity section is defined. A Knysna account that bills water/refuse/sewerage/rates instead would match the fingerprint but yield NO row (no section matches -> no svc_rules). Add the English service-word sections once such a bill is available. RECONCILE IS GENUINE, NOT CIRCULAR: total_ex_vat_r comes from the LEDGER money columns (sum of amounts minus sum of VAT), while standard_r/other_r come from the TIER, BASIC and reversal lines - different printed figures.",
+ "fingerprint": {
+  "all": [
+   ">>>>>91597"
+  ],
+  "reject_if_text": [
+   "Please wait...",
+   "does not support the use of JavaScript"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}ELEC[ \\t]",
+   "require": "ELEC[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]{2,}(\\d{10,14})-\\d{2}-\\d{2}[ \\t]*$",
+    "REFERENCE:[ \\t]+(\\d{10,14})",
+    "\\*(\\d{10,14})\\*"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "kyn_account_formatted",
+   "label": "Account Number (formatted)",
+   "scope": "document",
+   "pattern": "^[ \\t]{2,}(\\d-\\d{4,6}-\\d{3}-\\d{2}-\\d)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "statement_month",
+   "label": "Statement period MM-YY",
+   "scope": "document",
+   "pattern": "^[ \\t]{2,}\\d{10,14}-(\\d{2}-\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "kyn_property_key",
+    "kyn_hdr_num3",
+    "kyn_stmt_date",
+    "billing_date"
+   ],
+   "types": [
+    "text",
+    "money",
+    "date",
+    "date"
+   ],
+   "label": "Header column row (property key / unlabelled num3 / statement date / account date)",
+   "scope": "document",
+   "pattern": "^[ \\t]{5,}(\\d+)[ \\t]{2,}((?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "kyn_site_street",
+   "label": "Property / street line (above the addressee)",
+   "scope": "document",
+   "pattern": "^[ \\t]{10,}(\\S[^\\n]*?)[ \\t]*\\n[ \\t]*TELKOM SA",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "kyn_site_town",
+   "label": "Suburb / town (tail of the addressee line)",
+   "scope": "document",
+   "pattern": "^[ \\t]*TELKOM SA[^\\n]*?[ \\t]{2,}([A-Za-z][A-Za-z .'-]+?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "kyn_total_vat_r",
+   "label": "TOTAL VAT",
+   "scope": "document",
+   "pattern": "TOTAL VAT:[ \\t]+(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "kyn_balance_bf_r",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "BALANCE BROUGHT FORWARD[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "kyn_receipts_r",
+   "label": "Receipts",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}RECEIPTS[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "kyn_interest_r",
+   "label": "Interest on electricity account",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}INTEREST[^\\n]*?[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "kyn_current_r",
+    "due_date",
+    "kyn_total_due_r"
+   ],
+   "types": [
+    "money",
+    "date",
+    "money"
+   ],
+   "label": "Aging row: current / due date / total due",
+   "scope": "document",
+   "pattern": "^[ \\t]+(?:-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?[ \\t]+){1,6}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meter number",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}(\\d{4,})[ \\t]{2,}ELEC[ \\t]",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "tariff_name",
+   "label": "Tariff code (TAR:)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "TAR:[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "kyn_description",
+   "label": "Charge description",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}(ELEC[^\\n]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Consumption period (as printed)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\d{4,}[ \\t]{2,}ELEC[^\\n(]*\\((\\d{2}/\\d{2}/\\d{4})-(\\d{2}/\\d{2}/\\d{4})\\)",
+   "type": "date",
+   "required": false
+  },
+  {
+   "fields": [
+    "end_reading_kwh",
+    "start_reading_kwh",
+    "kyn_read_kwh",
+    "kyn_days"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "Reading line (END - START = UNITS KWH n DAYS)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+((?<![\\d.,])[\\d,]+(?:\\.\\d+)?)[ \\t]*-[ \\t]*((?<![\\d.,])[\\d,]+(?:\\.\\d+)?)[ \\t]*=[ \\t]*((?<![\\d.,])[\\d,]+(?:\\.\\d+)?)[ \\t]+KWH[ \\t]+(\\d+)[ \\t]+DAYS",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "kyn_tier_kwh",
+    "kyn_tier_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Inclining-block tier lines (kWh @ rate = Rand, ex VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]+((?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]+KWH[ \\t]+@[ \\t]+[\\d,.]+[ \\t]+=[ \\t]+((?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "kyn_basic_r",
+   "label": "BASIC charge (ex VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "BASIC:[ \\t]*=[ \\t]*(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "kyn_elec_vat_r",
+    "kyn_elec_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Ledger ELEC lines: VAT column + amount column (inc VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\d{4,}[ \\t]{2,}ELEC[^\\n]*?[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?(?<![\\d.,])[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "kyn_elec_credit_vat_r",
+    "kyn_elec_credit_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Ledger ELEC reversal lines (negative amounts only)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\d{4,}[ \\t]{2,}ELEC[^\\n]*?[ \\t]{2,}(-(?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]{2,}(-(?<![\\d.,])[\\d,]+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "kyn_site_street",
+    "kyn_site_town"
+   ]
+  },
+  {
+   "field": "kyn_elec_ex_r",
+   "op": "sub",
+   "of": [
+    "kyn_elec_inc_r",
+    "kyn_elec_vat_r"
+   ]
+  },
+  {
+   "field": "kyn_credit_ex_r",
+   "op": "sub",
+   "of": [
+    "kyn_elec_credit_inc_r",
+    "kyn_elec_credit_vat_r"
+   ]
+  },
+  {
+   "field": "kyn_other_r",
+   "op": "sum",
+   "of": [
+    "kyn_basic_r",
+    "kyn_credit_ex_r"
+   ]
+  },
+  {
+   "field": "kyn_total_kwh",
+   "op": "prefer",
+   "as": "number",
+   "of": [
+    "kyn_read_kwh",
+    "kyn_tier_kwh"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "kyn_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "kyn_tier_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "kyn_tier_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "kyn_other_r",
+  "total_ex_vat_r": "kyn_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "BALANCE BROUGHT FORWARD[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "RECEIPTS[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "vat_total": "TOTAL VAT:[ \\t]+(-?[\\d,]+\\.\\d{2}-?)",
+  "total_due": "(?:-?[\\d,]+\\.\\d{2}[ \\t]+){1,6}\\d{2}/\\d{2}/\\d{4}[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "due_date": "(?:-?[\\d,]+\\.\\d{2}[ \\t]+){1,6}(\\d{2}/\\d{2}/\\d{4})[ \\t]+-?[\\d,]+\\.\\d{2}[ \\t]*$"
+ }
+}

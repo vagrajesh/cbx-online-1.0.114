@@ -1,0 +1,287 @@
+{
+ "profile_id": "endumeni",
+ "profile_name": "Endumeni Local Municipality (Dundee)",
+ "short_name": "Endumeni",
+ "_doc": "Emunsoft statement in two variants: 8 bills as the standard layout (METER READINGS with reading date + type), 2 newer bills with CONSUMPTION / LEVIED AMOUNT / READING DATES (start date glued in front of the meter number, end date at the line end). Fingerprint: Endumeni's own VAT number + 'ENDUMENI LOCAL MUNICIPALITY'. Electricity lines: ELECTRICITY (kWh, energy -> standard), KVA DEMAND (-> demand), BASIC ELECTRICITY (-> other); one bill also carries council seasonal-tariff reversals and re-bills (REVERSAL OF SEASONAL TARIFF, DN ELECTRICITY, DN KVA DEMAND, ADJUSTED ... BILLING) which are electricity and go to other_r (its total ex VAT is therefore low). Reading rows of type N (zero, not read) are skipped. IDENTITY x_elec_resid_r = TOTAL DUE - Opening Balance - every non-electricity ledger line (payments, other services, interest, rebates) - the VAT line, i.e. the electricity total implied by the bill's own balance movement, independent of the electricity lines; 0.00 gap on all 10 bills (10 checked). The levied-layout's LEVIED AMOUNT for the kWh row also equals the energy line.",
+ "fingerprint": {
+  "all": [
+   "4410193041",
+   "ENDUMENI LOCAL MUNICIPALITY"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS",
+   "require": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+(?:BASIC ELECTRICI|KVA DEMAND|ELECTRICITY)"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account Number:[ \\t]+(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]+(\\d{1,2} [A-Z]{3} \\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "invoice_number",
+   "label": "Tax Invoice No.",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.?:[ \\t]+(\\d{6,})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "site_name",
+   "label": "Street (site address)",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "meter",
+   "label": "Electricity / kVA meter(s)",
+   "scope": "section:electricity",
+   "type": "text",
+   "required": false,
+   "collect": "join_unique",
+   "patterns": [
+    "^[ \\t]*(\\S+)[ \\t]+(?:ELECTRICITY|KVA)[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-MO-Z][ \\t]",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+-(\\S+)[ \\t]+(?:ELECTRICITY|KVA)[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+[\\d,]+\\.\\d{2}"
+   ]
+  },
+  {
+   "fields": [
+    "en_a_meter",
+    "en_a_start",
+    "en_a_end",
+    "en_a_read_end",
+    "reading_type",
+    "en_a_cons"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "date",
+    "text",
+    "number"
+   ],
+   "label": "Electricity meter row (date + type layout)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\S+)[ \\t]+ELECTRICITY[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+([A-MO-Z])[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]*$",
+   "required": false
+  },
+  {
+   "fields": [
+    "en_l_read_start",
+    "en_l_meter",
+    "en_l_start",
+    "en_l_end",
+    "en_l_cons",
+    "en_l_levied_r",
+    "en_l_read_end"
+   ],
+   "types": [
+    "date",
+    "text",
+    "number",
+    "number",
+    "number",
+    "money",
+    "date"
+   ],
+   "label": "Electricity meter row (levied-amount layout)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]+-(\\S+)[ \\t]+ELECTRICITY[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "required": false
+  },
+  {
+   "fields": [
+    "en_energy_kwh",
+    "en_energy_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "ELECTRICITY (energy)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+ELECTRICITY[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]*@?[ \\t]+[\\d.,]+[ \\t]*\\*?[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "demand_kva",
+    "demand_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "KVA DEMAND",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+KVA DEMAND[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]*@?[ \\t]+[\\d.,]+[ \\t]*\\*?[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "en_basic_qty",
+    "en_basic_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "BASIC ELECTRICITY",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+BASIC ELECTRICI\\w*[ \\t]+(?<![\\d.,])([\\d,]*\\.?\\d+)[ \\t]*@?[ \\t]+[\\d.,]+[ \\t]*\\*?[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "field": "en_adj_r",
+   "label": "Electricity adjustments / reversals",
+   "scope": "section:electricity",
+   "pattern": "(?:REVERSAL OF SEASONAL TARIFF|\\bDN ELECTRICITY|\\bDN KVA DEMAND|ADJUSTED [A-Z]+ \\d{4} BILLING)[^\\n]*?[ \\t]([\\d,]*\\.\\d{2}-?)[ \\t]*(?:[A-Za-z]+[ \\t]*)?$",
+   "type": "money",
+   "required": false,
+   "collect": "sum"
+  },
+  {
+   "field": "x_total_due_r",
+   "label": "TOTAL DUE (remittance)",
+   "scope": "document",
+   "pattern": "TOTAL DUE:[ \\t]+([\\d,]*\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_opening_r",
+   "label": "Opening Balance",
+   "scope": "document",
+   "pattern": "Opening Balance[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_vat_r",
+   "label": "VAT (whole bill)",
+   "scope": "document",
+   "pattern": "^[ \\t]+\\d+[ \\t]+VAT[ \\t]+([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_nonelec_r",
+   "label": "Non-electricity ledger lines (incl. payments)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\S+[ \\t]+(?![^\\n]*(?:ELECTRIC|KVA|ADJUSTED))[^\\n]*?[ \\t]([\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false,
+   "collect": "sum"
+  }
+ ],
+ "computes": [
+  {
+   "field": "total_kwh",
+   "op": "prefer",
+   "of": [
+    "en_energy_kwh"
+   ]
+  },
+  {
+   "field": "start_reading_kwh",
+   "op": "prefer",
+   "of": [
+    "en_a_start",
+    "en_l_start"
+   ]
+  },
+  {
+   "field": "end_reading_kwh",
+   "op": "prefer",
+   "of": [
+    "en_a_end",
+    "en_l_end"
+   ]
+  },
+  {
+   "field": "read_end",
+   "op": "prefer",
+   "of": [
+    "en_a_read_end",
+    "en_l_read_end"
+   ]
+  },
+  {
+   "field": "read_start",
+   "op": "prefer",
+   "of": [
+    "en_l_read_start"
+   ]
+  },
+  {
+   "field": "other_r",
+   "op": "sum",
+   "of": [
+    "en_basic_r",
+    "en_adj_r"
+   ]
+  },
+  {
+   "field": "en_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "en_energy_r",
+    "demand_r",
+    "other_r"
+   ]
+  },
+  {
+   "field": "x_elec_resid_r",
+   "op": "sub",
+   "of": [
+    "x_total_due_r",
+    "x_opening_r",
+    "x_nonelec_r",
+    "x_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "standard_kwh": "total_kwh",
+  "standard_r": "en_energy_r",
+  "total_ex_vat_r": "en_elec_ex_r",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "tariff_name": "_none",
+  "nmd_kva": "_none",
+  "nmd_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

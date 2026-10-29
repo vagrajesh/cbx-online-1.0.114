@@ -1,0 +1,657 @@
+{
+ "profile_id": "rustenburg",
+ "profile_name": "Rustenburg Local Municipality",
+ "short_name": "Rustenburg",
+ "_doc": "RUSTENBURG LOCAL MUNICIPALITY (North West) - acct [number removed],\nTelkom site 12P CHURCH STREET / OU DORP, ERF 2413.  9 PDFs: Jul, Aug,\nSep, Nov, Dec 2025 and Jan, Mar, Jun, Jul 2026 (Oct 2025, Feb, Apr and\nMay 2026 are not in the pack).  2-3 pages each, the whole masthead +\nmeta block repeated on every page.\n\nSAME BILLING ENGINE AS DITSOBOTLA SHAPE B - tri-lingual\n'TAX INVOICE / BELASTINGFAKTUUR', 'VAT Reg No./ BTW Nr./ No. Ya\nLekgetho', 'Invoice No:INV [number removed] 202607', 'Month/Maand/Kgwedi:',\n'Statement Date/Staat Datum/Letlha la Mokwalo' (value on the NEXT line),\n'Due Date/Betaaldatum/Tuelo go Fitlha', 'Account  [number removed]',\n'ERF No/No Ya Tulo', 'Surburb/ Voorstad/ Tulo', 'Extent/ Grootte/\nBotona', 'Mkt Value/ Markwaarde/', 'Category/ Kategorie/ Karolo',\n'Street No/ Straat Nr/ Leina', ledger columns Date / Description / VAT /\nDebit / Credit / Balance, the 'Meter Number  Factor  Date From  Date To\nBand From  Band End  Rate  Units  Description  Reading Type  Exclusive'\nsub-table under each charge row, the 180/150/120/90/60/30/Current/Amount\nDue ageing strip, 'VAT Total', 'Amount Due/Verskuldig/ Sekoloto',\n'Deposit/ Deposito/ Peeletso', 'Guarantee/ Waarborg/ Netefaletso:',\n'Payments up to/ Betalings tot / Tuelo go Fitlha:'.\n\nNUMBER FORMAT - NO COMMA-DECIMAL TRAP HERE.  This is the important\ndifference from Ditsobotla shape B.  Ditsobotla prints SPACE thousands +\nCOMMA decimal ('55 473,14'), which _to_decimal() turns into [number removed] -\n100x too big - forcing the rand-part-only workaround.  Rustenburg prints\nCOMMA thousands + PERIOD decimal ('116,348.45', 'R45,646.03',\n'258,239.85').  _to_decimal() deletes the commas and the value parses\nEXACTLY.  Every Rand figure in this profile is CENT-EXACT; there is no\nrand-part workaround, no '*_txt' twin field and no cent-exact variant is\nneeded.  A zero VAT still prints with no leading digit ('.00'), so the\nmoney token used throughout allows an empty integer part:\n  (?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])\n'.00' therefore reads 0.00 rather than being dropped.\n\nTHE DEBIT COLUMN IS VAT-INCLUSIVE and the VAT is printed separately, so\nex-VAT figures ARE derived with 'sub' computes per register family -\nexactly as for Ditsobotla.  BUT the bill ALSO prints its own ex-VAT\nfigure in the meter sub-table's 'Exclusive' column, so each canonical\nRand column is a 'prefer' over (printed Exclusive, Debit - VAT); the\ndelta between the two is carried as rus_*_excl_delta.\n\nTHREE ELECTRICITY CHARGE FAMILIES, and they must not be confused:\n  'Elec Cons (KWH) 71677KW - [[number removed] to [number removed]]'   -> energy   (kWh)\n  'Elec Demand (KVA) 116.98KVA - [0 to 116.98]'        -> demand   (kVA)\n  'Network Access - All Season 234KVA - [0 to 234]'    -> network access\nEnergy -> standard_kwh / standard_r (single-band convention: one kWh\nregister, no time-of-use).  Demand -> demand_kva / demand_r.  Network\nAccess is the notified-capacity charge -> nmd_kva / nmd_r.  There is NO\nbasic/fixed charge line at all, so other_r is '_none'.  Rustenburg bills\nno rates, refuse or sewerage on this account - only electricity, water\nand payments.\n\nMID-MONTH TARIFF CHANGES SPLIT EVERY ROW IN TWO.  On 4 of the 9 bills\n(Jul 2025, Sep 2025, Jun 2026, Jul 2026) each charge is printed TWICE\nwith two different rates and the consumption split between them, e.g.\nJul 2025 '20710.76KW ... @3.10' + '42802.24KW ... @3.49' = 63 513 kWh =\nthe [[number removed] to [number removed]] register difference.  BOTH rows are real\ndebits (the Balance column applies both).  So every quantity and every\nmoney rule on this profile is collect:\"sum\".  Jul 2026 additionally\nprints two all-zero registers ('0KW - [0 to 0]' legacy, '0KVA - [0 to\n0]' generation) which sum in harmlessly as 0.00.  The register bracket\non the ledger line is the WHOLE period ([[number removed] to [number removed]]); the one\ninside the meter sub-table is the per-band midpoint ([number removed].5) and\nmust NOT be used - the reading rules therefore anchor on\n'Elec Cons (KWH)', which only ever appears on the ledger line.  On the\nsplit bills the ledger description WRAPS, so the closing reading sits on\nthe next line; end_reading_kwh crosses the newline with [\\s\\S]{0,80}?.\n\nTELLING KVA DEMAND FROM NETWORK ACCESS in the meter sub-table: both\nprint 'nnnKVA - [...]', so the Exclusive column cannot be attributed by\nthe description.  They are separated by the meter number, which the\nengine prints on the WRAP LINE BELOW the data row: 'KVA83' for demand,\n'NETWORK ACCESS' (continuation of '[number removed]-') for network access.  The\ntwo Exclusive rules therefore end with '\\n[ \\t]*KVA\\d+' and\n'\\n[ \\t]*NETWORK ACCESS' respectively.  The unambiguous ledger-derived\nDebit - VAT is the fallback for both.\n\nSECTIONS.  The masthead and the whole meta block repeat on every page,\nand the literal heading 'Electricity' appears 3x per bill (once per\ncharge family) with the ledger interleaved across page breaks.  As for\nDitsobotla, electricity is the ONLY boundary-forming section - it starts\nat the first 'Electricity' heading and therefore runs to the end of the\ndocument - and water and sundry are \"overlay\": true with \"end\": \"\\\\Z\" so\nthey span to the end and cut nothing.  'header' is the text above the\nfirst 'Electricity' heading, i.e. exactly the page-1 meta block, which\nis why the account/site/date rules never pick up the blank repeats on\npages 2-3.  The sundry section starts on the 'PAYMENT THANK YOU' row\nitself (present on 9/9 bills) rather than the 'Payments' heading (only\n3/9).  Every rule anchors on its own description text, so nothing leaks\nacross services.\n\nRULE ZERO.  The bill prints no ex-VAT ELECTRICITY subtotal, so\ntotal_ex_vat_r (rus_elec_total_ex_r) is the SUM OF ITS OWN PARTS and the\nengine's reconcile is CIRCULAR here - it cannot fail.  Four genuinely\nindependent identities are checked instead, and all four are carried in\nthe data:\n (1) printed 'Exclusive' == ledger Debit - VAT, per register family\n     -> rus_kwh_excl_delta / rus_kva_excl_delta / rus_nac_excl_delta.\n (2) end_reading - start_reading == sum of the printed KW quantities\n     -> rus_kwh_qty_delta.\n (3) Sum(VAT column, every charge row incl. water) == printed 'VAT Total'\n     -> rus_vat_delta_r.\n (4) Balance Brought Forward + Sum(Debit) - Sum(Credit) == printed\n     'Amount Due' -> rus_due_delta_r.\n\nRECON BLOCK - ONE KNOWN LIMIT.  The bill prints its payments in an\nunsigned CREDIT column ('PAYMENT THANK YOU  .00  337,564.70  269,429.95'),\nso recon's incoming_payment comes out POSITIVE - there is no leading\nminus, no trailing minus and no 'Cr' for _recon_money() to read, and a\nregex-only profile cannot invent a sign.  extract_recon() then derives\nsubtotal = prev_balance + incoming_payment, which for this profile must\nbe read as prev_balance MINUS incoming_payment.  Only that one derived\ncell is affected: prev_balance, current_ex (from the ageing Current\ncolumn minus VAT), vat, total_due and due_date are all taken straight\nfrom printed figures and are correct, and the payment itself is carried\ncorrectly as rus_payment_r / rus_payment_col_sum_r on the sundry row.\n\nFINGERPRINT.  Anchored on the municipality's own VAT registration\n4840112868 (9/487 files in the pack, all Rustenburg), the masthead\n'Rustenburg Local Municipality', the statement mailbox and the portal.\nNOT on 'TAX INVOICE / BELASTINGFAKTUUR' (41 files - shared with\nDitsobotla, Matlosana and Sol Plaatjie), NOT on 'VAT Reg No./ BTW Nr./\nNo. Ya Lekgetho' (18 files - shared with Ditsobotla), and NOT on the\nSetswana line 'O tshwanetse go duela' (20 files - shared with\nMatlosana), which is the sentence whose 'tshwaneTSE' substring satisfies\nthe 'cot' profile's all-gate.",
+ "fingerprint": {
+  "all": [],
+  "any": [
+   "4840112868",
+   "Rustenburg Local Municipality",
+   "statement@rustenburg.gov.za",
+   "rustenburg.gov.za"
+  ],
+  "reject_if_text": [
+   "requires Adobe Reader 8 or higher"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity[ \\t]*$"
+  },
+  "water": {
+   "start": "^[ \\t]*Water[ \\t]*$",
+   "overlay": true,
+   "end": "\\Z"
+  },
+  "sundry": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+PAYMENT THANK YOU",
+   "overlay": true,
+   "end": "\\Z"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "header",
+   "patterns": [
+    "^[^\\n]*?Account[ \\t]{2,}(\\d{5,15})(?![\\d])",
+    "Reference:[ \\t]{2,}(\\d{5,15})(?![\\d])"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "rus_street_l1",
+   "label": "Street No / Straat Nr / Leina (line 1)",
+   "scope": "header",
+   "patterns": [
+    "Street No/ Straat Nr/ Leina[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+    "^[ \\t]*(\\S[^\\n]*?)[ \\t]{2,}Account[ \\t]{2,}\\d{5,}(?![\\d])"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "rus_street_l2",
+   "label": "Street (wrapped line 2)",
+   "scope": "header",
+   "patterns": [
+    "^[ \\t]*Bodulo[ \\t]{2,}Mmila[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+    "^[^\\n]*?[ \\t]{2,}Account[ \\t]{2,}\\d{5,}[^\\n]*\\n[ \\t]*(\\S[^\\n]*?)[ \\t]*$"
+   ],
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "header",
+   "pattern": "Statement Date/Staat Datum[\\s\\S]{0,220}?(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "header",
+   "pattern": "Due Date/Betaaldatum[^\\n]*?[ \\t]{2,}(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "rus_month",
+   "label": "Billing month",
+   "scope": "header",
+   "pattern": "Month/Maand/Kgwedi:[ \\t]{2,}([A-Za-z]+[ \\t]+\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "rus_invoice_no",
+   "label": "Invoice number",
+   "scope": "header",
+   "pattern": "Invoice No:[ \\t]*(INV[ \\t]*\\d+(?:[ \\t]+\\d+)?)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "rus_vat_reg",
+   "label": "Municipality VAT registration",
+   "scope": "header",
+   "pattern": "VAT Reg No\\./ BTW Nr\\./ No\\. Ya Lekgetho[ \\t]*:[ \\t]*(\\d{10})(?![\\d])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "rus_erf",
+   "label": "ERF No / No Ya Tulo",
+   "scope": "header",
+   "pattern": "ERF No/No Ya Tulo[ \\t]{2,}(\\d+)(?![\\d])",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "rus_suburb",
+   "label": "Surburb / Voorstad / Tulo",
+   "scope": "header",
+   "pattern": "Surburb/ Voorstad/ Tulo[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "rus_extent",
+   "label": "Extent / Grootte / Botona",
+   "scope": "header",
+   "pattern": "Extent/ Grootte/ Botona[^\\n]*\\n[ \\t]*(\\d+)[ \\t]*$",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "rus_mkt_value",
+   "label": "Mkt Value / Markwaarde",
+   "scope": "header",
+   "pattern": "Mkt Value/ Markwaarde/[\\s\\S]{0,80}?R[ \\t]*(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "rus_category",
+   "label": "Category / Kategorie / Karolo",
+   "scope": "header",
+   "pattern": "Category/ Kategorie/ Karolo[ \\t]{1,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "rus_vat_total_r",
+   "label": "VAT Total (whole bill)",
+   "scope": "document",
+   "pattern": "VAT Total[ \\t]{2,}R[ \\t]*(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "rus_amount_due_r",
+   "label": "Amount Due / Verskuldig / Sekoloto",
+   "scope": "document",
+   "pattern": "Amount Due/Verskuldig/[ \\t]{2,}R[ \\t]*(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "rus_bbf_r",
+   "label": "Balance Brought Forward",
+   "scope": "document",
+   "pattern": "^[ \\t]*Balance Brought Forward[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "rus_age_current_r",
+    "rus_age_due_r"
+   ],
+   "label": "Ageing Current + Amount Due",
+   "scope": "document",
+   "pattern": "180 Days[^\\n]*\\n[\\s]*(?:(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]+){6}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]+(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "deposit",
+   "label": "Deposit / Deposito / Peeletso",
+   "scope": "document",
+   "pattern": "Deposit/ Deposito/ Peeletso[ \\t]{2,}(\\d[\\d ,]*(?:\\.\\d{2})?)(?![\\d])",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "rus_payments_up_to",
+   "label": "Payments up to / Betalings tot",
+   "scope": "document",
+   "pattern": "Payments up to/ Betalings tot / Tuelo go Fitlha:[ \\t]{2,}(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "rus_vat_col_sum_r",
+    "rus_debit_col_sum_r"
+   ],
+   "label": "Sum of the VAT + Debit columns over every charge row (all services)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?:Elec Cons \\(KWH\\)|Elec Demand \\(KVA\\)|Network Access|Water Cons)[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "rus_payment_col_sum_r",
+   "label": "Sum of the Credit column over every PAYMENT row",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+PAYMENT THANK YOU[^\\n]*?[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "rus_kwh_vat_r",
+    "rus_kwh_inc_r"
+   ],
+   "label": "Elec Cons (KWH): VAT + Debit incl VAT",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Elec Cons \\(KWH\\)[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "rus_kva_vat_r",
+    "rus_kva_inc_r"
+   ],
+   "label": "Elec Demand (KVA): VAT + Debit incl VAT",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Elec Demand \\(KVA\\)[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "rus_nac_vat_r",
+    "rus_nac_inc_r"
+   ],
+   "label": "Network Access: VAT + Debit incl VAT",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Network Access[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "total_kwh",
+   "label": "Total kWh (sum of the Elec Cons rows)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Elec Cons \\(KWH\\)[ \\t]*([\\d.]+)KW[ \\t]*-[ \\t]*\\[",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "demand_kva",
+   "label": "Demand kVA (sum of the Elec Demand rows)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Elec Demand \\(KVA\\)[ \\t]*([\\d.]+)KVA[ \\t]*-[ \\t]*\\[",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "nmd_kva",
+   "label": "Network Access kVA (sum of the NAC rows)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Network Access[^\\n]*?[ \\t]([\\d.]+)KVA[ \\t]*-[ \\t]*\\[",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "start_reading_kwh",
+   "label": "Start reading kWh",
+   "scope": "section:electricity",
+   "pattern": "Elec Cons \\(KWH\\)[ \\t]*[\\d.]+KW[ \\t]*-[ \\t]*\\[[ \\t]*(\\d{4,})[ \\t]+to",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "end_reading_kwh",
+   "label": "End reading kWh",
+   "scope": "section:electricity",
+   "pattern": "Elec Cons \\(KWH\\)[ \\t]*[\\d.]+KW[ \\t]*-[ \\t]*\\[[ \\t]*\\d{4,}[ \\t]+to[\\s\\S]{0,240}?(?<![\\d.])(\\d{4,})\\]",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "label": "Reading period (kWh register)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:\\S+[ \\t]+)?\\d+[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]+(\\d{2}-\\d{2}-\\d{4})[^\\n]*?[\\d.]+KW[ \\t]*-[ \\t]*\\[",
+   "types": [
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "reading_type",
+   "label": "Actual / Estimated",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "[\\d.]+KW[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}((?:Actual|Estimated|Estimate))[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "rus_kwh_meter",
+   "label": "kWh register meter no",
+   "scope": "section:electricity",
+   "patterns": [
+    "[\\d.]+KW[ \\t]*-[ \\t]*\\[[^\\n]*\\n[ \\t]*(\\d{6,})(?![\\d\\]])",
+    "^[ \\t]*(\\d{6,})[ \\t]+\\d+[ \\t]+\\d{2}-\\d{2}-\\d{4}[ \\t]+\\d{2}-\\d{2}-\\d{4}[^\\n]*?[\\d.]+KW[ \\t]*-"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "rus_kva_meter",
+   "label": "kVA demand register meter no",
+   "scope": "section:electricity",
+   "pattern": "[\\d.]+KVA[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*\\n[ \\t]*(KVA\\d+)(?![\\d])",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "rus_kwh_rate",
+   "label": "kWh rate(s) as printed",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(?:\\S+[ \\t]+)?\\d+[ \\t]+\\d{2}-\\d{2}-\\d{4}[ \\t]+\\d{2}-\\d{2}-\\d{4}[ \\t]+[\\d.,]+[ \\t]+[\\d.,]+[ \\t]+([\\d.,]+)[ \\t]+[\\d.,]+[ \\t]+[\\d.]+KW[ \\t]*-",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "rus_kwh_excl_r",
+   "label": "kWh ex-VAT (printed Exclusive, summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "[\\d.]+KW[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "rus_kva_excl_r",
+   "label": "kVA demand ex-VAT (printed Exclusive, summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "[\\d.]+KVA[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*\\n[ \\t]*KVA\\d+(?![\\d])",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "rus_nac_excl_r",
+   "label": "Network Access ex-VAT (printed Exclusive, summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "[\\d.]+KVA[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]*\\n[ \\t]*NETWORK ACCESS",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "rus_water_vat_r",
+    "rus_water_inc_r"
+   ],
+   "label": "Water Cons: VAT + Debit incl VAT",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Water Cons[^\\n]*?[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "rus_water_kl",
+   "label": "Water kL (summed)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Water Cons[ \\t]*([\\d.]+)KL[ \\t]*-[ \\t]*\\[",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "rus_water_start",
+    "rus_water_end"
+   ],
+   "label": "Water readings",
+   "scope": "section:water",
+   "pattern": "Water Cons[ \\t]*[\\d.]+KL[ \\t]*-[ \\t]*\\[[ \\t]*(\\d+)[ \\t]+to[ \\t]+(\\d+)\\]",
+   "types": [
+    "number",
+    "number"
+   ],
+   "required": true
+  },
+  {
+   "field": "rus_water_meter",
+   "label": "Water meter no",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*([A-Z]{2,}\\d+)[ \\t]+\\d+[ \\t]+\\d{2}-\\d{2}-\\d{4}[ \\t]+\\d{2}-\\d{2}-\\d{4}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "rus_water_excl_r",
+   "label": "Water ex-VAT (printed Exclusive, summed)",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "[\\d.]+KL[ \\t]*-[ \\t]*\\[[^\\n]*?[ \\t]{2,}(?:Actual|Estimated|Estimate)[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "rus_payment_r",
+   "label": "PAYMENT THANK YOU (Credit column, summed)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+PAYMENT THANK YOU[^\\n]*?[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]{2,}(?<![\\d.])(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})(?![\\d])[ \\t]{2,}(?<![\\d.])-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "rus_site",
+   "op": "concat",
+   "of": [
+    "rus_street_l1",
+    "rus_street_l2"
+   ]
+  },
+  {
+   "field": "rus_kwh_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "rus_kwh_inc_r",
+    "rus_kwh_vat_r"
+   ]
+  },
+  {
+   "field": "rus_kva_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "rus_kva_inc_r",
+    "rus_kva_vat_r"
+   ]
+  },
+  {
+   "field": "rus_nac_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "rus_nac_inc_r",
+    "rus_nac_vat_r"
+   ]
+  },
+  {
+   "field": "rus_water_ex_calc_r",
+   "op": "sub",
+   "of": [
+    "rus_water_inc_r",
+    "rus_water_vat_r"
+   ]
+  },
+  {
+   "field": "rus_std_r_out",
+   "op": "prefer",
+   "of": [
+    "rus_kwh_excl_r",
+    "rus_kwh_ex_calc_r"
+   ]
+  },
+  {
+   "field": "rus_demand_r_out",
+   "op": "prefer",
+   "of": [
+    "rus_kva_excl_r",
+    "rus_kva_ex_calc_r"
+   ]
+  },
+  {
+   "field": "rus_nmd_r_out",
+   "op": "prefer",
+   "of": [
+    "rus_nac_excl_r",
+    "rus_nac_ex_calc_r"
+   ]
+  },
+  {
+   "field": "rus_elec_total_ex_r",
+   "op": "sum",
+   "of": [
+    "rus_std_r_out",
+    "rus_demand_r_out",
+    "rus_nmd_r_out"
+   ]
+  },
+  {
+   "field": "rus_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "rus_kwh_vat_r",
+    "rus_kva_vat_r",
+    "rus_nac_vat_r"
+   ]
+  },
+  {
+   "field": "rus_kwh_excl_delta",
+   "op": "diff",
+   "of": [
+    "rus_kwh_excl_r",
+    "rus_kwh_ex_calc_r"
+   ]
+  },
+  {
+   "field": "rus_kva_excl_delta",
+   "op": "diff",
+   "of": [
+    "rus_kva_excl_r",
+    "rus_kva_ex_calc_r"
+   ]
+  },
+  {
+   "field": "rus_nac_excl_delta",
+   "op": "diff",
+   "of": [
+    "rus_nac_excl_r",
+    "rus_nac_ex_calc_r"
+   ]
+  },
+  {
+   "field": "rus_reading_kwh",
+   "op": "diff",
+   "as": "number",
+   "of": [
+    "end_reading_kwh",
+    "start_reading_kwh"
+   ]
+  },
+  {
+   "field": "rus_kwh_qty_delta",
+   "op": "diff",
+   "as": "number",
+   "of": [
+    "rus_reading_kwh",
+    "total_kwh"
+   ]
+  },
+  {
+   "field": "rus_vat_delta_r",
+   "op": "diff",
+   "of": [
+    "rus_vat_col_sum_r",
+    "rus_vat_total_r"
+   ]
+  },
+  {
+   "field": "rus_due_calc_r",
+   "op": "sub",
+   "of": [
+    "rus_bbf_r",
+    "rus_payment_col_sum_r"
+   ]
+  },
+  {
+   "field": "rus_due_calc2_r",
+   "op": "sum",
+   "of": [
+    "rus_due_calc_r",
+    "rus_debit_col_sum_r"
+   ]
+  },
+  {
+   "field": "rus_due_delta_r",
+   "op": "diff",
+   "of": [
+    "rus_due_calc2_r",
+    "rus_amount_due_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": [
+   "rus_site",
+   "rus_street_l1"
+  ],
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": [
+   "rus_kwh_meter",
+   "rus_kva_meter"
+  ],
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "nmd_kva",
+  "peak_r": "_none",
+  "standard_r": "rus_std_r_out",
+  "offpeak_r": "_none",
+  "demand_r": "rus_demand_r_out",
+  "nmd_r": "rus_nmd_r_out",
+  "other_r": "_none",
+  "total_ex_vat_r": "rus_elec_total_ex_r",
+  "deposit_r": "deposit",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "^[ \\t]*Balance Brought Forward[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})[ \\t]*$",
+  "incoming_payment": "PAYMENT THANK YOU[^\\n]*?[ \\t]{2,}-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})",
+  "vat": "VAT Total[ \\t]{2,}R[ \\t]*(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})",
+  "total_due": "Amount Due/Verskuldig/[ \\t]{2,}R[ \\t]*(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})",
+  "current_incl": "180 Days[^\\n]*\\n[\\s]*(?:-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2}[ \\t]+){6}(-?(?:\\d{1,3}(?:[ ,]?\\d{3})*)?\\.\\d{2})",
+  "due_date": "Due Date/Betaaldatum[^\\n]*?[ \\t]{2,}(\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})"
+ }
+}

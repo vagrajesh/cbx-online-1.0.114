@@ -1,0 +1,197 @@
+{
+ "profile_id": "emadlangeni",
+ "profile_name": "Emadlangeni Local Municipality (Utrecht, KwaZulu-Natal)",
+ "short_name": "Emadlangeni",
+ "fingerprint": {
+  "all": [
+   "Emadlangeni"
+  ],
+  "any": [
+   "4000791832",
+   "4 000791832"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity Consumption[ \\t]*$",
+   "require": "ELEC CONS"
+  },
+  "sundry": {
+   "start": "^[ \\t]*180 Days[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "pattern": "\\bAccount(?: Number:)?[ \\t]+(\\d{9})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "pattern": "Statement Date:[ \\t]+(\\d{2}/\\d{2}/\\d{4}|\\d{1,2}[ \\t]+[A-Za-z]+[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "ema_invoice_no",
+   "label": "Invoice No",
+   "scope": "document",
+   "pattern": "(?:Invoice No:|STATEMENT / TAX INVOICE)[ \\t]*(INV[ \\t]*\\d+)",
+   "type": "text"
+  },
+  {
+   "field": "ema_site",
+   "label": "Physical Address",
+   "scope": "document",
+   "pattern": "Physical Address[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "ema_elec_vat_r",
+    "ema_elec_incl_r",
+    "ema_elec_bal_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity ledger line: VAT / Debit (incl) / running Balance",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+[^\\n]*?ELEC CONS[^\\n]*?[ \\t]{2,}([\\d,]*\\.\\d{1,2})[ \\t]{2,}([\\d,]+\\.\\d{2})[ \\t]{2,}(\\(?-?[\\d,]+\\.\\d{2}\\)?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "ema_prev_bal_r",
+   "label": "Running balance on the line before the Electricity Consumption heading",
+   "scope": "document",
+   "pattern": "(\\(?-?[\\d,]+\\.\\d{2}\\)?)[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]*Electricity Consumption[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "ema_kwh",
+    "start_reading_kwh",
+    "end_reading_kwh"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "kWh + register (ELEC CONS n KW (Start: End:) / Elec Cons-KWH nKW - [start to end])",
+   "scope": "section:electricity",
+   "patterns": [
+    "ELEC CONS[ \\t]+(\\d+)[ \\t]*KW[ \\t]*\\(Start:[ \\t]*(\\d+)[ \\t]+End:[ \\t]*(\\d+)\\)",
+    "Elec Cons-KWH[ \\t]+(\\d+)[ \\t]*KW[ \\t]+-[ \\t]+\\[(\\d+)[ \\t]+to[ \\t]+(\\d+)\\]",
+    "Elec Cons-KWH[ \\t]+(\\d+)[ \\t]*KW[ \\t]+-[ \\t]+\\[(\\d+)[ \\t]+to[ \\t]"
+   ]
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Reading dates",
+   "scope": "section:electricity",
+   "patterns": [
+    "Reading Dates:[ \\t]*(\\d{4}/\\d{2}/\\d{2})[ \\t]+To[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+    "^[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]+(\\d{2}-\\d{2}-\\d{4})[ \\t]+[\\d.,]+[ \\t]"
+   ]
+  },
+  {
+   "fields": [
+    "ema_rate",
+    "ema_units",
+    "ema_reading_type",
+    "ema_excl_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "text",
+    "money"
+   ],
+   "label": "Meter detail row (rate / units / reading type / Exclusive) - TAX INVOICE print only",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+\\d{2}-\\d{2}-\\d{4}[ \\t]+\\d{2}-\\d{2}-\\d{4}[ \\t]+[\\d.,]+[ \\t]+[\\d,]+[ \\t]+([\\d.]+)[ \\t]+([\\d,]+\\.\\d+)[ \\t]+\\S[^\\n]*?[ \\t]{2,}(Actual|Estimated?)[ \\t]{2,}([\\d,]+\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "field": "meter",
+   "label": "Meter number (TAX INVOICE print)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(E\\d{6,})[ \\t]",
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "ema_elec_ex_r",
+   "label": "Electricity ex VAT = Debit - VAT",
+   "op": "sub",
+   "of": [
+    "ema_elec_incl_r",
+    "ema_elec_vat_r"
+   ]
+  },
+  {
+   "field": "ema_bal_incl_r",
+   "op": "sub",
+   "of": [
+    "ema_elec_bal_r",
+    "ema_prev_bal_r"
+   ]
+  },
+  {
+   "field": "ema_bal_ex_r",
+   "label": "IDENTITY: (balance after - balance before the electricity line) - VAT",
+   "op": "sub",
+   "of": [
+    "ema_bal_incl_r",
+    "ema_elec_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "ema_site",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "ema_reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "ema_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "ema_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "ema_elec_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "_none",
+  "total_ex_vat_r": "ema_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "_doc": "Three prints of one ledger statement (Date | Reference | Description | Vat | Debit | Credit | Balance) with a single 'Electricity Consumption' heading and one kWh line per bill, no basic/demand charges: (a) 'STATEMENT / TAX INVOICE' with 'ELEC CONS n KW (Start:x End:y)' plus a 'Reading Dates: ... Readings: ...' line; (b) the same statement with 'Elec Cons-KWH nKW - [start to ...' where the end reading is cut off by the print (end reading left blank, no reading dates printed); (c) the newer 'TAX INVOICE' (printed twice in the PDF) with the full '[start to end]' and a meter detail row (dates, rate, units, reading type, Exclusive) and the meter number. Debit is VAT-inclusive; total_ex_vat_r = Debit - VAT (VAT sometimes printed with one decimal), all mapped to the single standard band. IDENTITY ema_bal_ex_r = (running balance on the electricity line - running balance on the line before the heading) - VAT: exact on 10/10; on the (c) print the Exclusive column equals the total (1c print rounding on one bill). 10/10 bills routed, 0 checks. Fingerprint: 'Emadlangeni' + the municipality's VAT number in either printed form (with/without the space)."
+}

@@ -1,0 +1,362 @@
+{
+ "profile_id": "laingsburg",
+ "profile_name": "Laingsburg Local Municipality (Western Cape)",
+ "short_name": "Laingsburg",
+ "_doc": "Laingsburg LM. Compact Afrikaans ledger, same print as Swartland: no masthead, no municipal name or VAT number in the text (the only VAT printed is the customer's). Ledger 'dd/mm/yy <meter|code> <BESKRYWING> <VAT> <incl>', readings line 'new - old = n KWH d DAYS', tier lines 'n KWH @ rate = R', 'TAR: <code> BASIES: = R'. Electricity = ELEKTRISITEIT <size>A (energy + basic) + ELEKTRISITEIT METER HUUR; total_ex_vat_r = incl - VAT of both; standard = tier kWh/R; other = basic + meter rental. Fingerprint has to use layout strings: all BALANS OORGEBRING + TOTALE BTW:, any ELEKTRISITEIT / WATER METER HUUR (found only on these bills), and rejects Swartland's EasyPay id and the Oudtshoorn / Matzikama / Matlosana names. 9 of the 11 PDFs are scans whose text layer is only a barcode string (no OCR text in the cache) and stay unrouted. IDENTITY lai_detail_identity_r = tier Rands + all BASIES detail lines vs ledger incl - VAT: 0.00 on 2/2. One READ check: the May-2026 bill prints a register rollover (end reading below start, consumption correct).",
+ "fingerprint": {
+  "all": [
+   "BALANS OORGEBRING",
+   "TOTALE BTW:"
+  ],
+  "any": [
+   "ELEKTRISITEIT METER HUUR",
+   "WATER METER HUUR"
+  ],
+  "reject_if_text": [
+   ">>>>>91587",
+   "OUDTSHOORN",
+   "MATZIKAMA",
+   "MATLOSANA",
+   "Please wait...",
+   "requires Adobe Reader"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}ELEKTRISITEIT",
+   "require": "ELEKTRISITEIT"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}RIOOL"
+  },
+  "water": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}WATER[ \\t(]"
+  },
+  "refuse": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}VULLIS"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]{2,}(\\d{10,14})-\\d{2}-\\d{2}[ \\t]*$",
+    "VERWYSING:[ \\t]+(\\d{10,14})\\b"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "lai_account_formatted",
+   "label": "Formatted account",
+   "scope": "document",
+   "pattern": "^[ \\t]{2,}(\\d-\\d{2,6}-\\d{3,6}-\\d{3}-\\d)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "lai_valuation",
+    "lai_stmt_date",
+    "billing_date"
+   ],
+   "label": "Header: valuation, statement date, account date",
+   "scope": "document",
+   "pattern": "^[ \\t]{5,}(\\d+)[ \\t]{2,}(\\d{2}/\\d{2}/\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "lai_street",
+   "label": "Street (line above addressee)",
+   "scope": "document",
+   "pattern": "^[ \\t]{10,}(\\S[^\\n]*?)[ \\t]*\\n[ \\t]*TFMC",
+   "type": "text"
+  },
+  {
+   "field": "lai_town",
+   "label": "Suburb (tail of addressee line)",
+   "scope": "document",
+   "pattern": "^[ \\t]*TFMC[^\\n]*?[ \\t]{2,}([A-Za-z][A-Za-z .'-]+?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "lai_total_vat_r",
+   "label": "Total VAT",
+   "scope": "document",
+   "pattern": "TOTALE BTW:[ \\t]+((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "lai_balance_bf_r",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "BALANS OORGEBRING[ \\t]{2,}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "lai_current_r",
+    "due_date",
+    "lai_total_due_r"
+   ],
+   "label": "Ageing tail: current, due date, total due",
+   "scope": "document",
+   "pattern": "^[ \\t]+(?:-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?[ \\t]+){1,6}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "types": [
+    "money",
+    "date",
+    "money"
+   ]
+  },
+  {
+   "field": "meter",
+   "label": "Meter number",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}(\\d{4,})[ \\t]{2,}ELEKTRISITEIT[ \\t]+(?!METER)",
+   "type": "text"
+  },
+  {
+   "field": "tariff_name",
+   "label": "Supply size (e.g. 200A)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}ELEKTRISITEIT[ \\t]+(\\d+A)\\b",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "label": "Reading period",
+   "scope": "section:electricity",
+   "pattern": "ELEKTRISITEIT[^\\n(]*\\((\\d{2}/\\d{2}/\\d{4})-(\\d{2}/\\d{2}/\\d{4})\\)",
+   "types": [
+    "date",
+    "date"
+   ]
+  },
+  {
+   "fields": [
+    "end_reading_kwh",
+    "start_reading_kwh",
+    "lai_read_kwh",
+    "lai_days"
+   ],
+   "label": "Readings line (new - old = kWh)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+(\\d+(?:\\.\\d+)?)[ \\t]*-[ \\t]*(\\d+(?:\\.\\d+)?)[ \\t]*=[ \\t]*(\\d+(?:\\.\\d+)?)[ \\t]+KWH[ \\t]+(\\d+)[ \\t]+DAYS",
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number"
+   ]
+  },
+  {
+   "fields": [
+    "lai_tier_kwh",
+    "lai_tier_r"
+   ],
+   "label": "Energy tier lines",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]+(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?(\\d[\\d ]*\\.\\d{2})[ \\t]+KWH[ \\t]*@[ \\t]+[\\d.]+[ \\t]+=[ \\t]+(\\d[\\d ]*\\.\\d{2})[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "field": "lai_basic_r",
+   "label": "Basic (BASIES) detail lines incl. meter rental",
+   "scope": "section:electricity",
+   "pattern": "BASIES:[ \\t]*=[ \\t]*((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "lai_elec_vat_r",
+    "lai_elec_inc_r"
+   ],
+   "label": "Electricity ledger lines (VAT, incl)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}ELEK[^\\n]*?[ \\t]{2,}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "lai_rental_vat_r",
+    "lai_rental_inc_r"
+   ],
+   "label": "Meter rental (VAT, incl)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}ELEKTRISITEIT METER HUUR[ \\t]{2,}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "lai_sewer_vat_r",
+    "lai_sewer_inc_r"
+   ],
+   "label": "Sewer",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}RIOOL[^\\n]*?[ \\t]{2,}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "lai_water_vat_r",
+    "lai_water_inc_r"
+   ],
+   "label": "Water lines incl. meter rental",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}WATER[^\\n]*?[ \\t]{2,}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "lai_water_end",
+    "lai_water_start",
+    "lai_water_kl"
+   ],
+   "label": "Water readings",
+   "scope": "section:water",
+   "pattern": "^[ \\t]+(\\d+(?:\\.\\d+)?)[ \\t]*-[ \\t]*(\\d+(?:\\.\\d+)?)[ \\t]*=[ \\t]*(\\d+(?:\\.\\d+)?)[ \\t]+Kl\\b",
+   "types": [
+    "number",
+    "number",
+    "number"
+   ]
+  },
+  {
+   "fields": [
+    "lai_refuse_vat_r",
+    "lai_refuse_inc_r"
+   ],
+   "label": "Refuse",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}VULLIS[^\\n]*?[ \\t]{2,}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.])-?(?:\\d{1,3}(?: \\d{3})+|\\d+)\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "lai_street",
+    "lai_town"
+   ]
+  },
+  {
+   "field": "lai_elec_ex_r",
+   "op": "sub",
+   "of": [
+    "lai_elec_inc_r",
+    "lai_elec_vat_r"
+   ]
+  },
+  {
+   "field": "lai_other_r",
+   "op": "sub",
+   "of": [
+    "lai_elec_ex_r",
+    "lai_tier_r"
+   ]
+  },
+  {
+   "field": "lai_detail_identity_r",
+   "op": "sum",
+   "of": [
+    "lai_tier_r",
+    "lai_basic_r"
+   ]
+  },
+  {
+   "field": "lai_total_kwh",
+   "op": "prefer",
+   "of": [
+    "lai_read_kwh",
+    "lai_tier_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "lai_water_ex_r",
+   "op": "sub",
+   "of": [
+    "lai_water_inc_r",
+    "lai_water_vat_r"
+   ]
+  },
+  {
+   "field": "lai_sewer_ex_r",
+   "op": "sub",
+   "of": [
+    "lai_sewer_inc_r",
+    "lai_sewer_vat_r"
+   ]
+  },
+  {
+   "field": "lai_refuse_ex_r",
+   "op": "sub",
+   "of": [
+    "lai_refuse_inc_r",
+    "lai_refuse_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "lai_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "lai_tier_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "lai_tier_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "lai_other_r",
+  "total_ex_vat_r": "lai_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

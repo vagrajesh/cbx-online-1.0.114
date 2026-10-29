@@ -1,0 +1,580 @@
+{
+ "profile_id": "sol_plaatje",
+ "profile_name": "Sol Plaatje Local Municipality (Kimberley, Northern Cape)",
+ "short_name": "Sol Plaatje",
+ "_doc": "SOL PLAATJE MUNICIPALITY (Kimberley, Northern Cape) - bilingual 'TAX INVOICE / BELASTINGFAKTUUR' ledger statement. One account, [number removed] (TELKOM SOUTH AFRICA c/o TFMC), one site '2 JAN SMUTS BOULEVARD STREE' (the bill truncates the address itself), one metering point [number removed]. 12 bills MARCH 2025 - MAR 2026 (files are named by month; ALWAYS read the month from 'STATEMENT DATE:').\n\nFINGERPRINT: the municipal VAT registration number 4370102313 (fingerprint.all) plus the masthead word 'SOL PLAATJE' (fingerprint.any; 'SOL PLAATJIE' is only the folder spelling and appears in 0 files - it is kept purely as a spelling-variant safety net). Counted over all 487 PDFs of the Telkom tree: '4370102313' occurs in exactly these 12 files and nowhere else, and so does 'SOL PLAATJE'. NOTHING is fingerprinted on the recipient block: these bills carry '[address removed]' (53 files / 5 folders - the shipped mangaung fingerprint, which is why they used to route to mangaung), the Telkom/TFMC addressee 'TELKOM SOUTH AFRICA' / 'PRIVATE BAG X137' (226 files / 25 folders) / 'CENTURION', and Telkom's own VAT 4680101146 (136 files / 17 folders) - all portfolio-wide poison, all deliberately unused. reject_if_text carries the two standard XFA/prepayment-shell guards; neither string occurs in any of the 12 files, so the profile cannot poison itself.\n\nMASTHEAD IS SCRAMBLED ON ONE BILL. 11 bills open 'SOL PLAATJE   VAT REGISTRATION No: 4370102313   SOL PLAATJE'; MAR 2026 opens 'VAT REGISTRATION No:SOL PLAATJE   4370102313   SOL PLAATJE' (the glyph runs are re-ordered by the text extractor). 'SOL PLAATJE' and '4370102313' each survive as substrings in both orders, so the fingerprint holds - but any pattern that expects 'VAT REGISTRATION No: <digits>' adjacently would MISS that file, which is why sol_munic_vat_no uses '[^\\n]*?'.\n\nMONEY IS POINT-DECIMAL WITH NO THOUSAND SEPARATOR ('510215.54', '-3867.86'). There is NO comma-decimal trap on this bill, so no *_txt parallel natives are needed and _to_decimal is exact. Credits print as a plain leading minus.\n\nPAGE SHAPE. 11 bills are 2 pages, 9,363-9,670 chars, split 6,684-6,986 on page 1 and 2,678-2,708 on page 2. Page 1 carries the masthead, the addressee/meta block, the whole ledger, the current-charges subtotal, TOTAL AMOUNT PAYABLE, VAT:15%, the AGEING row and the remittance advice; page 2 is a REMITTANCE COPY - identical masthead, meta block, AGEING row and remittance advice, with an EMPTY ledger body (the 'Date Document Description Current Totals' heading is reprinted with nothing under it). MAR 2026 is 1 page, 5,710 chars: the remittance copy is simply absent. That is the whole explanation for its 32 KB against the others' 36 KB - no section and no data are missing from it. Neither page is scanned; read_pdf(ocr='auto') reports ocr=False, scanned=False on all 12, so no tesseract pass is involved.\n\nSCOPES ARE BOUNDED SO PAGE 2 CAN NEVER BE IN SCOPE. 'electricity' starts at the page-1 ledger column header ('Date Document Description Current Totals') and is terminated by a rules-free 'sundry' section declared at 'TOTAL AMOUNT PAYABLE' - split_sections() makes a section a boundary whether or not any field rule is scoped to it, and extract() emits no row for a service with no rules (line 1214), so 'sundry' bounds the electricity span without inventing a sundry row. 'header' is therefore exactly the masthead + addressee/meta block of page 1. rates / sewerage / refuse are single-line OVERLAY sections ('end': '\\n') so they capture their own line without cutting the electricity span short (the ledger prints RATES, ADD SEWERAGE, BAS ELECTRICITY and BAS REFUSE BUSINESS BEFORE the metered electricity lines).\n\nTHE LEDGER. Columns are Date / Document / Description / Current / Totals, but the extracted text is ragged - column positions drift by 1-3 spaces between bills - so every rule anchors on the DESCRIPTION text and takes the amount at end-of-line, never on a character offset. BALANCE B/FWD and PAYMENTS RECEIVED print in the far-right 'Totals' column; everything else prints in 'Current'. A charge that attracts VAT carries a bare '*' between the description and the amount; RATES - COMMERCIAL and INCENTIVE PAYMENT carry no '*' and are VAT-exempt.\n\nELECTRICITY LINES SEEN ACROSS THE 12 BILLS:\n  [number removed]-P  EL PEAK 200-500          (peak energy)          11 bills\n  [number removed]-S  EL STD 200-500           (standard energy)      11 bills\n  [number removed]-O  EL OFF PEAK 200-500      (off-peak energy)      11 bills\n  [number removed]-P/S/O  ELEC INTERIM         (estimated energy)      1 bill  (MAR 2026)\n  [number removed]-K  INDUSTRIAL TOU 200-500   (kVA demand)           12 bills\n  [number removed]-K  SERVICE CHARGE                                  12 bills\n  ([number removed]-K) BAS ELECTRICITY         (basic/network charge)  11 bills (absent JULY 2025)\n  [number removed]-K  DISC/SUR                 (-10% of the demand charge) 4 bills (NOV 2025, JAN, FEB, MAR 2026)\n  ZLS 114     CORRECTION NETWORK ACCESS CHARGE JU              1 bill  (AUG 2025)\n  CORR112492  BASIC ELECTRICITY CORRECTION BE1153              1 bill  (JULY 2025)\n  PENT840342  ELEC PREPAID PENALTY CHARGES                     1 bill  (NOV 2025, credit)\nThe three one-off adjustment lines are summed into sol_elec_adj_r by one collect:'sum' rule and land in Other Charges - JULY 2025 has no BAS ELECTRICITY line precisely because its basic charge was re-billed as 'BASIC ELECTRICITY CORRECTION', so bas-electricity is required:false by design and a blank there is data, not a miss.\n\nA METERED ENERGY BLOCK IS FIVE LINES AND IS SELF-BINDING:\n    [number removed]-P      EL PEAK 200-500                    *      71313.35\n          READ FROM 2025/03/01 TO 2025/04/01\n               READINGS:\n                    ([number removed] - [number removed]) X 1.000\n               = 22816 UNITS\n                    22816.000 @ 2.717900 = 62011.61\nThe band rules walk that exact line structure ('[^\\n]*\\n' per line) rather than using a bounded '[\\s\\S]{0,n}?' gap, so a pattern can never reach across into the next band's block. Readings print (NEW - OLD); the CT ratio 'X 1.000' is 1.000 on all 12 bills and is captured once as sol_ct_ratio (join_unique) purely so a future ratio != 1 is visible. The demand block is FOUR lines and puts its readings on the READINGS line itself ('READINGS: 336 - 0 = 336 KVA'), then bills a separate, sometimes fractional, kVA ('302.218 @ 177.677100 = 53697.22' in JAN 2026) - the fractional BILLED kVA is what canonical Demand kVA reads, with the registered integer as fallback.\n\nVAT BASIS - READ THIS BEFORE TRUSTING THE RAND COLUMNS. The 'Current' column is VAT-INCLUSIVE and the bill prints NO per-line VAT and no per-service subtotal. The only ex-VAT figures printed anywhere are the working lines inside the metered blocks ('<units> @ <rate> = <ex VAT amount>'), which exist for EL PEAK / EL STD / EL OFF PEAK / INDUSTRIAL TOU on the 11 read bills and for INDUSTRIAL TOU only on the interim bill. Verified on every metered line of all 12 bills: printed inclusive == round(printed ex-VAT x 1.15) and units x rate == printed ex-VAT, with ZERO mismatches. So:\n  - peak_r / standard_r / offpeak_r / demand_r = prefer(printed ex-VAT, printed inclusive). On the 11 read bills all four are the genuine printed EX-VAT figures. On MAR 2026 (interim) the three ELEC INTERIM bands print no ex-VAT figure at all and those three columns fall back to the INCLUSIVE amount.\n  - other_r (BAS ELECTRICITY + SERVICE CHARGE + DISC/SUR + adjustments) is always the INCLUSIVE amount: the bill prints neither an ex-VAT figure nor a per-line VAT for those lines, and the compute engine has sum/sub/diff/mul/prefer/concat but NO division and no way to introduce a literal constant, so inclusive/1.15 is not expressible in a profile.\n  Net effect, measured on every bill against the true ex-VAT total (inclusive x 20/23): total_ex_vat_r runs HIGH by the VAT sitting on the inclusive part - R2,604.79 to R8,273.06 on the 11 read bills (+0.58% to +1.42%) and R21,780.47 on the MAR 2026 interim bill (+11.82%, because three of its five band/demand columns are inclusive rather than one). Every native figure is stored exactly as printed - sol_*_inc_r alongside sol_*_ex_r, plus sol_elec_incl_total_r - so the true ex-VAT split is fully recoverable downstream (x20/23), and the recon block's Current Charges ex VAT is EXACT (printed subtotal minus printed VAT, no derivation). An interim bill is always identifiable in the canonical row by reading_type='Estimated' and blank kWh columns; treat its Rand columns as inclusive.\n\nRULE ZERO - RECONCILIATION HERE IS CIRCULAR, AND IS DECLARED AS SUCH. The bill prints no independent electricity-only total of any kind, so total_ex_vat_r is sol_elec_total_r = peak + standard + off-peak + demand + other. The harness will therefore report reconcile OK on all 12 bills and that result carries NO information. The checks that do carry information, all against figures the extraction did not construct, are:\n  (1) printed 'VAT:15%' == 15/115 x the sum of every '*'-flagged inclusive line I capture. Max deviation over the 12 bills: R0.01.\n  (2) printed current-charges subtotal (the bare amount between the two dashed rules) == the sum of every current ledger line I capture, incentive included. Deviation over the 12 bills: R0.00 exactly.\n  (3) per metered line, printed inclusive == printed ex-VAT x 1.15 and units x rate == printed ex-VAT. 0 mismatches over the 45 metered lines of the 12 bills (33 energy + 12 demand).\n  (4) end_reading_kwh - start_reading_kwh == total_kwh (the three register diffs sum to the three printed UNITS totals). 0 mismatches over the 11 read bills.\n  (5) recon closes: printed prev_balance + printed payments + (printed subtotal - printed VAT) + printed VAT == printed TOTAL AMOUNT PAYABLE, exact on all 12.\n\nGENUINELY NOT PRINTED (mapped '_none', not misses): NMD kVA and NMD Rands (no notified maximum demand on this tariff), Cash, Guarantee and Security Held. Deposit IS printed - as the last column of the AGEING row (R250.00 on all 12 bills) - and is mapped to canonical Deposit.\n\nREADING TYPE IS DERIVED, NOT PRINTED. The bill never prints Actual/Estimated. 'ELEC INTERIM' is by definition an interim/estimated levy, and a real read prints '= <n> UNITS'; sol_reading_type is a label_present compute over those two markers in that order, giving 'Estimated' for MAR 2026 and 'Actual' for the other 11.\n\nOTHER SERVICES. rates = 'RATES - COMMERCIAL' (VAT-exempt), sewerage = 'ADD SEWERAGE', refuse = 'BAS REFUSE BUSINESS'; one line each, every bill, inclusive amounts (sewerage and refuse are '*'-flagged, rates is not). They produce one row per service carrying the shared meta. There is no water line on this account.\n\nWATCH OUT: 'EL OFF PEAK' does NOT contain the substring 'EL PEAK', so the peak rule's '\\bEL PEAK\\b' cannot steal the off-peak line - do not 'simplify' it to 'PEAK'. The bare subtotal amount is only identifiable by the dashed rule above it ('-{5,}' then an indented bare amount); an unanchored 'indented bare amount' pattern would also hit the AGEING and remittance figures.",
+ "fingerprint": {
+  "all": [
+   "4370102313"
+  ],
+  "any": [
+   "SOL PLAATJE",
+   "SOL PLAATJIE"
+  ],
+  "reject_if_text": [
+   "requires Adobe Reader 8 or higher",
+   "Prepayment Account Update"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Date[ \\t]+Document[ \\t]+Description[ \\t]+Current[ \\t]+Totals[ \\t]*$",
+   "require": "EL PEAK|EL STD|EL OFF[ \\t]*PEAK|ELEC INTERIM|INDUSTRIAL TOU|BAS ELECTRICITY|SERVICE CHARGE"
+  },
+  "sundry": {
+   "start": "^[ \\t]*TOTAL AMOUNT PAYABLE\\(VAT INCL\\.\\)"
+  },
+  "rates": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+RATES[ \\t]*-[ \\t]*COMMERCIAL",
+   "end": "\\n",
+   "overlay": true
+  },
+  "sewerage": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+ADD SEWERAGE",
+   "end": "\\n",
+   "overlay": true
+  },
+  "refuse": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+BAS REFUSE BUSINESS",
+   "end": "\\n",
+   "overlay": true
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "header",
+   "pattern": "ACCOUNT NO:[ \\t]*(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "sol_customer",
+   "label": "Account Name",
+   "scope": "header",
+   "pattern": "^[ \\t]*NAME:[ \\t]*(\\S[^\\n]*?)[ \\t]{2,}ACCOUNT NO:",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Site Name (street address as printed)",
+   "scope": "header",
+   "pattern": "STREET ADDR:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Billing Date (statement date)",
+   "scope": "header",
+   "pattern": "STATEMENT DATE:[ \\t]*(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due Date (payment date)",
+   "scope": "header",
+   "pattern": "PAYMENT DATE:[ \\t]*(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "sol_statement_month",
+   "label": "Statement Month",
+   "scope": "header",
+   "pattern": "ACCOUNT NO:[ \\t]*\\d{6,}[ \\t]+([A-Za-z]+)[ \\t]+Account\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "sol_unit_no",
+   "label": "Unit No",
+   "scope": "header",
+   "pattern": "UNIT NO:[ \\t]*(\\d[\\d ]*?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "sol_valuation_r",
+   "label": "Property Valuation",
+   "scope": "header",
+   "pattern": "VALUATION:[ \\t]*R[ \\t]*(\\d+(?:\\.\\d{2})?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "sol_telkom_vat_no",
+   "label": "Customer VAT Reg No (Telkom)",
+   "scope": "header",
+   "pattern": "VAT REG\\. NO:[ \\t]*(\\d{8,})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "sol_munic_vat_no",
+   "label": "Municipal VAT Reg No",
+   "scope": "document",
+   "pattern": "VAT REGISTRATION No:[^\\n]*?(\\d{10})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "sol_prev_balance_r",
+   "label": "Balance Brought Forward",
+   "scope": "document",
+   "pattern": "BALANCE B/FWD[ \\t]+(-?\\d+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sol_payments_r",
+   "label": "Payments Received",
+   "scope": "document",
+   "pattern": "PAYMENTS RECEIVED[ \\t]+(-?\\d+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sol_incentive_r",
+   "label": "Incentive Payment",
+   "scope": "document",
+   "pattern": "INCENTIVE PAYMENT[ \\t]+(-?\\d+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "sol_current_incl_r",
+   "label": "Current Charges Subtotal (incl VAT)",
+   "scope": "document",
+   "pattern": "-{5,}[ \\t]*\\n[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sol_total_due_r",
+   "label": "Total Amount Payable (incl VAT)",
+   "scope": "document",
+   "pattern": "TOTAL AMOUNT PAYABLE\\(VAT INCL\\.\\)[ \\t]+(-?\\d+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sol_bill_vat_r",
+   "label": "VAT on the whole bill",
+   "scope": "document",
+   "pattern": "VAT:15%[ \\t]+(-?\\d+\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "sol_age_current_r",
+    "sol_age_30_r",
+    "sol_age_60_r",
+    "sol_age_90_r",
+    "sol_deposit_r"
+   ],
+   "label": "Ageing row (Current / 30 / 60 / 90+ / Deposit)",
+   "scope": "document",
+   "pattern": "^[ \\t]*AGEING[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "meter",
+   "label": "Metering point",
+   "scope": "section:electricity",
+   "pattern": "\\b(\\d{7,})-[PSOK]\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "tariff_name",
+   "label": "Tariff",
+   "scope": "section:electricity",
+   "pattern": "\\b(INDUSTRIAL TOU[ \\t]+[\\d-]+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "label": "Reading period",
+   "scope": "section:electricity",
+   "pattern": "READ FROM[ \\t]+(\\d{4}/\\d{2}/\\d{2})[ \\t]+TO[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+   "types": [
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "field": "sol_ct_ratio",
+   "label": "CT / register multiplier",
+   "scope": "section:electricity",
+   "pattern": "\\)[ \\t]*X[ \\t]*([\\d.]+)",
+   "type": "text",
+   "collect": "join_unique",
+   "required": false
+  },
+  {
+   "field": "sol_interim_flag",
+   "label": "Interim (estimated) levy marker",
+   "scope": "section:electricity",
+   "pattern": "\\b(ELEC INTERIM)\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "sol_actual_flag",
+   "label": "Real-read marker",
+   "scope": "section:electricity",
+   "pattern": "=[ \\t]*\\d+[ \\t]*(UNITS)\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "peak_end_reading",
+    "peak_start_reading",
+    "peak_kwh",
+    "peak_rate",
+    "sol_peak_ex_r"
+   ],
+   "label": "Peak block (readings / kWh / rate / Rands ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "\\bEL PEAK\\b[^\\n]*\\n[^\\n]*READ FROM[^\\n]*\\n[^\\n]*READINGS:[^\\n]*\\n[^\\n]*\\((\\d+)[ \\t]*-[ \\t]*(\\d+)\\)[ \\t]*X[ \\t]*[\\d.]+[^\\n]*\\n[^\\n]*=[ \\t]*(\\d+)[ \\t]*UNITS[^\\n]*\\n[^\\n]*?[\\d.]+[ \\t]*@[ \\t]*([\\d.]+)[ \\t]*=[ \\t]*(-?\\d+\\.\\d{2})",
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "std_end_reading",
+    "std_start_reading",
+    "standard_kwh",
+    "std_rate",
+    "sol_std_ex_r"
+   ],
+   "label": "Standard block (readings / kWh / rate / Rands ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "\\bEL STD\\b[^\\n]*\\n[^\\n]*READ FROM[^\\n]*\\n[^\\n]*READINGS:[^\\n]*\\n[^\\n]*\\((\\d+)[ \\t]*-[ \\t]*(\\d+)\\)[ \\t]*X[ \\t]*[\\d.]+[^\\n]*\\n[^\\n]*=[ \\t]*(\\d+)[ \\t]*UNITS[^\\n]*\\n[^\\n]*?[\\d.]+[ \\t]*@[ \\t]*([\\d.]+)[ \\t]*=[ \\t]*(-?\\d+\\.\\d{2})",
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "off_end_reading",
+    "off_start_reading",
+    "offpeak_kwh",
+    "off_rate",
+    "sol_off_ex_r"
+   ],
+   "label": "Off-peak block (readings / kWh / rate / Rands ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "\\bEL OFF[ \\t]*PEAK\\b[^\\n]*\\n[^\\n]*READ FROM[^\\n]*\\n[^\\n]*READINGS:[^\\n]*\\n[^\\n]*\\((\\d+)[ \\t]*-[ \\t]*(\\d+)\\)[ \\t]*X[ \\t]*[\\d.]+[^\\n]*\\n[^\\n]*=[ \\t]*(\\d+)[ \\t]*UNITS[^\\n]*\\n[^\\n]*?[\\d.]+[ \\t]*@[ \\t]*([\\d.]+)[ \\t]*=[ \\t]*(-?\\d+\\.\\d{2})",
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number",
+    "money"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "sol_dem_read_new",
+    "sol_dem_read_old",
+    "sol_dem_kva",
+    "sol_dem_kva_billed",
+    "sol_dem_rate",
+    "sol_dem_ex_r"
+   ],
+   "label": "Demand block (kVA readings / registered / billed / rate / Rands ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "\\bINDUSTRIAL TOU\\b[^\\n]*\\n[^\\n]*READ FROM[^\\n]*\\n[^\\n]*READINGS:[ \\t]*(\\d+)[ \\t]*-[ \\t]*(\\d+)[ \\t]*=[ \\t]*(\\d+)[ \\t]*KVA[^\\n]*\\n[^\\n]*?([\\d.]+)[ \\t]*@[ \\t]*([\\d.]+)[ \\t]*=[ \\t]*(-?\\d+\\.\\d{2})",
+   "types": [
+    "number",
+    "number",
+    "number",
+    "number",
+    "number",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "field": "sol_peak_inc_r",
+   "label": "Peak Rands (incl VAT, as levied)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[^\\n]*\\bEL PEAK\\b[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+    "^[^\\n]*\\d-P[ \\t]+ELEC INTERIM[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$"
+   ],
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sol_std_inc_r",
+   "label": "Standard Rands (incl VAT, as levied)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[^\\n]*\\bEL STD\\b[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+    "^[^\\n]*\\d-S[ \\t]+ELEC INTERIM[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$"
+   ],
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sol_off_inc_r",
+   "label": "Off-peak Rands (incl VAT, as levied)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[^\\n]*\\bEL OFF[ \\t]*PEAK\\b[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+    "^[^\\n]*\\d-O[ \\t]+ELEC INTERIM[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$"
+   ],
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sol_dem_inc_r",
+   "label": "Demand Rands (incl VAT, as levied)",
+   "scope": "section:electricity",
+   "pattern": "^[^\\n]*\\bINDUSTRIAL TOU\\b[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sol_bas_elec_inc_r",
+   "label": "Basic electricity charge (incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[^\\n]*\\bBAS ELECTRICITY\\b[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "sol_service_inc_r",
+   "label": "Service charge (incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[^\\n]*\\bSERVICE CHARGE\\b[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sol_discsur_inc_r",
+   "label": "Discount / surcharge (incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[^\\n]*\\bDISC/SUR\\b[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "sol_elec_adj_r",
+   "label": "Electricity corrections / penalties (incl VAT)",
+   "scope": "section:electricity",
+   "pattern": "^[^\\n]*?(?:ELEC(?:TRICITY)?[^\\n]*?(?:CORRECTION|PENALTY)|CORRECTION NETWORK ACCESS)[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "sol_rates_inc_r",
+   "label": "Assessment rates (VAT exempt)",
+   "scope": "section:rates",
+   "pattern": "RATES[ \\t]*-[ \\t]*COMMERCIAL[^\\n]*?(-?\\d+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sol_sewer_inc_r",
+   "label": "Sewerage (incl VAT)",
+   "scope": "section:sewerage",
+   "pattern": "ADD SEWERAGE[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "sol_refuse_inc_r",
+   "label": "Refuse (incl VAT)",
+   "scope": "section:refuse",
+   "pattern": "BAS REFUSE BUSINESS[^\\n]*?\\*[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "sol_peak_r_out",
+   "op": "prefer",
+   "of": [
+    "sol_peak_ex_r",
+    "sol_peak_inc_r"
+   ]
+  },
+  {
+   "field": "sol_std_r_out",
+   "op": "prefer",
+   "of": [
+    "sol_std_ex_r",
+    "sol_std_inc_r"
+   ]
+  },
+  {
+   "field": "sol_off_r_out",
+   "op": "prefer",
+   "of": [
+    "sol_off_ex_r",
+    "sol_off_inc_r"
+   ]
+  },
+  {
+   "field": "sol_dem_r_out",
+   "op": "prefer",
+   "of": [
+    "sol_dem_ex_r",
+    "sol_dem_inc_r"
+   ]
+  },
+  {
+   "field": "sol_other_r",
+   "op": "sum",
+   "of": [
+    "sol_bas_elec_inc_r",
+    "sol_service_inc_r",
+    "sol_discsur_inc_r",
+    "sol_elec_adj_r"
+   ]
+  },
+  {
+   "field": "sol_elec_total_r",
+   "op": "sum",
+   "of": [
+    "sol_peak_r_out",
+    "sol_std_r_out",
+    "sol_off_r_out",
+    "sol_dem_r_out",
+    "sol_other_r"
+   ]
+  },
+  {
+   "field": "sol_elec_incl_total_r",
+   "op": "sum",
+   "of": [
+    "sol_peak_inc_r",
+    "sol_std_inc_r",
+    "sol_off_inc_r",
+    "sol_dem_inc_r",
+    "sol_bas_elec_inc_r",
+    "sol_service_inc_r",
+    "sol_discsur_inc_r",
+    "sol_elec_adj_r"
+   ]
+  },
+  {
+   "field": "total_kwh",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "peak_kwh",
+    "standard_kwh",
+    "offpeak_kwh"
+   ]
+  },
+  {
+   "field": "sol_start_reading_kwh",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "peak_start_reading",
+    "std_start_reading",
+    "off_start_reading"
+   ]
+  },
+  {
+   "field": "sol_end_reading_kwh",
+   "op": "sum",
+   "as": "number",
+   "of": [
+    "peak_end_reading",
+    "std_end_reading",
+    "off_end_reading"
+   ]
+  },
+  {
+   "field": "sol_reading_type",
+   "op": "label_present",
+   "of": [
+    "sol_interim_flag",
+    "sol_actual_flag"
+   ],
+   "labels": [
+    "Estimated",
+    "Actual"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "sol_reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "sol_start_reading_kwh",
+  "end_reading_kwh": "sol_end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "peak_kwh",
+  "standard_kwh": "standard_kwh",
+  "offpeak_kwh": "offpeak_kwh",
+  "demand_kva": [
+   "sol_dem_kva_billed",
+   "sol_dem_kva"
+  ],
+  "nmd_kva": "_none",
+  "peak_r": "sol_peak_r_out",
+  "standard_r": "sol_std_r_out",
+  "offpeak_r": "sol_off_r_out",
+  "demand_r": "sol_dem_r_out",
+  "nmd_r": "_none",
+  "other_r": "sol_other_r",
+  "total_ex_vat_r": "sol_elec_total_r",
+  "deposit_r": "sol_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "BALANCE B/FWD[ \\t]+(-?\\d+\\.\\d{2})",
+  "incoming_payment": "PAYMENTS RECEIVED[ \\t]+(-?\\d+\\.\\d{2})",
+  "current_incl": "-{5,}[ \\t]*\\n[ \\t]+(-?\\d+\\.\\d{2})[ \\t]*$",
+  "vat": "VAT:15%[ \\t]+(-?\\d+\\.\\d{2})",
+  "total_due": "TOTAL AMOUNT PAYABLE\\(VAT INCL\\.\\)[ \\t]+(-?\\d+\\.\\d{2})",
+  "due_date": "PAYMENT DATE:[ \\t]*(\\d{4}/\\d{2}/\\d{2})",
+  "deposito": "^[ \\t]*AGEING[ \\t]+(?:-?\\d+\\.\\d{2}[ \\t]+){4}(-?\\d+\\.\\d{2})[ \\t]*$"
+ }
+}

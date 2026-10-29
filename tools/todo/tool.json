@@ -1,0 +1,17 @@
+{
+  "slug": "todo",
+  "title": "tool.title",
+  "icon": "check-square",
+  "menu": {
+    "section": "My tools",
+    "order": 50
+  },
+  "access": {
+    "roles": [],
+    "tool": "todo"
+  },
+  "home": "mine",
+  "owner": "edwin.botha@cbreexcellerate.com",
+  "version": 1,
+  "note": "To-do made in the Builder (1.0.55): My to-do, Team board, Jobs, Stats and Goals with reward days. It replaces the built-in To-do page; the old tasks, jobs and goals were copied in once."
+}

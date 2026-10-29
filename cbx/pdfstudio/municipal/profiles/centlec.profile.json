@@ -1,0 +1,248 @@
+{
+  "profile_id": "centlec",
+  "profile_name": "Centlec (SOC) Ltd - Bloemfontein electricity",
+  "short_name": "Centlec",
+  "_doc": "Bloemfontein's electricity utility. Charge grammar matches Mangaung ('LEVY ELEC. ... AMOUNT', 'VAT ELEC. ...') which is why bare-word matching leaked - fingerprint on the unique VAT reg 4250211721. AMOUNT = last money on the line, credits carry a leading minus. Independent GT: LEVY ELEC x 15%% == VAT ELEC.",
+  "fingerprint": {
+    "all": [
+      "4250211721"
+    ]
+  },
+  "sections": {
+    "electricity": {
+      "start": "LEVY ELEC|LEVY ESTIMATE ELEC|METER READINGS / METER LESINGS|CONSUMEDUNITS|UNITS CONSUMED"
+    }
+  },
+  "fields": [
+    {
+      "field": "account_number",
+      "label": "Account",
+      "scope": "document",
+      "patterns": [
+        "Account Number:\\s*(\\d+)",
+        "ACCOUNT NO[:.]?\\s*(\\d{8,})"
+      ],
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "billing_date",
+      "label": "Invoice date",
+      "scope": "document",
+      "patterns": [
+        "Invoice Date:\\s*(\\d{4}/\\d{2}/\\d{2})",
+        "TAX INVOICE NO\\.[\\s\\S]{0,90}?\\d{8,}/(\\d{4}/\\d{2}/\\d{2})",
+        "TAX INVOICE NO\\.?[\\s\\S]{0,60}?\\d{8,}/(\\d{4}/\\d{2}/\\d{2})"
+      ],
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "invoice_number",
+      "label": "Invoice no",
+      "scope": "document",
+      "pattern": "Invoice No:\\s*(\\d+\\s+\\d{4}/\\d{2}/\\d{2})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "site_name",
+      "label": "Stand description",
+      "scope": "document",
+      "patterns": [
+        "Stand Description\\s+(.+?)\\s*$",
+        "ACCOUNT NO[:.]?\\s*\\d{8,}\\s+([A-Z0-9][^\\n]{4,60}?)\\s*$"
+      ],
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "municipality",
+      "label": "Municipality",
+      "scope": "document",
+      "pattern": "()",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "deposit",
+      "label": "Deposit amount",
+      "scope": "document",
+      "pattern": "Deposit Amount:\\s*(-?[\\d ,]+\\.\\d{2})",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "meter",
+      "label": "Meter number",
+      "scope": "document",
+      "collect": "join_unique",
+      "pattern": "\\n\\s*[A-Z]?\\d{6,}\\s+(\\w+)\\s+\\d+\\s+\\d+\\s+[\\d.]+\\s+\\w+\\s*$",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "cl_elec_levy_r",
+      "label": "Electricity levy",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "LEVY ELEC\\.?\\s.*\\s(-?\\d+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "cl_elec_vat_r",
+      "label": "Electricity VAT",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "VAT ELEC\\.?\\s.*\\s(-?\\d+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "cl_sundry_levy_r",
+      "label": "Sundry levy",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "LEVY SUNDRY\\s.*\\s(-?\\d+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    },
+    {
+      "field": "due_date",
+      "label": "Due date",
+      "scope": "document",
+      "pattern": "DUE DATE[^\\n]*\\n[^\\n]*?(\\d{4}-\\d{2}-\\d{2})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "cl_e_present",
+      "scope": "section:electricity",
+      "label": "elec present",
+      "pattern": "(LEVY ELEC|LEVY ESTIMATE ELEC|METER READINGS / METER LESINGS|CONSUMEDUNITS|UNITS CONSUMED)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "cl_consumed",
+      "label": "Consumed units (kWh)",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "EL\\s+(?!A)[A-Z]?\\d{4,}\\s+(?:[\\d.]+\\s+[\\d.]+|ESTIMATE)\\s+([\\d.]+)\\s+(?![A-Z]*K\\d)[A-Z]\\w+"
+    },
+    {
+      "field": "cl_demand",
+      "label": "Demand (K-code row)",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "EL\\s+(?!A)[A-Z]?\\d{4,}\\s+[\\d.]+\\s+[\\d.]+\\s+([\\d.]+)\\s+[A-Z]*K\\d\\w*"
+    },
+    {
+      "field": "cl_nmd",
+      "label": "NMD (A-prefixed meter)",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "EL\\s+A\\d{4,}\\s+[\\d.]+\\s+([\\d.]+)\\s+[\\d.]+\\s+\\w+"
+    },
+    {
+      "field": "cl_meter",
+      "label": "Meter number(s)",
+      "scope": "document",
+      "collect": "join_unique",
+      "pattern": "EL\\s+([A-Z]?\\d{4,})\\s+(?:[\\d.]+\\s+[\\d.]+|ESTIMATE)\\s+[\\d.]+\\s+\\w+"
+    },
+    {
+      "fields": [
+        "cl_date_start",
+        "cl_date_end"
+      ],
+      "label": "Reading dates (variant header)",
+      "scope": "document",
+      "patterns": [
+        "PREVIOUS READING\\s+NEW READING[\\s\\S]{0,600}?(\\d{4}/\\d{2}/\\d{2})\\s+(\\d{4}/\\d{2}/\\d{2})",
+        "(?m)^\\s*(\\d{4}/\\d{2}/\\d{2})\\s+(\\d{4}/\\d{2}/\\d{2})\\s*$"
+      ],
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "cl_peak_kwh",
+      "label": "Peak kWh (register)",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "EL\\s+[A-Z]?\\d{5,}\\s+(?:[\\d.]+\\s+[\\d.]+|ESTIMATE)\\s+([\\d.]+)\\s+[A-Z]\\w*P\\b"
+    },
+    {
+      "field": "cl_std_kwh",
+      "label": "Standard kWh (register)",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "EL\\s+[A-Z]?\\d{5,}\\s+(?:[\\d.]+\\s+[\\d.]+|ESTIMATE)\\s+([\\d.]+)\\s+[A-Z]\\w*S\\b"
+    },
+    {
+      "field": "cl_off_kwh",
+      "label": "Off-peak kWh (register)",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "EL\\s+[A-Z]?\\d{5,}\\s+(?:[\\d.]+\\s+[\\d.]+|ESTIMATE)\\s+([\\d.]+)\\s+[A-Z]\\w*O\\b"
+    },
+    {
+      "fields": [
+        "cl_read_prev",
+        "cl_read_new"
+      ],
+      "label": "First register readings",
+      "scope": "document",
+      "pattern": "EL\\s+[A-Z]?\\d{5,}\\s+([\\d.]+)\\s+([\\d.]+)\\s+[\\d.]+\\s+[A-Z]\\w+",
+      "type": "number",
+      "required": false
+    },
+    {
+      "field": "cl_est_levy_r",
+      "label": "Estimate levy",
+      "scope": "document",
+      "collect": "sum",
+      "pattern": "LEVY ESTIMATE ELEC\\.?\\s.*\\s(-?\\d+\\.\\d{2})\\s*$",
+      "type": "money",
+      "required": false
+    }
+  ],
+  "computes": [
+    {
+      "field": "cl_elec_ex",
+      "op": "sum",
+      "of": [
+        "cl_elec_levy_r",
+        "cl_sundry_levy_r",
+        "cl_est_levy_r"
+      ]
+    }
+  ],
+  "canonical": {
+    "demand_kva": "cl_demand",
+    "nmd_kva": "cl_nmd",
+    "read_start": "cl_date_start",
+    "read_end": "cl_date_end",
+    "site_name": "site_name",
+    "tariff_name": "_none",
+    "reading_type": "_none",
+    "meter": "cl_meter",
+    "total_ex_vat_r": "cl_elec_ex",
+    "other_r": "cl_elec_ex",
+    "deposit_r": "deposit",
+    "total_kwh": "cl_consumed",
+    "peak_kwh": "cl_peak_kwh",
+    "standard_kwh": "cl_std_kwh",
+    "offpeak_kwh": "cl_off_kwh",
+    "start_reading_kwh": "cl_read_prev",
+    "end_reading_kwh": "cl_read_new"
+  },
+  "recon": {
+    "prev_balance": "PREVIOUS ACCOUNT\\s+\\d{4}/\\d{2}/\\d{2}\\s+(-?[\\d,]+\\.\\d{2})",
+    "current_ex": "LEVY (?:ESTIMATE )?ELEC\\.[^\\n]*\\s(-?\\d[\\d,]*\\.\\d{2})\\s*$",
+    "vat": "VAT ELEC\\.[^\\n]*\\s(-?\\d[\\d,]*\\.\\d{2})\\s*$",
+    "total_due": "AMOUNT DUE\\s*\\n\\s*([\\d,]+\\.\\d{2})",
+    "due_date": "DUE DATE[^\\n]*\\n[^\\n]*?(\\d{4}-\\d{2}-\\d{2})"
+  }
+}

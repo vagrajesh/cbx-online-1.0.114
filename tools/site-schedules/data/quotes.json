@@ -1,0 +1,267 @@
+{
+  "kind": "table",
+  "title": "data.quotes.title",
+  "scope": "mine",
+  "write": "everyone",
+  "columns": [
+    {
+      "key": "quote",
+      "label": "col.quote",
+      "type": "file",
+      "accept": [
+        "pdf"
+      ],
+      "max_mb": 25
+    },
+    {
+      "key": "more",
+      "label": "col.more",
+      "type": "file",
+      "accept": [
+        "pdf"
+      ],
+      "max_mb": 25
+    },
+    {
+      "key": "status",
+      "label": "col.status",
+      "type": "choice",
+      "options": [
+        "New",
+        "Read",
+        "Built"
+      ],
+      "default": "New"
+    },
+    {
+      "key": "site_name",
+      "label": "col.site_name",
+      "type": "text"
+    },
+    {
+      "key": "company",
+      "label": "col.company",
+      "type": "text"
+    },
+    {
+      "key": "lease_type",
+      "label": "col.lease_type",
+      "type": "text"
+    },
+    {
+      "key": "start_date",
+      "label": "col.start_date",
+      "type": "text"
+    },
+    {
+      "key": "term_years",
+      "label": "col.term_years",
+      "type": "int"
+    },
+    {
+      "key": "term_months",
+      "label": "col.term_months",
+      "type": "int"
+    },
+    {
+      "key": "esc_year",
+      "label": "col.esc_year",
+      "type": "int"
+    },
+    {
+      "key": "col_id",
+      "label": "col.col_id",
+      "type": "text"
+    },
+    {
+      "key": "contract_no",
+      "label": "col.contract_no",
+      "type": "text"
+    },
+    {
+      "key": "soc_no",
+      "label": "col.soc_no",
+      "type": "text"
+    },
+    {
+      "key": "t100_ref",
+      "label": "col.t100_ref",
+      "type": "text"
+    },
+    {
+      "key": "t000_ref",
+      "label": "col.t000_ref",
+      "type": "text"
+    },
+    {
+      "key": "co_code",
+      "label": "col.co_code",
+      "type": "text"
+    },
+    {
+      "key": "lease_code",
+      "label": "col.lease_code",
+      "type": "text"
+    },
+    {
+      "key": "swiftnet_rep",
+      "label": "col.swiftnet_rep",
+      "type": "text"
+    },
+    {
+      "key": "couser_rep",
+      "label": "col.couser_rep",
+      "type": "text"
+    },
+    {
+      "key": "stac",
+      "label": "col.stac",
+      "type": "text"
+    },
+    {
+      "key": "pid",
+      "label": "col.pid",
+      "type": "text"
+    },
+    {
+      "key": "region",
+      "label": "col.region",
+      "type": "text"
+    },
+    {
+      "key": "lat",
+      "label": "col.lat",
+      "type": "text"
+    },
+    {
+      "key": "lon",
+      "label": "col.lon",
+      "type": "text"
+    },
+    {
+      "key": "struct_name",
+      "label": "col.struct_name",
+      "type": "text"
+    },
+    {
+      "key": "struct_cat",
+      "label": "col.struct_cat",
+      "type": "text"
+    },
+    {
+      "key": "site_owner",
+      "label": "col.site_owner",
+      "type": "text"
+    },
+    {
+      "key": "co_site_name",
+      "label": "col.co_site_name",
+      "type": "text"
+    },
+    {
+      "key": "bs_site_no",
+      "label": "col.bs_site_no",
+      "type": "text"
+    },
+    {
+      "key": "co_region",
+      "label": "col.co_region",
+      "type": "text"
+    },
+    {
+      "key": "mast_cat",
+      "label": "col.mast_cat",
+      "type": "text"
+    },
+    {
+      "key": "mast_hagl",
+      "label": "col.mast_hagl",
+      "type": "text"
+    },
+    {
+      "key": "inst_hagl",
+      "label": "col.inst_hagl",
+      "type": "text"
+    },
+    {
+      "key": "scope",
+      "label": "col.scope",
+      "type": "text",
+      "multiline": true
+    },
+    {
+      "key": "equip_comments",
+      "label": "col.equip_comments",
+      "type": "text",
+      "multiline": true
+    },
+    {
+      "key": "monthly",
+      "label": "col.monthly",
+      "type": "number",
+      "format": "money"
+    },
+    {
+      "key": "charges",
+      "label": "col.charges",
+      "type": "text",
+      "multiline": true
+    },
+    {
+      "key": "read_from",
+      "label": "col.read_from",
+      "type": "text",
+      "multiline": true
+    },
+    {
+      "key": "checks",
+      "label": "col.checks",
+      "type": "checklist"
+    },
+    {
+      "key": "checks_n",
+      "label": "col.checks_n",
+      "type": "calc",
+      "calc": {
+        "fn": "count",
+        "of": "checks"
+      }
+    },
+    {
+      "key": "checks_done",
+      "label": "col.checks_done",
+      "type": "calc",
+      "calc": {
+        "fn": "done",
+        "of": "checks"
+      }
+    },
+    {
+      "key": "swift_signers",
+      "label": "col.swift_signers",
+      "type": "text",
+      "multiline": true
+    },
+    {
+      "key": "couser_signers",
+      "label": "col.couser_signers",
+      "type": "text",
+      "multiline": true
+    },
+    {
+      "key": "details",
+      "label": "col.details",
+      "type": "json",
+      "hidden": true
+    },
+    {
+      "key": "agreement",
+      "label": "col.agreement",
+      "type": "file",
+      "accept": [
+        "docx"
+      ],
+      "max_mb": 25
+    }
+  ]
+}

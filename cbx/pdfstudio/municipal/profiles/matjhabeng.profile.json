@@ -1,0 +1,655 @@
+{
+ "profile_id": "matjhabeng",
+ "profile_name": "Matjhabeng Local Municipality (Welkom, Free State)",
+ "short_name": "Matjhabeng",
+ "_doc": "IDENTITY IS INFERRED. The bill prints NO municipality name, no masthead, no logo text, no portal URL and no tax-invoice number — only 'TELKOM SA LTD / TFMC / PRIVAATSAK X137 / CENTURION' (the addressee) plus 'Vat Number: 4860188612' and 'Township: WELKOM - CIVIC CENTRE'. Confirmed Matjhabeng from the VAT registration number Edwin supplied and the Welkom township. Fingerprint = that VAT number (unique across all 219 PDFs in the Telkom tree) AND the bill's own spelling mistake 'Payments Untill'. Deliberately NOT fingerprinted on '[address removed]' — that CBRE mailbox appears on many municipalities' bills and is what made mangaung hijack Dihlabeng and Breede Valley.\n\nSAP/Solar mSCOA print stream (filenames c_/k_usr1SAGprintsolar-mscoa-prod|testBO080_...). Metsimaholo and Midvaal use the same print stream but a COMPLETELY different page layout, different VAT regs (4000846594 / 4700193503) and different labels, so the fingerprint cannot cross over; verified empirically over the whole tree.\n\nLAYOUT (1 page, ~3.2 kB of text, identical on all 12 bills)\n  A. Meta block, label: value pairs — Account Number, Old Account, Vat Number, Account For (YYYY/MM), Due Date, Unit Number (the stand/erf code 001 000 [number removed] 00000 0000 0000), Street Address, Township, Market Value, Stand Area (erf size m2), Deposit, Payments Untill, Final Read Date (always blank).\n  B. Meter table: 'METER TYPE / PREVIOUS READING / CURRENT READING / UNITS / METER REFERENCE / PREVIOUS READ-DATE / CURRENT READ-DATE'. Only KVA registers are ever listed — K[number removed] (kVA demand) and A[number removed] (kVA billed on the access charge). PREVIOUS READING is always 0 (max-demand registers reset monthly) and UNITS == CURRENT READING. There is NO kWh register row, so Start/End Reading kWh are genuinely absent -> mapped '_none'.\n  C. Ledger table: 'DATE / UNITS / DETAILS / VAT / AMOUNT'. AMOUNT IS VAT-INCLUSIVE and the VAT column is the VAT contained in it (VAT/AMOUNT == 15/115 == 0.130435 on every vatable line). All canonical Rand columns therefore read EX-VAT computes (amount - vat), matching the CoT lesson.\n  D. 'CURRENT TOTAL DUE: R...', 'TOTAL AMOUNT OUTSTANDING: R...', a 5-column ageing row (120/90/60/30/CURRENT) and a '>>>>>> 9 1911 0000 1091 5628 8   GRAND TOTAL DUE: R...' barcode line (present on all 12). The barcode total sometimes ROUNDS UP against CURRENT TOTAL DUE by a cent or two (568459.55 vs 568459.54; 282759.90 vs 282759.88), so both are captured separately and CURRENT TOTAL DUE is the one used for recon.\n\nELECTRICITY LINES (exactly 5 every month)\n  'ELEC TOU MV/KVA'        UNITS = kVA maximum demand (matches the K register) -> demand_kva / demand_r\n  'TOU MV ACCESS CHARGE'   UNITS = kVA billed for network access (matches the A register) -> nmd_kva / nmd_r.\n                           CAVEAT: this quantity MOVES month to month (235,241,251,257,276..282), so it is a measured/assessed access kVA, NOT a contracted notified maximum demand. It is mapped to the NMD columns because it is the second kVA quantity the bill bills, and because dumping a demand charge into 'Other' would be worse. Flagged for Edwin.\n  'ELEC INTERIM' x3        UNITS = kWh. THE THREE LINES CARRY THE IDENTICAL LABEL — the bill never prints Peak/Standard/Off-peak. They are printed in ascending-UNITS order because the whole ledger is sorted by the UNITS column (3, 30, 191, 221, 280, 10229, 26226, 34601), so their print position carries NO band information. They are SUMMED into one energy figure and routed to the STANDARD band (the same single-band convention as CoJ flat-rate / Ekurhuleni). peak_*/offpeak_* are '_none' — inventing bands from print order would be a fabrication. The three individual kWh figures and amounts are preserved in matj_energy_kwh_lines / matj_energy_r_lines (join_unique, so sorted, not in print order).\n\nLEAK GUARD (Rule Zero): matj_elec_all_inc_r / matj_elec_all_vat_r sum EVERY ledger line whose DETAILS starts with ELEC or TOU, regardless of label. matj_elec_leak_r / matj_elec_vat_leak_r are the abs differences against the sum of the three labelled buckets and MUST be 0.00 on every bill. A new or renamed electricity line shows up there instead of vanishing.\n\nSERVICE CHARGES ARE NOT ATTRIBUTED. Every bill prints TWO 'SERVICE CHARGE' lines (e.g. 34.16 inc VAT and 5,618.68 inc VAT) with no service name. The large one is almost certainly the MV electricity service charge, but the bill does not say so, so they are captured on the SUNDRY row (sundry_charges_r / sundry_vat_r, plus matj_service_charge_lines) and kept OUT of the electricity columns. If Edwin confirms the R5,618.68 line is electricity, move it into other_r; electricity ex VAT would then rise from 203,676.42 to 208,562.23 on the Dec-25 bill.\n\nOTHER SERVICES (kept strictly out of electricity, every rule is label-anchored):\n  'BUSINESS' (alone, no UNITS column) = property rates, VAT 0.00 -> rates row.\n  'REFUSE BUSINESS/IND 240L MORE THAN 104' UNITS = bins -> refuse row.\n  'SEWER BUSINESS' UNITS = kL -> sewerage row.\n  'WATER INTERIM' UNITS = kL -> water row. No water meter is printed anywhere on the bill.\n  'BALANCE B/FWD' and 'RECEIPT 000018 RECEIPT <n>' (leading-minus credits) are ledger movements, captured as recon fields only.\nBecause the ledger is sorted by UNITS, water/sewer/elec lines interleave — sectioning by position is impossible. electricity is the one positional section (the whole ledger from its column header); water/sewerage/refuse/rates/sundry are OVERLAY sections so they never cut it short.\n\nBILLING DATE: the bill prints no statement/invoice date and no tax-invoice number. billing_date = the printed 'Account For: YYYY/MM' (the bill's own period label), kept exactly as printed. read_start/read_end come from the meter table's PREVIOUS/CURRENT READ-DATE.\n\nRECONCILE IS CIRCULAR HERE and is declared as such: no independent ex-VAT electricity total is printed, so total_ex_vat_r = standard_r + demand_r + nmd_r by construction. The genuine checks are (1) the sum of every current-dated AMOUNT == the ageing table's printed CURRENT figure, (2) per-line VAT == amount x 15/115, both verified to the cent on all 12 bills.\n\nACCOUNT NUMBERS: three filenames say MATJ_102456_, MATJ_458965_, MATJ_545866_ but the ACCOUNT NUMBER printed inside all three is [number removed], same as the other nine. One filename is bare '[number removed].pdf'. All 12 are the same single account and the same stand; the odd filenames are mis-names. The account number is always read from the bill text.",
+ "fingerprint": {
+  "all": [
+   "Vat Number: 4860188612",
+   "Payments Untill",
+   "Account For:"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "METSIMAHOLO",
+   "MIDVAAL LOCAL MUNICIPALITY",
+   "MOGALE CITY",
+   "requires Adobe Reader"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*DATE[ \\t]+UNITS[ \\t]+DETAILS",
+   "require": "ELEC[ \\t]+(?:INTERIM|ACTUAL)|ELEC TOU MV/KVA"
+  },
+  "water": {
+   "start": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+WATER[ \\t]+(?:INTERIM|ACTUAL)",
+   "overlay": true,
+   "end": "^[ \\t]*CURRENT TOTAL DUE"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+SEWER\\b",
+   "overlay": true,
+   "end": "^[ \\t]*CURRENT TOTAL DUE"
+  },
+  "refuse": {
+   "start": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+REFUSE\\b",
+   "overlay": true,
+   "end": "^[ \\t]*CURRENT TOTAL DUE"
+  },
+  "rates": {
+   "start": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+BUSINESS[ \\t]{2,}",
+   "overlay": true,
+   "end": "^[ \\t]*CURRENT TOTAL DUE"
+  },
+  "sundry": {
+   "start": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+SERVICE CHARGE[ \\t]{2,}",
+   "overlay": true,
+   "end": "^[ \\t]*CURRENT TOTAL DUE"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number (from the bill text, never the filename)",
+   "scope": "document",
+   "pattern": "Account Number:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "matj_old_account",
+   "label": "Old account number",
+   "scope": "document",
+   "pattern": "Old Account[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "matj_vat_number",
+   "label": "Municipality VAT reg no",
+   "scope": "document",
+   "pattern": "Vat Number:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account For (billing period as printed)",
+   "scope": "document",
+   "pattern": "Account For:[ \\t]*(\\d{4}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "statement_month",
+   "label": "Account For (non-electricity rows)",
+   "scope": "document",
+   "pattern": "Account For:[ \\t]*(\\d{4}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "document",
+   "pattern": "Due Date:[ \\t]*(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "matj_payments_until",
+   "label": "Payments Untill (statement run date)",
+   "scope": "document",
+   "pattern": "Payments Untill:[ \\t]*(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "matj_unit_number",
+   "label": "Unit/stand code (erf reference)",
+   "scope": "document",
+   "pattern": "Unit Number:[ \\t]*([0-9][0-9 \\t]*[0-9])[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "matj_street",
+   "label": "Street address",
+   "scope": "document",
+   "pattern": "Street Address:[ \\t]*(\\S.*?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Township / site",
+   "scope": "document",
+   "pattern": "Township:[ \\t]*(\\S.*?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "matj_market_value",
+   "label": "Market value of property",
+   "scope": "document",
+   "pattern": "Market Value[ \\t]+(\\d+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "matj_stand_area",
+   "label": "Stand area / erf size (m2)",
+   "scope": "document",
+   "pattern": "Stand Area:[ \\t]*(\\d+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "matj_deposit",
+   "label": "Deposit held",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]*R[ \\t]*((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "matj_current_total_due",
+   "label": "CURRENT TOTAL DUE",
+   "scope": "document",
+   "pattern": "CURRENT TOTAL DUE:[ \\t]*R[ \\t]*((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "matj_total_outstanding",
+   "label": "TOTAL AMOUNT OUTSTANDING",
+   "scope": "document",
+   "pattern": "TOTAL AMOUNT OUTSTANDING:[ \\t]*R[ \\t]*((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "matj_grand_total_due",
+   "label": "GRAND TOTAL DUE (barcode line; absent on some prints)",
+   "scope": "document",
+   "pattern": "GRAND TOTAL DUE:[ \\t]*R[ \\t]*((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "matj_ageing_current",
+   "label": "Ageing table CURRENT column (independent identity check)",
+   "scope": "document",
+   "pattern": "^[ \\t]*120 DAYS[^\\n]*\\n[ \\t]*(?:-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]+){4}((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "matj_balance_bfwd",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "BALANCE B/FWD[ \\t]+(?:-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "matj_receipts_r",
+   "label": "Receipts in period (summed, credits are leading-minus)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+RECEIPT[^\\n]*?[ \\t]((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "matj_meter_type",
+   "label": "Meter register type(s)",
+   "scope": "header",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(KVA|KWH|KL|WATER)[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+[A-Z]?\\d{4,}[ \\t]+\\d{4}/\\d{2}/\\d{2}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "meter",
+   "label": "Meter reference(s)",
+   "scope": "header",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(?:KVA|KWH|KL|WATER)[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+([A-Z]?\\d{4,})[ \\t]+\\d{4}/\\d{2}/\\d{2}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Reading period (meter table PREVIOUS/CURRENT READ-DATE)",
+   "scope": "header",
+   "pattern": "^[ \\t]*(?:KVA|KWH|KL|WATER)[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+[A-Z]?\\d{4,}[ \\t]+(\\d{4}/\\d{2}/\\d{2})[ \\t]+(\\d{4}/\\d{2}/\\d{2})[ \\t]*$",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "matj_k_prev_reading",
+    "matj_k_curr_reading",
+    "matj_k_units"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "K register (kVA demand) prev/curr/units",
+   "scope": "header",
+   "pattern": "^[ \\t]*KVA[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+K\\d{4,}[ \\t]+\\d{4}/\\d{2}/\\d{2}",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "matj_a_prev_reading",
+    "matj_a_curr_reading",
+    "matj_a_units"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "A register (kVA access) prev/curr/units",
+   "scope": "header",
+   "pattern": "^[ \\t]*KVA[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+A\\d{4,}[ \\t]+\\d{4}/\\d{2}/\\d{2}",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "matj_tariff_name",
+   "label": "Tariff (from the demand charge description)",
+   "scope": "section:electricity",
+   "pattern": "ELEC[ \\t]+(TOU[ \\t]+[A-Z]{2})/KVA",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "matj_flag_interim",
+   "label": "Interim (estimated) energy line present",
+   "scope": "section:electricity",
+   "pattern": "ELEC[ \\t]+(INTERIM)\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "matj_flag_actual",
+   "label": "Actual energy line present",
+   "scope": "section:electricity",
+   "pattern": "ELEC[ \\t]+(ACTUAL)\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "matj_energy_kwh",
+    "matj_energy_vat_r",
+    "matj_energy_inc_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Energy: all ELEC INTERIM/ACTUAL lines summed (kWh, VAT, inc-VAT amount)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(\\d+)[ \\t]+ELEC[ \\t]+(?:INTERIM|ACTUAL)[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "matj_energy_kwh_lines",
+   "label": "Energy kWh per line (unlabelled registers, sorted)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(\\d+)[ \\t]+ELEC[ \\t]+(?:INTERIM|ACTUAL)[ \\t]+-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]+-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "matj_energy_r_lines",
+   "label": "Energy inc-VAT amount per line (unlabelled registers, sorted)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+ELEC[ \\t]+(?:INTERIM|ACTUAL)[ \\t]+-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "matj_demand_kva",
+    "matj_demand_vat_r",
+    "matj_demand_inc_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "ELEC TOU MV/KVA demand: kVA, VAT, inc-VAT amount",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(\\d+)[ \\t]+ELEC[ \\t]+TOU[ \\t]+MV/KVA[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "matj_access_kva",
+    "matj_access_vat_r",
+    "matj_access_inc_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "TOU MV ACCESS CHARGE: kVA, VAT, inc-VAT amount",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(\\d+)[ \\t]+TOU[ \\t]+MV[ \\t]+ACCESS[ \\t]+CHARGE[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "matj_elec_all_inc_r",
+   "label": "LEAK GUARD: every ELEC*/TOU* ledger line, inc-VAT amount summed",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+(?:ELEC|TOU)\\b[^\\n]*?[ \\t]-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "matj_elec_all_vat_r",
+   "label": "LEAK GUARD: every ELEC*/TOU* ledger line, VAT summed",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+\\d+[ \\t]+(?:ELEC|TOU)\\b[^\\n]*?[ \\t]((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]+-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "total_kl",
+    "matj_water_vat_r",
+    "water_charges_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Water: kL, VAT, inc-VAT amount",
+   "scope": "section:water",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(\\d+)[ \\t]+WATER[ \\t]+(?:INTERIM|ACTUAL)[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "w_reading_type",
+   "label": "Water reading flag",
+   "scope": "section:water",
+   "collect": "join_unique",
+   "pattern": "WATER[ \\t]+(INTERIM|ACTUAL)\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "sewer_kl",
+    "matj_sewer_vat_r",
+    "sewer_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Sewer: units, VAT, inc-VAT amount",
+   "scope": "section:sewerage",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(\\d+)[ \\t]+SEWER\\b[^\\n]*?[ \\t]((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "matj_refuse_units",
+    "matj_refuse_vat_r",
+    "refuse_charges_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "Refuse: bins, VAT, inc-VAT amount",
+   "scope": "section:refuse",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+(\\d+)[ \\t]+REFUSE\\b[^\\n]*?[ \\t]((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "matj_refuse_desc",
+   "label": "Refuse description",
+   "scope": "section:refuse",
+   "pattern": "\\d+[ \\t]+(REFUSE[A-Z0-9 /]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "rates_vat_r",
+    "rates_total_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Property rates ('BUSINESS' line): VAT, amount",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+BUSINESS[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "sundry_vat_r",
+    "sundry_charges_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "SERVICE CHARGE lines (service NOT stated on the bill): VAT, inc-VAT amount",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+SERVICE CHARGE[ \\t]{2,}((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "matj_service_charge_lines",
+   "label": "SERVICE CHARGE amounts per line (sorted)",
+   "scope": "section:sundry",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+SERVICE CHARGE[ \\t]{2,}-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]+((?<![\\d.])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "reading_type",
+   "op": "label_present",
+   "of": [
+    "matj_flag_actual",
+    "matj_flag_interim"
+   ],
+   "labels": [
+    "Actual",
+    "Estimated"
+   ]
+  },
+  {
+   "field": "matj_energy_ex_r",
+   "op": "sub",
+   "of": [
+    "matj_energy_inc_r",
+    "matj_energy_vat_r"
+   ]
+  },
+  {
+   "field": "matj_demand_ex_r",
+   "op": "sub",
+   "of": [
+    "matj_demand_inc_r",
+    "matj_demand_vat_r"
+   ]
+  },
+  {
+   "field": "matj_access_ex_r",
+   "op": "sub",
+   "of": [
+    "matj_access_inc_r",
+    "matj_access_vat_r"
+   ]
+  },
+  {
+   "field": "matj_elec_inc_r",
+   "op": "sum",
+   "of": [
+    "matj_energy_inc_r",
+    "matj_demand_inc_r",
+    "matj_access_inc_r"
+   ]
+  },
+  {
+   "field": "matj_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "matj_energy_vat_r",
+    "matj_demand_vat_r",
+    "matj_access_vat_r"
+   ]
+  },
+  {
+   "field": "matj_elec_ex_r",
+   "op": "sub",
+   "of": [
+    "matj_elec_inc_r",
+    "matj_elec_vat_r"
+   ]
+  },
+  {
+   "field": "matj_elec_leak_r",
+   "op": "diff",
+   "of": [
+    "matj_elec_all_inc_r",
+    "matj_elec_inc_r"
+   ]
+  },
+  {
+   "field": "matj_elec_vat_leak_r",
+   "op": "diff",
+   "of": [
+    "matj_elec_all_vat_r",
+    "matj_elec_vat_r"
+   ]
+  },
+  {
+   "field": "matj_water_ex_r",
+   "op": "sub",
+   "of": [
+    "water_charges_r",
+    "matj_water_vat_r"
+   ]
+  },
+  {
+   "field": "matj_sewer_ex_r",
+   "op": "sub",
+   "of": [
+    "sewer_r",
+    "matj_sewer_vat_r"
+   ]
+  },
+  {
+   "field": "matj_refuse_ex_r",
+   "op": "sub",
+   "of": [
+    "refuse_charges_r",
+    "matj_refuse_vat_r"
+   ]
+  },
+  {
+   "field": "sundry_total_r",
+   "op": "prefer",
+   "of": [
+    "sundry_charges_r"
+   ]
+  },
+  {
+   "field": "sundry_total_ex_r",
+   "op": "sub",
+   "of": [
+    "sundry_charges_r",
+    "sundry_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "matj_tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "matj_energy_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "matj_energy_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "matj_demand_kva",
+  "nmd_kva": "matj_access_kva",
+  "peak_r": "_none",
+  "standard_r": "matj_energy_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "matj_demand_ex_r",
+  "nmd_r": "matj_access_ex_r",
+  "other_r": "_none",
+  "total_ex_vat_r": "matj_elec_ex_r",
+  "deposit_r": "matj_deposit",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "BALANCE B/FWD[ \\t]+(?:-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]+(-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})",
+  "incoming_payment": "^[ \\t]*\\d{4}/\\d{2}/\\d{2}[ \\t]+RECEIPT[^\\n]*?[ \\t](-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})[ \\t]*$",
+  "current_incl": "^[ \\t]*120 DAYS[^\\n]*\\n[ \\t]*(?:-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}[ \\t]+){4}(-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})",
+  "total_due": "CURRENT TOTAL DUE:[ \\t]*R[ \\t]*(-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})",
+  "due_date": "Due Date:[ \\t]*(\\d{4}/\\d{2}/\\d{2})",
+  "deposito": "Deposit:[ \\t]*R[ \\t]*(-?\\d+(?:[ ,]\\d{3})*\\.\\d{2})"
+ }
+}

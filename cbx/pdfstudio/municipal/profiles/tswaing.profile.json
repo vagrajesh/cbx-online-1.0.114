@@ -1,0 +1,246 @@
+{
+ "profile_id": "tswaing",
+ "profile_name": "Tswaing Local Municipality (Delareyville, North West)",
+ "short_name": "Tswaing",
+ "_doc": "Tswaing Local Municipality (Delareyville) 'TAX INVOICE': masthead with the municipality's own 'VAT Registration No. 4960112813', Account Number / Statement Date / Deposit, physical address + suburb, then a ledger with columns Charge (excl VAT) | VAT | (incl VAT) in 'R 13 864.34' format: BALANCE BROUGHT FORWARD, payments, optional SUB TOTAL, RATES, REFUSE, a 'METER-NO <meter> TARIFF: ELECTRICITY ...' block (Curr = / Prev = / Cons = registers, 'Reading dates: Curr .. Prev ..', then '<kWh> kWh  R ex  R vat  R incl'), an optional 'BASIC ELECTRICITY BUSINESS' line (1 of 10 bills), water and sewer blocks, TOTAL CURRENT LEVY, and a totals row Total Charge (excl VAT) | Total VAT | Total Charge (incl VAT); a footer repeats 'EL<code> :<kWh> kWh@ <rate> = <amount>'. total_ex_vat_r = kWh line ex + basic line ex (single flat band -> standard; basic -> other_r). The electricity section is an overlay from BALANCE BROUGHT FORWARD to TOTAL CURRENT LEVY. Fingerprint: VAT 4960112813 + 'TSWAING'. IDENTITY tsg_ident_ex = printed Total Charge (excl VAT) - SUB TOTAL (the carried balance that total includes when it is printed) - every non-electricity charge line ex VAT: 0.00 on 10/10; the footer energy amount equals the kWh-line amount on 10/10. No reading-type marker. Checked on 10 bills.",
+ "fingerprint": {
+  "all": [
+   "4960112813",
+   "TSWAING"
+  ],
+  "any": [],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+BALANCE BROUGHT FORWARD",
+   "overlay": true,
+   "end": "TOTAL CURRENT LEVY[^\\n]*$",
+   "require": "TARIFF:[ \\t]*ELECTRICITY"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "Account Number[ \\t]+(\\d{5,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement Date",
+   "scope": "document",
+   "pattern": "Statement Date[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "tsg_invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "TAX Invoice No\\.[ \\t]+(\\S+)",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit[ \\t]+R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "tsg_street",
+   "label": "Physical address",
+   "scope": "document",
+   "pattern": "Physical[ \\t]+(\\S[^\\n]*?)[ \\t]{2,}Suburb",
+   "type": "text"
+  },
+  {
+   "field": "tsg_suburb",
+   "label": "Suburb",
+   "scope": "document",
+   "pattern": "Physical[^\\n]*?Suburb[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "tsg_due_date",
+   "label": "Due date",
+   "scope": "document",
+   "pattern": "Amount Payable on[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "fields": [
+    "tsg_total_ex",
+    "tsg_total_vat",
+    "tsg_total_incl"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Total Charge (excl VAT) / Total VAT / Total Charge (incl VAT)",
+   "scope": "document",
+   "pattern": "Handed[^\\n]*\\n(?:[ \\t]*\\n)*[^\\n]*?R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})[ \\t]+R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})[ \\t]+R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "tsg_subtotal",
+   "label": "SUB TOTAL (carried balance after payments)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*SUB TOTAL[ \\t]+R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "tsg_levy_incl",
+   "label": "TOTAL CURRENT LEVY",
+   "scope": "document",
+   "pattern": "TOTAL CURRENT LEVY[ \\t]+(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "tsg_nonelec_ex",
+   "label": "Non-electricity charge lines, excl. VAT (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{2}[ \\t]+)?(?!BALANCE|PAYMENT|SUB TOTAL|BASIC ELECTRICITY|R[ \\t]*\\d)[A-Z][^\\n]*?[ \\t]{2,}R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "tsg_meter",
+    "tsg_tariff"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "Electricity meter + tariff",
+   "scope": "section:electricity",
+   "pattern": "METER-NO[ \\t]+(\\S+)[ \\t]+TARIFF:[ \\t]*(ELECTRICITY[^\\n]*?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "tsg_end_reading",
+    "tsg_start_reading"
+   ],
+   "types": [
+    "number",
+    "number"
+   ],
+   "label": "Curr / Prev register",
+   "scope": "section:electricity",
+   "pattern": "TARIFF:[ \\t]*ELECTRICITY[^\\n]*\\n[ \\t]*Curr[ \\t]*=[ \\t]*([\\d.]+)[ \\t]+Prev[ \\t]*=[ \\t]*([\\d.]+)"
+  },
+  {
+   "fields": [
+    "tsg_read_to",
+    "tsg_read_from"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Reading dates",
+   "scope": "section:electricity",
+   "pattern": "TARIFF:[ \\t]*ELECTRICITY[^\\n]*\\n[^\\n]*\\n[ \\t]*Reading dates:[ \\t]*Curr[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+Prev[ \\t]+(\\d{2}/\\d{2}/\\d{4})"
+  },
+  {
+   "fields": [
+    "tsg_kwh",
+    "tsg_energy_ex",
+    "tsg_energy_vat"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "label": "kWh line (kWh, excl, VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*([\\d.]+)[ \\t]*kWh[ \\t]{2,}R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})[ \\t]+R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})[ \\t]+R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "tsg_basic_ex",
+    "tsg_basic_vat"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "BASIC ELECTRICITY line",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]+BASIC ELECTRICITY[^\\n]*?[ \\t]{2,}R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})[ \\t]+R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})[ \\t]+R[ \\t]*(-?\\d{1,3}(?: \\d{3})*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "field": "tsg_footer_energy",
+   "label": "Footer EL calc (kWh @ rate = amount)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*EL\\w+[ \\t]*:[ \\t]*[\\d.]+[ \\t]*kWh[ \\t]*@[ \\t]*[\\d.]+[ \\t]*=[ \\t]*([\\d.]+)",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "tsg_street",
+    "tsg_suburb"
+   ]
+  },
+  {
+   "field": "tsg_elec_ex",
+   "op": "sum",
+   "of": [
+    "tsg_energy_ex",
+    "tsg_basic_ex"
+   ]
+  },
+  {
+   "field": "tsg_ident_ex",
+   "op": "sub",
+   "of": [
+    "tsg_total_ex",
+    "tsg_subtotal",
+    "tsg_nonelec_ex"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tsg_tariff",
+  "account_number": "account_number",
+  "meter": "tsg_meter",
+  "reading_type": "_none",
+  "read_start": "tsg_read_from",
+  "read_end": "tsg_read_to",
+  "start_reading_kwh": "tsg_start_reading",
+  "end_reading_kwh": "tsg_end_reading",
+  "total_kwh": "tsg_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "tsg_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "tsg_energy_ex",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "tsg_basic_ex",
+  "total_ex_vat_r": "tsg_elec_ex",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

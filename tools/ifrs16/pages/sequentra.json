@@ -1,0 +1,94 @@
+{
+  "title": "page.sequentra.title",
+  "intro": "page.sequentra.intro",
+  "menu": true,
+  "order": 3,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 4,
+            "widgets": [
+              {
+                "id": "w_api",
+                "type": "form",
+                "title": "w.w_api.title",
+                "source": {
+                  "data": "api"
+                },
+                "fields": [
+                  {
+                    "key": "kind"
+                  },
+                  {
+                    "key": "month"
+                  },
+                  {
+                    "key": "to_month"
+                  }
+                ],
+                "submit": "w.w_api.submit"
+              },
+              {
+                "id": "w_ahow",
+                "type": "text",
+                "text": "w.w_ahow.text",
+                "tone": "muted"
+              }
+            ]
+          },
+          {
+            "width": 8,
+            "widgets": [
+              {
+                "id": "w_apis",
+                "type": "table",
+                "title": "w.w_apis.title",
+                "source": {
+                  "data": "api"
+                },
+                "add": false,
+                "search": false,
+                "columns": [
+                  {
+                    "key": "kind",
+                    "label": "col.api_kind"
+                  },
+                  {
+                    "key": "month",
+                    "label": "col.api_month"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  },
+                  {
+                    "key": "ok",
+                    "label": "col.api_ok"
+                  },
+                  {
+                    "key": "result",
+                    "label": "col.api_result"
+                  },
+                  {
+                    "key": "download",
+                    "label": "col.api_download"
+                  },
+                  {
+                    "key": "note",
+                    "label": "col.note"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

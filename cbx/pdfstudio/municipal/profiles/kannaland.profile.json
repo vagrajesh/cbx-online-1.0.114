@@ -1,0 +1,249 @@
+{
+ "profile_id": "kannaland",
+ "profile_name": "Kannaland Local Municipality (Ladismith, Western Cape)",
+ "short_name": "Kannaland",
+ "_doc": "Kannaland LM (Ladismith) bilingual 'TAX INVOICE MONTHLY ACCOUNT / BELASTINGFAKTUUR MAANDELIKSE REKENING', period decimals, trailing '-' credits. Meter table rows W/E/K (E row: meter, previous, current, consumption, DD/MM-DD/MM period). Charge table columns TARIFF CONSUMPTION BASIC(=ex VAT, 5 decimals) VAT AMOUNT(incl): 'Elec./Elek. Basic/Basies' (-> other), 'Elec./Elek. Charge/Koste' (kWh, -> standard), 'KVA Demand/Aanvr.' (kVA; ex = amount - VAT, -> demand); water/refuse/sewerage/rates lines are only used for the check. Fingerprint: own VAT number + name. Shares the 'Kwitansies gepos tot' wording with Overstrand but not its layout. IDENTITY x_elec_ex_id = Total monthly - Balance brought forward - receipts/journals/interest - non-electricity amounts - electricity VAT (i.e. electricity from the AMOUNT column via the printed total, vs the BASIC column): 0.00 on 9 of 10 bills, 0.03 on one (a rounding difference in the printed total). 10 bills checked; electricity only (no water/refuse rows emitted).",
+ "fingerprint": {
+  "all": [
+   "4540197268"
+  ],
+  "any": [
+   "Kannaland"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Elec\\./Elek\\.[ \\t]",
+   "require": "Elec\\./Elek\\.[ \\t]+(?:Basic/Basies|Charge/Koste)"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Rekening Nr/Account No",
+   "scope": "document",
+   "patterns": [
+    "Rekening Nr/Account No[ \\t]+(?:KANNA[ \\t]+)?(\\d{6,})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Rekening Datum/Account Date",
+   "scope": "document",
+   "pattern": "Rekening Datum/Account Date[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Belastingfakt Nr/Tax Invoice No[ \\t]+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "site_name",
+   "label": "Site address",
+   "scope": "document",
+   "pattern": "Ligging van eiendom/Site address[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "meter",
+    "start_r",
+    "end_r",
+    "kn_meter_kwh",
+    "read_start",
+    "read_end"
+   ],
+   "label": "E meter row",
+   "scope": "document",
+   "pattern": "^[ \\t]*E[ \\t]+(\\d{4,})[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+(?:\\d+(?:\\.\\d+)?[ \\t]+)?(\\d+\\.\\d{3})[ \\t]+(\\d{2}/\\d{2})-(\\d{2}/\\d{2})",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number",
+    "date",
+    "date"
+   ],
+   "required": false
+  },
+  {
+   "fields": [
+    "kn_basic_ex",
+    "kn_basic_vat",
+    "kn_basic_amt"
+   ],
+   "label": "Elec Basic",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec\\./Elek\\.[ \\t]+Basic/Basies[ \\t]+(?:\\d+[ \\t]+)?(\\d+\\.\\d{5})[ \\t]+(\\d+\\.\\d{2}-?)[ \\t]+(\\d+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "kn_kwh",
+    "kn_energy_ex",
+    "kn_energy_vat",
+    "kn_energy_amt"
+   ],
+   "label": "Elec Charge (kWh)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Elec\\./Elek\\.[ \\t]+Charge/Koste[ \\t]+(\\d+(?:\\.\\d+)?)[ \\t]+(\\d+\\.\\d{5})[ \\t]+(\\d+\\.\\d{2}-?)[ \\t]+(\\d+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "fields": [
+    "kn_kva",
+    "kn_demand_ex",
+    "kn_demand_vat",
+    "kn_demand_amt"
+   ],
+   "label": "KVA Demand",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*KVA[ \\t]+Demand/Aanvr\\.[ \\t]+(\\d+(?:\\.\\d+)?)[ \\t]+(?:(\\d+\\.\\d{5})[ \\t]+)?(\\d+\\.\\d{2}-?)[ \\t]+(\\d+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "money",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "x_total_monthly",
+   "label": "Total monthly",
+   "scope": "document",
+   "pattern": "Total monthly:[ \\t]+(\\d+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_bbf",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "Balance brought forward:[ \\t]+(\\d+\\.\\d{2}-?)",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "x_ledger",
+   "label": "Journals/Receipts/Interest",
+   "scope": "document",
+   "pattern": "^[ \\t]*(?:Journals|Receipts|Interest/penalties):[^\\n]*?[ \\t](\\d+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "x_nonelec",
+   "label": "Non-electricity amounts",
+   "scope": "document",
+   "pattern": "^[ \\t]*(?:Water|REFUSE|SEWERAGE|RATES)\\b[^\\n]*?[ \\t](\\d+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "kn_demand_r2",
+   "op": "sub",
+   "of": [
+    "kn_demand_amt",
+    "kn_demand_vat"
+   ]
+  },
+  {
+   "field": "demand_r",
+   "op": "prefer",
+   "of": [
+    "kn_demand_ex",
+    "kn_demand_r2"
+   ]
+  },
+  {
+   "field": "kn_total_ex",
+   "op": "sum",
+   "of": [
+    "kn_basic_ex",
+    "kn_energy_ex",
+    "demand_r"
+   ]
+  },
+  {
+   "field": "kn_elec_vat",
+   "op": "sum",
+   "of": [
+    "kn_basic_vat",
+    "kn_energy_vat",
+    "kn_demand_vat"
+   ]
+  },
+  {
+   "field": "x_elec_ex_id",
+   "op": "sub",
+   "of": [
+    "x_total_monthly",
+    "x_bbf",
+    "x_ledger",
+    "x_nonelec",
+    "kn_elec_vat"
+   ]
+  },
+  {
+   "field": "kn_total_kwh",
+   "op": "prefer",
+   "of": [
+    "kn_meter_kwh",
+    "kn_kwh"
+   ],
+   "as": "number"
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "meter": "meter",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_r",
+  "end_reading_kwh": "end_r",
+  "total_kwh": "kn_total_kwh",
+  "standard_kwh": "kn_kwh",
+  "standard_r": "kn_energy_ex",
+  "demand_kva": "kn_kva",
+  "demand_r": "demand_r",
+  "other_r": "kn_basic_ex",
+  "total_ex_vat_r": "kn_total_ex",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "nmd_r": "_none",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none",
+  "tariff_name": "_none",
+  "reading_type": "_none"
+ }
+}

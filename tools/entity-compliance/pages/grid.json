@@ -1,0 +1,91 @@
+{
+  "title": "page.grid.title",
+  "intro": "page.grid.intro",
+  "menu": true,
+  "style": {
+    "width": "normal"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_export",
+                "type": "links",
+                "kind": "buttons",
+                "align": "end",
+                "items": [
+                  {
+                    "label": "act.export",
+                    "url": "/api/ec/export"
+                  }
+                ]
+              },
+              {
+                "id": "w_stats",
+                "type": "stats",
+                "source": {
+                  "grid": "w_grid"
+                },
+                "items": [
+                  {
+                    "key": "companies"
+                  },
+                  {
+                    "key": "expired"
+                  },
+                  {
+                    "key": "expiring"
+                  },
+                  {
+                    "key": "outstanding"
+                  },
+                  {
+                    "key": "in_date"
+                  }
+                ]
+              },
+              {
+                "id": "w_grid",
+                "type": "grid",
+                "title": "page.grid.title",
+                "source": {
+                  "data": "documents"
+                },
+                "rows": {
+                  "data": "companies",
+                  "label": "name",
+                  "hide": "archived"
+                },
+                "cols": {
+                  "data": "doc_types",
+                  "label": "short",
+                  "title": "name",
+                  "order": "order",
+                  "show": "shown"
+                },
+                "cell": {
+                  "row": "company",
+                  "col": "doc_type",
+                  "status": "status",
+                  "date": "expiry"
+                },
+                "extra": [
+                  {
+                    "key": "responsible",
+                    "account": "responsible_account"
+                  }
+                ],
+                "row_page": "company"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

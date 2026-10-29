@@ -1,0 +1,338 @@
+{
+ "profile_id": "king_sabata_dalindyebo",
+ "profile_name": "King Sabata Dalindyebo Local Municipality (Mthatha, Eastern Cape, EC157)",
+ "short_name": "KSD",
+ "_doc": "IDENTITY INFERRED - CONFIRM WITH EDWIN (same caveat as the Mbombela profile). The bill text names NO municipality: whole-tree substring scan over all 487 cached texts gives 'KING SABATA' 0 hits, 'MTHATHA' 0, 'EC157' 0, and there is no municipal VAT number, no bank details and no portal URL anywhere in the text layer. The KSD attribution rests on (a) the source folder name 'King Sibata', (b) the 'KSD-YYYYMM-[number removed]' export filenames, and (c) account [number removed] appearing under King Sabata Dalindyebo in Edwin's master list (16 accounts). Everything below is verified against the text; the municipality NAME is not. COMPACT ACCOUNT-STATEMENT LEDGER, NO MASTHEAD (Mthatha, Eastern Cape, EC157). Same statement engine as Knysna / Swartland / Oudtshoorn: the text layer opens straight into data - no municipality name, no municipal address, no portal URL, no demarcation code and NO MUNICIPAL VAT NUMBER anywhere. 'KING SABATA', 'MTHATHA' and 'EC157' each appear 0 times in the whole 487-PDF tree. Unlike Knysna/Swartland there is also NO EasyPay '>>>>>9nnnn' bill-scan line and, unlike Oudtshoorn, NO municipal biller-code line - so neither sibling marker exists here. FINGERPRINT: all=['120 DAYS PLUS','REFERENCE:'], any=['CONSUM:','ELECT COMMERCIAL','BALANCE BROUGHT FORWARD']. '120 DAYS PLUS' is the AGING-STRIP COLUMN HEADER ('120 DAYS PLUS   90 DAYS   60 DAYS   30 DAYS'), which this municipality's statement engine prints on every statement and which Knysna / Swartland / Oudtshoorn / Matlosana / Matzikama do not print at all - they print the aging amounts with no header row. Whole-tree substring scan over all 487 PDFs: '120 DAYS PLUS' = 10 files, 1 folder (this one); 'CONSUM:' = 10 files, 1 folder; 'ELECT COMMERCIAL' = 10 files, 1 folder. The '120 ' prefix is load-bearing - bare 'DAYS PLUS' is 11 files (one Mbombela bill) and bare '120 DAYS' is 115 files across 13 folders. 'REFERENCE:' (82 files, 8 folders) is only there to require a second layout-level marker; the intersection is still exactly these 10 files. These are all PRINT-ENGINE markers, not account-level ones, so they generalise to KSD's other 15 accounts in the master list. DELIBERATELY NOT USED: 4680101146 - that is TELKOM's own VAT number (136 files across 17 folders in this tree; fingerprinting on it would hijack the portfolio); account [number removed], the header constant 73245.54, service code X4273 and the site word SOUTHRIDGE are each unique tree-wide but are ACCOUNT-level, so they would not survive a different KSD account. ONE SHAPE ONLY, 10/10 files, 1 page, 1575-1974 chars, real text layer on all ten (ocr='never' reads them fine, scanned=False, no warnings). No scanned pages, no byte-identical duplicates, no two files with identical text. LAYOUT (per --raw): line 1 = the bare account number. Line 3 = an unlabelled header column row '<property key>  <num3>  <statement date>  <account date>'; the property key prints 0 on all ten and num3 is 73245.54, IDENTICAL on all ten months - it is UNLABELLED (Knysna prints 1080.00 in the same column) so it is kept as the native ksd_hdr_num3 and canonical deposit_r is left '_none' rather than guess a deposit. Then the property/street line '96 TELKOM (SOUTHRIDGE PAR' (truncated at source by the field width) immediately ABOVE the 'TELKOM (T.F.M.C.)' addressee line, whose own tail carries the suburb 'Southridge Park'; site_name is the concat of the two. Then '<account>-MM-YY' -> account_number + statement_month. LEDGER: one line per transaction, 'DD/MM/YY  <code>  <DESCRIPTION>  <VAT>  <AMOUNT INC VAT>'. THE AMOUNT COLUMN IS VAT-INCLUSIVE and that line's VAT is printed in its own column immediately to its left, so ex-VAT is a real 'sub' of two printed columns, NOT a reconstruction. Non-VAT lines (BALANCE BROUGHT FORWARD, RECEIPT, INTEREST) print only the amount column, so the two-money-column pattern cannot pick them up. Under the ELECT line: 'READINGS:<start>-<end> CONSUM:<units> KWHs READ DATE: <date>' - NOTE the START reading is printed FIRST here (the opposite of Knysna, which prints END first) - then 'BASIC: <rand>' (ex VAT) and 'TIER<n>: <units> @ <rate> = <rand>' (ex VAT) and a per-line 'VAT: <rand>'. The single TIER1 band is non-TOU and is routed to the STANDARD canonical band (same convention as CoJ flat-rate / Ekurhuleni). Money is SPACE-thousands with a DOT decimal in the ledger columns ('103 814.58') and no separator at all in the sub-lines ('89459.50'), so every money group is '\\d+(?:[ ,]\\d{3})*\\.\\d{2}' with a (?![\\d]) tail anchor - that anchor is what stops it eating '24688.70' out of the TIER units '24688.7000'. There is NO comma-decimal 100x trap on this layout. Dates are kept EXACTLY as printed: billing_date reads '31/07/26' (two-digit year), due_date reads '31/08/2026'. READ DATE IS TRUNCATED AT SOURCE on the 7 high-consumption months: the readings line is long enough that the date cell is clipped to 'READ DATE: 26'. The rule therefore only accepts a FULL dd/mm/yyyy, so read_end fills on the 3 zero-consumption months (26/05/2026, 26/06/2026, 27/07/2026) and is BLANK on the other 7 - blank rather than a misleading bare day number. read_start is '_none': the bill prints no consumption period at all, only the one read date. 3 of the 10 bills are zero-consumption re-reads (READINGS:[number removed]-[number removed] CONSUM:0), which legitimately print no TIER line - standard_kwh / standard_r are blank on those three and the whole charge is the BASIC (other_r). That is data, not a miss. RECONCILE IS GENUINE, NOT CIRCULAR: total_ex_vat_r = ELECT ledger amount column MINUS the ELECT ledger VAT column, while standard_r comes from the TIER line and other_r from the BASIC line - different printed figures. Max deviation R0.00 on 10/10. RECON ROW: the recon column key is 'vat' (RECON_COLS line 6511), not 'vat_total' - an earlier draft used 'vat_total', which is an orphan key and left the VAT column blank; fixed. 'current_incl' is the aging-strip CURRENT column, and current_incl - vat == elec ex-VAT + interest exactly on 10/10, which is what makes the engine's derived current_ex right. KNOWN recon-row limitation: extract_recon runs ONE re.search per rule, so on 202510 - the only month with TWO RECEIPT lines - the recon 'incoming_payment' / computed 'subtotal' columns see only the first receipt. The extraction field ksd_receipts_r (collect:'sum') sums both correctly; only the recon row is affected, and a single capture group cannot express a sum. SITE FIELDS: ksd_site_street / ksd_site_town lead with a TELKOM-anchored pattern (exact on all 10 bills in this portfolio) and fall back to a layout-only pattern - deep-indent property line immediately above a shallow-indent addressee block, and the alpha tail after the numeric column of the addressee line - so a non-Telkom KSD account still fills them instead of raising a required miss. NOT PRINTED ANYWHERE -> mapped '_none': reading type (no Actual/Estimate flag), TOU peak / off-peak registers, demand kVA, NMD, consumer deposit / cash / guarantee / security held. tariff_name carries the printed charge description 'ELECT COMMERCIAL' - the bill prints no tariff name or tariff code. meter carries 'X4273', the code in the same ledger column that Knysna uses for its meter number; on this account it is a service/tariff code rather than a physical meter serial, which the bill does not print. FILE NAMING: two of the ten PDFs are misnamed at source. MATZ_[number removed]_KSD-202602-[number removed].pdf carries the Matzikama export prefix but its text is a pure KSD February-2026 statement (account [number removed], site 96 TELKOM (SOUTHRIDGE PAR, '120 DAYS PLUS' aging header, ELECT COMMERCIAL, X4273) - the prefix is a naming error and there is nothing Matzikama about the content. KSD_[number removed]_duplicate-ACC-1-999smi[number removed]_202604_3869.pdf is the account's April-2026 statement and it is the ONLY April statement in the folder - 'duplicate' is a download-side filename artifact, not a bill status (no DUPLICATE/COPY watermark text, and its ledger chains exactly: March total due 103 801.74 == its BALANCE BROUGHT FORWARD, and its total due 103 803.09 == May's BALANCE BROUGHT FORWARD). It also prints its ledger with one leading space instead of two, which is why every ledger pattern starts '^[ \\t]*' and not '^[ \\t]{2,}'. MONTHS ACTUALLY PRESENT: 202509, 202510, 202511, 202601, 202602, 202603, 202604, 202605, 202606, 202607 - DECEMBER 2025 (202512) IS MISSING, which the ledger chain proves: 202511's total due 105 027.86 does not equal 202601's brought-forward 103 804.68, and every other consecutive pair matches to the cent. KNOWN LIMIT: all 10 sample bills are electricity-only, so only an electricity section is defined. A KSD account billing water / refuse / sewerage / rates instead would match the fingerprint (the aging header is service-independent) but produce NO row, because no section would match. Those service-word sections were not guessed - there is no non-electricity KSD bill in this tree to write them against. | CBX 1.0.78: reject 'SUNDAYS RIVER VALLEY' — Sundays River Valley bills print the same '120 DAYS PLUS' ageing strip (Telkom folder, Oct 2026).",
+ "fingerprint": {
+  "all": [
+   "120 DAYS PLUS",
+   "REFERENCE:"
+  ],
+  "any": [
+   "CONSUM:",
+   "ELECT COMMERCIAL",
+   "BALANCE BROUGHT FORWARD"
+  ],
+  "reject_if_text": [
+   "Please wait...",
+   "does not support the use of JavaScript",
+   "GREATER KOKSTAD MUNICIPALITY",
+   "HARRY GWALA",
+   "SUNDAYS RIVER VALLEY",
+      "Electricity Sales:"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}ELECT[ \\t]",
+   "require": "ELECT[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]{2,}(\\d{6,})-\\d{2}-\\d{2}[ \\t]*$",
+    "REFERENCE:[ \\t]+(\\d{6,})",
+    "^[ \\t]{2,}(\\d{8,})[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "statement_month",
+   "label": "Statement period MM-YY",
+   "scope": "document",
+   "pattern": "^[ \\t]{2,}\\d{6,}-(\\d{2}-\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "ksd_property_key",
+    "ksd_hdr_num3",
+    "ksd_stmt_date",
+    "billing_date"
+   ],
+   "types": [
+    "text",
+    "money",
+    "date",
+    "date"
+   ],
+   "label": "Header column row (property key / unlabelled num3 / statement date / account date)",
+   "scope": "document",
+   "pattern": "^[ \\t]{5,}(\\d+)[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]+(\\d{2}/\\d{2}/\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ksd_site_street",
+   "label": "Property / street line (above the addressee)",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]{10,}(\\S[^\\n]*?)[ \\t]*\\n[ \\t]*TELKOM\\b",
+    "^[ \\t]{20,}(\\S[^\\n]*?)[ \\t]*\\n[ \\t]{1,10}(?![\\d\\s])\\S"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ksd_site_town",
+   "label": "Suburb / town (tail of the addressee line)",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]*TELKOM[^\\n]*?[ \\t]{2,}([A-Za-z][A-Za-z .'-]+?)[ \\t]*$",
+    "^[ \\t]{1,8}\\S[^\\n]*?[ \\t]{2,}\\d+[ \\t]{2,}([A-Za-z][A-Za-z .'-]+?)[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ksd_total_vat_r",
+   "label": "TOTAL VAT (printed)",
+   "scope": "document",
+   "pattern": "TOTAL VAT:[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ksd_balance_bf_r",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "BALANCE BROUGHT FORWARD[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ksd_receipts_r",
+   "label": "Receipts",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}RECEIPT[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "ksd_interest_r",
+   "label": "Interest",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}INTEREST[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "ksd_interest_rate",
+   "label": "Interest rate as printed",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}(\\d+(?:\\.\\d+)?%)[ \\t]{2,}INTEREST[ \\t]",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "ksd_age_120",
+    "ksd_age_90",
+    "ksd_age_60",
+    "ksd_age_30"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Aging buckets 120+/90/60/30",
+   "scope": "document",
+   "pattern": "^[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}(?:(?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "ksd_current_r",
+    "due_date",
+    "ksd_total_due_r"
+   ],
+   "types": [
+    "money",
+    "date",
+    "money"
+   ],
+   "label": "Aging row: current / due date / total due",
+   "scope": "document",
+   "pattern": "^[ \\t]+(?:(?:(?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)[ \\t]{2,}){1,6}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "meter",
+   "label": "Electricity meter / service code",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}(\\S+)[ \\t]{2,}ELECT[ \\t]",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "ksd_description",
+   "label": "Charge description (tariff)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}(ELECT[^\\n]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "ksd_consum_kwh"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "READINGS line (start-end, CONSUM kWh)",
+   "scope": "section:electricity",
+   "pattern": "READINGS:[ \\t]*((?<![\\d.,])\\d+(?:\\.\\d+)?)[ \\t]*-[ \\t]*((?<![\\d.,])\\d+(?:\\.\\d+)?)[ \\t]+CONSUM:[ \\t]*((?<![\\d.,])\\d+(?:\\.\\d+)?)[ \\t]+KWH",
+   "type": "number",
+   "required": true
+  },
+  {
+   "field": "ksd_read_date",
+   "label": "Meter read date (only when printed in full)",
+   "scope": "section:electricity",
+   "pattern": "READ DATE:[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "ksd_basic_r",
+   "label": "BASIC charge (ex VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]+BASIC:[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "ksd_tier_kwh",
+    "ksd_tier_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TIER energy lines (kWh @ rate = Rand, ex VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*TIER\\d+:[ \\t]*((?<![\\d.,])\\d+(?:\\.\\d+)?)[ \\t]*@[ \\t]*[\\d.,]+[ \\t]*=[ \\t]*((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "ksd_tier_rate",
+   "label": "TIER rate(s) as printed",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*TIER\\d+:[ \\t]*(?:\\d+(?:\\.\\d+)?)[ \\t]*@[ \\t]*([\\d.,]+)[ \\t]*=",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "ksd_line_vat_r",
+   "label": "Per-line VAT sub-line (ex-VAT column)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]+VAT:[ \\t]+((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "ksd_elec_vat_r",
+    "ksd_elec_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Ledger ELECT line: VAT column + amount column (inc VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{2}[ \\t]{2,}\\S+[ \\t]{2,}ELECT[^\\n]*?[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]{2,}((?<![\\d.,])-?\\d+(?:[ ,]\\d{3})*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "ksd_site_street",
+    "ksd_site_town"
+   ]
+  },
+  {
+   "field": "ksd_elec_ex_r",
+   "op": "sub",
+   "of": [
+    "ksd_elec_inc_r",
+    "ksd_elec_vat_r"
+   ]
+  },
+  {
+   "field": "ksd_total_kwh",
+   "op": "prefer",
+   "as": "number",
+   "of": [
+    "ksd_consum_kwh",
+    "ksd_tier_kwh"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "ksd_description",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "ksd_read_date",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "ksd_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "ksd_tier_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "ksd_tier_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "ksd_basic_r",
+  "total_ex_vat_r": "ksd_elec_ex_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "BALANCE BROUGHT FORWARD[ \\t]{2,}(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "incoming_payment": "RECEIPT[ \\t]{2,}(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "vat": "TOTAL VAT:[ \\t]+(-?[\\d, ]+\\.\\d{2}-?)",
+  "current_incl": "^[ \\t]+(?:[\\d, ]+\\.\\d{2}[ \\t]{2,}){4}([\\d, ]+\\.\\d{2})[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}[ \\t]{2,}",
+  "total_due": "\\d{2}/\\d{2}/\\d{4}[ \\t]{2,}(-?[\\d, ]+\\.\\d{2}-?)[ \\t]*$",
+  "due_date": "[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]{2,}-?[\\d, ]+\\.\\d{2}[ \\t]*$"
+ }
+}

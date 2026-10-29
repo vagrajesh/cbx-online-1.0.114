@@ -1,0 +1,345 @@
+{
+ "profile_id": "lesedi",
+ "profile_name": "Lesedi Local Municipality (Heidelberg, Gauteng)",
+ "short_name": "Lesedi",
+ "_doc": "Lesedi LM (Heidelberg). Two renders of one statement: (A) cabedocs print (8 bills) and (B) eMunsoft print (2 bills, 2026). Both: header 'Account Number:' / 'Account Date: dd MON yyyy', a Meter Readings table (meter, type ELECTRICITY / KVA / WATER, old, new, [A/E flag in B], consumption, levied amount, reading dates) and an Account Details ledger with three money columns (ex VAT / VAT / incl). Render A prints readings with free decimals and drops empty cells (kVA rows lack the old reading; some rows have no consumption), so rows are matched in full and short shapes and their levied amounts summed separately. Several kWh meters per account: kWh summed, meters joined, readings only when one kWh meter exists, reading dates = first kWh row. Ledger 'ELECTRICITY' lines mix energy and demand, so standard_r / demand_r come from the meter-table levied amounts and other_r is BASIC ELECTRICITY; total_ex_vat_r = ledger ELECTRICITY + BASIC ELECTRICITY (ex column). Water, sewerage, refuse and rates rows from their ledger lines. Fingerprint: own VAT number + name. IDENTITY les_meter_identity_r = levied kWh + levied kVA (meter table) + basic: 0.00 on 10/10, 0 checks.",
+ "fingerprint": {
+  "all": [
+   "4900149628"
+  ],
+  "any": [
+   "Lesedi Local Municipality"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Meter Readings[ \\t]*$",
+   "require": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?:BASIC[ \\t]+)?ELECTRICITY[ \\t]"
+  },
+  "water": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+BASIC WATER[ \\t]",
+   "overlay": true,
+   "end": "^[ \\t]*\\d+\\+?[ \\t]*DAYS"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+BASIC SEWERAGE[ \\t]",
+   "overlay": true,
+   "end": "^[ \\t]*\\d+\\+?[ \\t]*DAYS"
+  },
+  "refuse": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+REFUSE[ \\t]",
+   "overlay": true,
+   "end": "^[ \\t]*\\d+\\+?[ \\t]*DAYS"
+  },
+  "rates": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+ASSESSMENT RATES[ \\t]",
+   "overlay": true,
+   "end": "^[ \\t]*\\d+\\+?[ \\t]*DAYS"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "pattern": "Account Number:[ \\t]*(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2}[ \\t]+[A-Z]{3}[ \\t]+\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "les_invoice_no",
+   "label": "Tax invoice no",
+   "scope": "document",
+   "pattern": "Tax Invoice No:[ \\t]*(\\d{8,})",
+   "type": "text"
+  },
+  {
+   "field": "site_name",
+   "label": "Street",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]*([A-Z0-9][^\\n]*?)[ \\t]{2,}[^\\n]*Street:",
+    "Street:[ \\t]+(\\S[^\\n]*?)[ \\t]*$"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "^[ \\t]*Deposit:[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "document",
+   "pattern": "Total Due on or before:?[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "les_total_due_r",
+   "label": "Total due",
+   "scope": "document",
+   "pattern": "^[ \\t]*Total Due:?[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "meter",
+   "label": "kWh meter number(s)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{4,}[A-Z]{0,2})[ \\t]+ELECTRICITY[ \\t]",
+   "type": "text",
+   "collect": "join_unique"
+  },
+  {
+   "fields": [
+    "les_kwh_cons",
+    "les_kwh_levied_full_r"
+   ],
+   "label": "kWh rows: consumption + levied",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:[A-Z]-)?\\d{4,}[A-Z]{0,2}[ \\t]+ELECTRICITY[ \\t]+(?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]+(?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*[A-Z]?[ \\t]+((?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+))[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})?[ \\t]*-[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "field": "les_kwh_levied_short_r",
+   "label": "kWh rows without consumption: levied",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:[A-Z]-)?\\d{4,}[A-Z]{0,2}[ \\t]+ELECTRICITY[ \\t]+(?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]+(?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})?[ \\t]*-[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "demand_kva",
+    "les_kva_levied_full_r"
+   ],
+   "label": "kVA rows: demand + levied",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:[A-Z]-)?\\d{4,}[A-Z]{0,2}[ \\t]+KVA[ \\t]+(?:(?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]+)?(?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*[A-Z]?[ \\t]+((?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+))[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})?[ \\t]*-[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "field": "les_kva_levied_short_r",
+   "label": "kVA rows with levied only",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:[A-Z]-)?\\d{4,}[A-Z]{0,2}[ \\t]+KVA[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})?[ \\t]*-[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "les_read_start",
+    "les_read_end"
+   ],
+   "label": "Reading dates (first kWh row)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:[A-Z]-)?\\d{4,}[A-Z]{0,2}[ \\t]+ELECTRICITY[ \\t][^\\n]*?[ \\t](\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*$",
+   "types": [
+    "date",
+    "date"
+   ]
+  },
+  {
+   "field": "les_flag",
+   "label": "Reading flag(s)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:[A-Z]-)?\\d{4,}[A-Z]{0,2}[ \\t]+ELECTRICITY[ \\t]+(?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]+(?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*([A-Z])[ \\t]+(?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]+-?\\d[\\d,]*\\.\\d{2}-?",
+   "type": "text",
+   "collect": "join_unique"
+  },
+  {
+   "fields": [
+    "start_reading_kwh",
+    "end_reading_kwh"
+   ],
+   "label": "Readings (single kWh meter only)",
+   "scope": "section:electricity",
+   "pattern": "\\A(?:(?!^[ \\t]*(?:[A-Z]-)?\\d{4,}[A-Z]{0,2}[ \\t]+ELECTRICITY[ \\t])[\\s\\S])*?^[ \\t]*(?:[A-Z]-)?\\d{4,}[A-Z]{0,2}[ \\t]+ELECTRICITY[ \\t]+((?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+))[ \\t]+((?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+))[ \\t]*[A-Z]?[ \\t]+(?:\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]+-?\\d[\\d,]*\\.\\d{2}-?[ \\t]+(?:\\d{2}/\\d{2}/\\d{4})?[ \\t]*-[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]*$(?![\\s\\S]*^[ \\t]*(?:[A-Z]-)?\\d{4,}[A-Z]{0,2}[ \\t]+ELECTRICITY[ \\t])",
+   "types": [
+    "number",
+    "number"
+   ]
+  },
+  {
+   "fields": [
+    "les_basic_r",
+    "les_basic_vat_r",
+    "les_basic_incl_r"
+   ],
+   "label": "Basic electricity",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+BASIC ELECTRICITY[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "les_elec_lines_r",
+    "les_elec_lines_vat_r",
+    "les_elec_lines_incl_r"
+   ],
+   "label": "ELECTRICITY ledger lines (energy + demand)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+ELECTRICITY[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "les_water_r",
+    "les_water_vat_r"
+   ],
+   "label": "Water (basic + consumption)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?:BASIC )?WATER[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+-?\\d[\\d,]*\\.\\d{2}-?[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "les_sewer_r",
+    "les_sewer_vat_r"
+   ],
+   "label": "Sewerage (basic + charge)",
+   "scope": "section:sewerage",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?:BASIC )?SEWERAGE[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+-?\\d[\\d,]*\\.\\d{2}-?[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "les_refuse_r",
+    "les_refuse_vat_r"
+   ],
+   "label": "Refuse",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+REFUSE[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+-?\\d[\\d,]*\\.\\d{2}-?[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "field": "les_rates_r",
+   "label": "Assessment rates",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+ASSESSMENT RATES[ \\t]+(-?\\d[\\d,]*\\.\\d{2}-?)[ \\t]+-?\\d[\\d,]*\\.\\d{2}-?[ \\t]+-?\\d[\\d,]*\\.\\d{2}-?[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  }
+ ],
+ "computes": [
+  {
+   "field": "les_kwh_levied_r",
+   "op": "sum",
+   "of": [
+    "les_kwh_levied_full_r",
+    "les_kwh_levied_short_r"
+   ]
+  },
+  {
+   "field": "les_kva_levied_r",
+   "op": "sum",
+   "of": [
+    "les_kva_levied_full_r",
+    "les_kva_levied_short_r"
+   ]
+  },
+  {
+   "field": "les_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "les_elec_lines_r",
+    "les_basic_r"
+   ]
+  },
+  {
+   "field": "les_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "les_elec_lines_vat_r",
+    "les_basic_vat_r"
+   ]
+  },
+  {
+   "field": "les_meter_identity_r",
+   "op": "sum",
+   "of": [
+    "les_kwh_levied_r",
+    "les_kva_levied_r",
+    "les_basic_r"
+   ]
+  },
+  {
+   "field": "les_total_kwh",
+   "op": "prefer",
+   "of": [
+    "les_kwh_cons"
+   ],
+   "as": "number"
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "les_flag",
+  "read_start": "les_read_start",
+  "read_end": "les_read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "les_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "les_total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "les_kwh_levied_r",
+  "offpeak_r": "_none",
+  "demand_r": "les_kva_levied_r",
+  "nmd_r": "_none",
+  "other_r": "les_basic_r",
+  "total_ex_vat_r": "les_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

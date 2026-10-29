@@ -1,0 +1,258 @@
+{
+ "profile_id": "umlalazi",
+ "profile_name": "uMlalazi Local Municipality (Eshowe, KwaZulu-Natal)",
+ "short_name": "uMlalazi",
+ "_doc": "uMlalazi Local Municipality (Eshowe) 'TAX INVOICE / STATEMENT': header with ACCOUNT NUMBER / TAX INVOICE / 'VAT REG. No.: 4170193181' (the municipality's own) / INVOICE DATE / MONTH, street/stand, deposit, a METER READINGS table (K<meter> kWh register and E<meter> kVA register rows: old | new | consumption | 'dd/mm-dd/mm'), an ACCOUNT DETAILS ledger (DATE dd/mm | DESCRIPTION | BASIC (ex VAT) | VAT | AMOUNT) whose 'Electricity' lines are the energy line (followed by '0+kWh @ R<rate>' steps), the demand line (followed by '0+KVA @ R<rate>'), a fixed line with no step, and occasional 'Electricity Journal' adjustments, then Refuse/Rates/Interest, '** Total Monthly', and an aging strip with a VAT column. total_ex_vat_r = sum of the BASIC column of all Electricity lines (journals included, interest excluded); standard_r = energy line, demand_r = kVA line, other_r = the rest (fixed + journals). kWh, readings and meter from the K row, demand_kva from the E row (kWh x printed rate = energy line within 1c on all text bills). Fingerprint: 'Total Monthly' plus any of VAT 4170193181 / 'uMlalazi' / the bill's own footer 'BALANCE BROUGHT FORWARD NOW OVERDUE AND SUBJECT TO DISCONNECTION' (the two 'MAY 2026 STATEMENT' files are header-less: only the ledger and that footer survive, so they have no account number or date). IDENTITY uml_ident_ex = electricity AMOUNT column - (aging-strip VAT - non-electricity VAT): 0.00 on 6/6 bills that print the strip; not computable on the 2 header-less files. The two OCR scans (June and August 2026) are deliberately given no electricity row: the section requires text free of OCR '|' artefacts, because their digits are misread (e.g. a 1107.31 line reads 1167.31) and a partial total would be wrong. 10 files: 10 routed, 8 electricity rows.",
+ "fingerprint": {
+  "all": [
+   "Total Monthly"
+  ],
+  "any": [
+   "4170193181",
+   "uMlalazi",
+   "BALANCE BROUGHT FORWARD NOW OVERDUE AND SUBJECT TO DISCONNECTION"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Balance brought forward:",
+   "require": "\\A(?![\\s\\S]*\\|)[\\s\\S]*?^[ \\t]*\\d{2}/\\d{2}[ \\t]+Electricity\\b"
+  },
+  "sundry": {
+   "start": "\\*\\*[ \\t]*Total Monthly:"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "pattern": "ACCOUNT NUMBER:[ \\t;:]+(\\d{7,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Invoice date",
+   "scope": "document",
+   "patterns": [
+    "INVOICE DATE:[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+    "VAT REG\\. No\\.:[ \\t]*\\d{10}[ \\t]+(\\d{2}/\\d{2}/\\d{4})"
+   ],
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "uml_month",
+   "label": "Month",
+   "scope": "document",
+   "pattern": "MONTH:[ \\t]+(\\d{4}/\\d{2})",
+   "type": "text"
+  },
+  {
+   "field": "uml_tax_invoice",
+   "label": "Tax invoice no",
+   "scope": "document",
+   "pattern": "TAX INVOICE :[ \\t]+(\\d{6,})",
+   "type": "text"
+  },
+  {
+   "field": "site_name",
+   "label": "Street address / stand",
+   "scope": "document",
+   "pattern": "STREET ADDRESS/ STAND[^\\n]*\\n[ \\t]*([A-Z][A-Z0-9 ]*?[A-Z0-9])(?:[ \\t]{2,}|[ \\t]*$)",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "DEPOSIT:[ \\t]+(\\d[\\d,]*\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "uml_bbf",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "Balance brought forward:[ \\t]+(-?\\d+\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "uml_receipts",
+   "label": "Receipts",
+   "scope": "document",
+   "pattern": "^[ \\t]*Receipts:[ \\t]+(-?\\d+\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "uml_total_monthly",
+   "label": "** Total Monthly",
+   "scope": "document",
+   "pattern": "\\*\\*[ \\t]*Total Monthly:[ \\t]+(-?\\d+\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "uml_vat_total",
+   "label": "Aging strip VAT",
+   "scope": "document",
+   "pattern": "120 DAYS\\+[^\\n]*CURRENT[ \\t]+VAT[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(?:\\S+[ \\t]+){5}(-?\\d+\\.\\d{2}-?)[ \\t]+\\S+[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "uml_nonelec_basic",
+    "uml_nonelec_vat",
+    "uml_nonelec_amt"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Non-electricity ledger lines (summed)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+(?!Electricity)[A-Za-z][^\\n]*?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "uml_elec_basic",
+    "uml_elec_vat",
+    "uml_elec_amt"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "All Electricity ledger lines (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Electricity\\b[^\\n]*?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "uml_energy_r",
+   "label": "Electricity line carrying the kWh step",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Electricity[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*\\n[ \\t]*\\d*\\+kWh @",
+   "type": "money"
+  },
+  {
+   "field": "uml_demand_r",
+   "label": "Electricity line carrying the kVA step",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Electricity[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*\\n[ \\t]*\\d*\\+KVA @",
+   "type": "money"
+  },
+  {
+   "field": "uml_kwh_rate",
+   "label": "kWh rate",
+   "scope": "section:electricity",
+   "pattern": "\\+kWh @ R([\\d.]+)",
+   "type": "number"
+  },
+  {
+   "field": "uml_kva_rate",
+   "label": "kVA rate",
+   "scope": "section:electricity",
+   "pattern": "\\+KVA @ R([\\d.]+)",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "uml_meter",
+    "uml_old_reading",
+    "uml_new_reading",
+    "uml_kwh",
+    "uml_read_from",
+    "uml_read_to"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number",
+    "text",
+    "text"
+   ],
+   "label": "kWh register row (K)",
+   "scope": "document",
+   "pattern": "^[ \\t]*E[ \\t]+K(\\d{5,})[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+(\\d{2}/\\d{2})[ \\t]*-?[ \\t]*(\\d{2}/\\d{2})"
+  },
+  {
+   "field": "uml_kva",
+   "label": "kVA register row (E) consumption",
+   "scope": "document",
+   "pattern": "^[ \\t]*E[ \\t]+E\\d{5,}[ \\t]+\\d+[ \\t]+\\d+[ \\t]+(\\d+)[ \\t]+\\d{2}/\\d{2}",
+   "type": "number"
+  }
+ ],
+ "computes": [
+  {
+   "field": "uml_other_r",
+   "op": "sub",
+   "of": [
+    "uml_elec_basic",
+    "uml_energy_r",
+    "uml_demand_r"
+   ]
+  },
+  {
+   "field": "uml_elec_vat_strip",
+   "op": "sub",
+   "of": [
+    "uml_vat_total",
+    "uml_nonelec_vat"
+   ]
+  },
+  {
+   "field": "uml_ident_ex",
+   "op": "diff",
+   "of": [
+    "uml_elec_vat_strip",
+    "uml_elec_amt"
+   ]
+  },
+  {
+   "field": "uml_energy_calc",
+   "op": "mul",
+   "of": [
+    "uml_kwh",
+    "uml_kwh_rate"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "uml_meter",
+  "reading_type": "_none",
+  "read_start": "uml_read_from",
+  "read_end": "uml_read_to",
+  "start_reading_kwh": "uml_old_reading",
+  "end_reading_kwh": "uml_new_reading",
+  "total_kwh": "uml_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "uml_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "uml_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "uml_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "uml_demand_r",
+  "nmd_r": "_none",
+  "other_r": "uml_other_r",
+  "total_ex_vat_r": "uml_elec_basic",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

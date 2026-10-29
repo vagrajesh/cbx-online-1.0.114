@@ -1,0 +1,297 @@
+{
+ "profile_id": "mbizana",
+ "profile_name": "Winnie Madikizela-Mandela Local Municipality (formerly Mbizana, Bizana, Eastern Cape)",
+ "short_name": "Mbizana",
+ "_doc": "Winnie Madikizela-Mandela LM (formerly Mbizana; the bank block still says 'Mbizana Local Municipality'). eMunsoft 'TAX INVOICE/STATEMENT OF ACCOUNT', variant with METER READINGS columns METER NO. / TYPE / OLD / NEW / READING DATE / READING TYPE / CONSUMPTION (no levied amount, no date range) and an ACCOUNT DETAILS ledger DATE / CODE / DESCRIPTION / UNITS @ TARIFF * VALUE. Electricity-only account. Ledger codes: 000203 basic, 300001 peak kWh, 300002 off-peak kWh, 000505 'ELECTRICITY' (third TOU register, mapped to standard), 008888 payments, 009008 VAT, 009006 interest; catch-up lines such as 'JUNE BILLING' carry the electricity codes with .000 units and land in other_r with the basic charge. total_ex_vat_r = every electricity-coded ledger line. Meter number / reading flag / reading date come only from meter rows that moved (retired meters print .000 and are skipped); start/end readings are left blank because three registers are printed. Fingerprint: own VAT number (all) + bank-block name or masthead (any). IDENTITY mb_balance_identity_r = TOTAL DUE - opening balance - payments - VAT - interest (valid because the account carries only electricity): 0.00 on 11/11 bills, 0 checks.",
+ "fingerprint": {
+  "all": [
+   "4320156815"
+  ],
+  "any": [
+   "Mbizana Local Municipality",
+   "Winnie Madikizela"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "require": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?:000203|000505|30000[12])[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "document",
+   "pattern": "^[ \\t]*Account Number:[ \\t]*(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2}[ \\t]+[A-Z]{3}[ \\t]+\\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "mb_invoice_no",
+   "label": "Tax invoice no",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.:[ \\t]*(\\d{8,})",
+   "type": "text"
+  },
+  {
+   "field": "mb_street",
+   "label": "Street",
+   "scope": "document",
+   "pattern": "Street:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "mb_suburb",
+   "label": "Suburb",
+   "scope": "document",
+   "pattern": "^[ \\t]*Suburb:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "mb_erf",
+   "label": "ERF",
+   "scope": "document",
+   "pattern": "ERF Description:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]*((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "mb_opening_r",
+   "label": "Opening balance",
+   "scope": "document",
+   "pattern": "^[ \\t]*Opening Balance[ \\t]+((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "mb_payments_r",
+   "label": "Payments / payment corrections (008888)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+008888[ \\t]+[^\\n]*?[ \\t]((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "field": "mb_vat_r",
+   "label": "VAT (whole bill)",
+   "scope": "document",
+   "pattern": "^[ \\t]*009008[ \\t]+VAT[ \\t]+((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "field": "mb_interest_r",
+   "label": "Interest",
+   "scope": "document",
+   "pattern": "^[ \\t]*009006[ \\t]+INTEREST[ \\t]+((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  },
+  {
+   "field": "mb_total_due_r",
+   "label": "Total due",
+   "scope": "document",
+   "pattern": "^[ \\t]*TOTAL DUE:[ \\t]*((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "due_date",
+   "label": "Due date",
+   "scope": "document",
+   "pattern": "TOTAL DUE ON OR BEFORE:[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "meter",
+   "label": "Meter numbers (registers with consumption)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+ELECTRICITY[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+([A-Z])[ \\t]+(\\d[\\d,]*\\.\\d{3})[ \\t]*$",
+   "type": "text",
+   "collect": "join_unique"
+  },
+  {
+   "field": "mb_read_end",
+   "label": "Reading date",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+([A-Z])[ \\t]+(\\d[\\d,]*\\.\\d{3})[ \\t]*$",
+   "type": "date"
+  },
+  {
+   "field": "mb_read_type",
+   "label": "Reading type flag(s)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+([A-Z])[ \\t]+\\d[\\d,]*\\.\\d{3}[ \\t]*$",
+   "type": "text",
+   "collect": "join_unique"
+  },
+  {
+   "field": "mb_meter_kwh",
+   "label": "Meter-table consumption (all registers)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+([\\d,]*\\.\\d{3})[ \\t]*$",
+   "type": "number",
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "mb_basic_units",
+    "mb_basic_r"
+   ],
+   "label": "Basic electricity",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000203[ \\t]+[^\\n]*?((?<![\\d.])[\\d,]*\\.\\d{3})[ \\t]+@[ \\t]+[\\d,]*\\.\\d+[ \\t]+\\*?[ \\t]*((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "peak_kwh",
+    "peak_r"
+   ],
+   "label": "Peak energy",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+300001[ \\t]+[^\\n]*?PEAK[ \\t]+((?<![\\d.])[\\d,]*\\.\\d{3})[ \\t]+@[ \\t]+[\\d,]*\\.\\d+[ \\t]+\\*?[ \\t]*((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "offpeak_kwh",
+    "offpeak_r"
+   ],
+   "label": "Off-peak energy",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+300002[ \\t]+[^\\n]*?OFF-PEAK[ \\t]+((?<![\\d.])[\\d,]*\\.\\d{3})[ \\t]+@[ \\t]+[\\d,]*\\.\\d+[ \\t]+\\*?[ \\t]*((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "fields": [
+    "standard_kwh",
+    "standard_r"
+   ],
+   "label": "Standard energy (ELECTRICITY)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000505[ \\t]+ELECTRICITY[ \\t]+((?<![\\d.])[\\d,]*\\.\\d{3})[ \\t]+@[ \\t]+[\\d,]*\\.\\d+[ \\t]+\\*?[ \\t]*((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "types": [
+    "number",
+    "money"
+   ],
+   "collect": "sum"
+  },
+  {
+   "field": "mb_elec_all_r",
+   "label": "All electricity ledger lines",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?:000203|000505|30000[12])[ \\t]+[^\\n]*?[ \\t]((?<![\\d.,])-?\\d[\\d,]*\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  }
+ ],
+ "computes": [
+  {
+   "field": "mb_total_kwh",
+   "op": "sum",
+   "of": [
+    "peak_kwh",
+    "standard_kwh",
+    "offpeak_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "mb_other_r",
+   "op": "sub",
+   "of": [
+    "mb_elec_all_r",
+    "peak_r",
+    "standard_r",
+    "offpeak_r"
+   ]
+  },
+  {
+   "field": "mb_elec_ex_r",
+   "op": "prefer",
+   "of": [
+    "mb_elec_all_r"
+   ]
+  },
+  {
+   "field": "mb_balance_identity_r",
+   "op": "sub",
+   "of": [
+    "mb_total_due_r",
+    "mb_opening_r",
+    "mb_payments_r",
+    "mb_vat_r",
+    "mb_interest_r"
+   ]
+  },
+  {
+   "field": "mb_tariff",
+   "op": "label_present",
+   "of": [
+    "peak_kwh"
+   ],
+   "labels": [
+    "Time of Use (peak/standard/off-peak)"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": [
+   "mb_street",
+   "mb_suburb"
+  ],
+  "billing_date": "billing_date",
+  "tariff_name": "mb_tariff",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "mb_read_type",
+  "read_start": "_none",
+  "read_end": "mb_read_end",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "mb_total_kwh",
+  "peak_kwh": "peak_kwh",
+  "standard_kwh": "standard_kwh",
+  "offpeak_kwh": "offpeak_kwh",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "peak_r",
+  "standard_r": "standard_r",
+  "offpeak_r": "offpeak_r",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "mb_other_r",
+  "total_ex_vat_r": "mb_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

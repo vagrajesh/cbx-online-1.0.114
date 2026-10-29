@@ -1,0 +1,304 @@
+{
+ "profile_id": "tswelopele",
+ "profile_name": "Tswelopele Local Municipality (Bultfontein, Free State)",
+ "short_name": "Tswelopele",
+ "_doc": "Tswelopele Local Municipality (Bultfontein) Emunsoft 'TAX INVOICE/STATEMENT OF ACCOUNT' (same print family as Ray Nkonyeni): masthead with the municipality's own VAT No.:4000846487, header block, METER READINGS table (one meter with several ELECTRICITY kWh registers and several KVA registers, plus a WATER meter), ACCOUNT DETAILS ledger, VAT line, aging strip. Electricity is ELECFLEX time-of-use, identified by ledger code <nn>TOU<band>: P peak, S standard, F off-peak (kWh x rate), D demand charge kVA, A network access charge kVA, B kVA basic charge. Values ex VAT. total_ex_vat_r = sum of all TOU-coded lines; peak/standard/offpeak kWh and Rands from P/S/F, demand_kva/demand_r from D, other_r = A + B. total_kwh = the meter table's ELECTRICITY registers' consumption summed (independent of the ledger; equals P+S+F units on 11/11). Readings left blank (three registers on one meter); read_end = the register reading date. Fingerprint: VAT 4000846487 + 'TSWELOPELE'. IDENTITY tsw_ident_ex = closing balance - opening balance - every non-TOU ledger line (payments, refuse, sewer, water, VAT): 0.00 on 11/11. Checked on 11 bills.",
+ "fingerprint": {
+  "all": [
+   "4000846487"
+  ],
+  "any": [
+   "TSWELOPELE"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*ACCOUNT DETAILS[ \\t]*$",
+   "require": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\d{2}TOU"
+  },
+  "sundry": {
+   "start": "^[ \\t]*REMITTANCE ADVICE\\b"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "^[ \\t]*Account Number:[ \\t]*(\\d{6,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2}[ \\t]+[A-Za-z]{3}[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "tsw_tax_invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Tax Invoice No\\.?:[ \\t]*(\\d{6,})",
+   "type": "text"
+  },
+  {
+   "field": "tsw_due_date",
+   "label": "Total due on or before",
+   "scope": "document",
+   "pattern": "TOTAL DUE ON OR BEFORE:?[ \\t]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "tsw_street",
+   "label": "Street (site)",
+   "scope": "document",
+   "pattern": "Street:[ \\t]+(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit",
+   "scope": "document",
+   "pattern": "Deposit:[ \\t]*([\\d,]*\\.\\d{2})",
+   "type": "money"
+  },
+  {
+   "field": "tsw_opening_r",
+   "label": "Opening balance",
+   "scope": "document",
+   "pattern": "^[ \\t]*OPENING BALANCE[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "tsw_closing_r",
+   "label": "Closing balance / total due (last aging column)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d+\\+[ \\t]*DAYS[^\\n]*(?:CLOSING BALANCE|TOTAL DUE)[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(?:\\S+[ \\t]+){5}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "tsw_current_r",
+   "label": "Aging CURRENT",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d+\\+[ \\t]*DAYS[^\\n]*(?:CLOSING BALANCE|TOTAL DUE)[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(?:\\S+[ \\t]+){4}(-?[\\d,]*\\.\\d{2}-?)[ \\t]+\\S+[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "tsw_vat_r",
+   "label": "VAT line",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\w{6}[ \\t]+VAT[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "tsw_nonelec_r",
+   "label": "Every ledger line that is not a TOU electricity line",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?(?!\\d{2}TOU)\\w{6}[ \\t]+(?=\\S)[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "tsw_elec_lines_r",
+   "label": "Electricity (TOU-coded) ledger lines",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\d{2}TOU\\w[ \\t]+[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "tsw_peak_units",
+    "tsw_peak_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Peak (TOUP)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\d{2}TOUP[ \\t]+[^\\n]*?[ \\t]{2,}(-?[\\d.]+)[ \\t]*@[ \\t]*[\\d,]*\\.\\d+[ \\t]*\\*?[ \\t]+(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "tsw_std_units",
+    "tsw_std_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Standard (TOUS)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\d{2}TOUS[ \\t]+[^\\n]*?[ \\t]{2,}(-?[\\d.]+)[ \\t]*@[ \\t]*[\\d,]*\\.\\d+[ \\t]*\\*?[ \\t]+(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "tsw_off_units",
+    "tsw_off_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Off-peak (TOUF)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\d{2}TOUF[ \\t]+[^\\n]*?[ \\t]{2,}(-?[\\d.]+)[ \\t]*@[ \\t]*[\\d,]*\\.\\d+[ \\t]*\\*?[ \\t]+(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "tsw_demand_units",
+    "tsw_demand_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Demand charge kVA (TOUD)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\d{2}TOUD[ \\t]+[^\\n]*?[ \\t]{2,}(-?[\\d.]+)[ \\t]*@[ \\t]*[\\d,]*\\.\\d+[ \\t]*\\*?[ \\t]+(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "tsw_nac_units",
+    "tsw_nac_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Network access charge kVA (TOUA)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\d{2}TOUA[ \\t]+[^\\n]*?[ \\t]{2,}(-?[\\d.]+)[ \\t]*@[ \\t]*[\\d,]*\\.\\d+[ \\t]*\\*?[ \\t]+(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "tsw_basic_units",
+    "tsw_basic_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "kVA basic charge (TOUB)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\d{2}TOUB[ \\t]+[^\\n]*?[ \\t]{2,}(-?[\\d.]+)[ \\t]*@[ \\t]*[\\d,]*\\.\\d+[ \\t]*\\*?[ \\t]+(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "field": "tsw_tariff",
+   "label": "Tariff (ledger description)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\d{2}TOU\\w[ \\t]+(ELECFLEX(?:[ \\t]+\\d+)?)\\b",
+   "type": "text"
+  },
+  {
+   "field": "tsw_meter",
+   "label": "Electricity meter(s)",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+ELECTRICITY[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+\\d{2}/\\d{2}/\\d{4}"
+  },
+  {
+   "field": "tsw_reg_kwh",
+   "label": "kWh registers' printed consumption (summed)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+[A-Z][ \\t]+([\\d.]+)[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "field": "tsw_read_date",
+   "label": "kWh reading date",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date"
+  },
+  {
+   "field": "tsw_read_type",
+   "label": "kWh reading type(s)",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]+([A-Z])[ \\t]+[\\d.]+[ \\t]*$"
+  },
+  {
+   "field": "tsw_interest_r",
+   "label": "Interest lines (not in total)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?:\\d{2}/\\d{2}/\\d{4}[ \\t]+)?\\w{6}[ \\t]+[^\\n]*?INTEREST[^\\n]*?[ \\t]{2,}(-?[\\d,]*\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "tsw_ident_ex",
+   "op": "sub",
+   "of": [
+    "tsw_closing_r",
+    "tsw_opening_r",
+    "tsw_nonelec_r"
+   ]
+  },
+  {
+   "field": "tsw_tou_kwh",
+   "op": "sum",
+   "of": [
+    "tsw_peak_units",
+    "tsw_std_units",
+    "tsw_off_units"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "tsw_other_r",
+   "op": "sum",
+   "of": [
+    "tsw_nac_r",
+    "tsw_basic_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "tsw_street",
+  "billing_date": "billing_date",
+  "tariff_name": "tsw_tariff",
+  "account_number": "account_number",
+  "meter": "tsw_meter",
+  "reading_type": "tsw_read_type",
+  "read_start": "_none",
+  "read_end": "tsw_read_date",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "tsw_reg_kwh",
+  "peak_kwh": "tsw_peak_units",
+  "standard_kwh": "tsw_std_units",
+  "offpeak_kwh": "tsw_off_units",
+  "demand_kva": "tsw_demand_units",
+  "nmd_kva": "_none",
+  "peak_r": "tsw_peak_r",
+  "standard_r": "tsw_std_r",
+  "offpeak_r": "tsw_off_r",
+  "demand_r": "tsw_demand_r",
+  "nmd_r": "_none",
+  "other_r": "tsw_other_r",
+  "total_ex_vat_r": "tsw_elec_lines_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

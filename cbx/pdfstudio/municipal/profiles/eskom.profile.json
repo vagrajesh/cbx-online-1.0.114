@@ -1,0 +1,810 @@
+{
+ "profile_id": "eskom",
+ "profile_name": "Eskom",
+ "short_name": "Eskom",
+ "_doc": "Eskom large-power TOU. Dates YYYY-MM-DD. Reads from page 2 (linear); page 1 is column-scrambled by the PDF and ignored. Total energy kWh = STD line; Energy Rands = High+Low season summed. Demand kVA = Demand Reading. Other Charges computed. | CBX 1.0.78: reject 'PHUMELELA LOCAL MUNICIPALITY' — Phumelela municipal bills print 'ESKOM' and were taken as Eskom bills (Telkom folder, Oct 2026).",
+ "fingerprint": {
+  "all": [
+   "ESKOM"
+  ],
+  "any": [
+   "ESKOM HOLDINGS",
+   "WWW.ESKOM.CO.ZA",
+   "TARIFF NAME",
+   "TOTAL CHARGES FOR BILLING PERIOD"
+  ],
+  "reject_if_text": [
+   "MALUTI - A - PHOFUNG",
+   "PHUMELELA LOCAL MUNICIPALITY"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "(?:^\\s*CONSUMPTION DETAILS\\s*\\(|PREMISE ID NUMBER\\s+\\d+\\s+TARIFF NAME)"
+  }
+ },
+ "canonical": {
+  "security_held_r": "eskom_security_r",
+  "site_name": "site_out",
+  "tariff_name": "tariff_name",
+  "reading_type": "esk_reading_type",
+  "meter": "esk_meter",
+  "read_start": "date_start_out",
+  "read_end": "date_end_out",
+  "start_reading_kwh": "esk_start_reading",
+  "end_reading_kwh": "esk_end_reading",
+  "total_kwh": "kwh_out",
+  "peak_kwh": "peak_kwh_out",
+  "standard_kwh": "std_kwh_out",
+  "offpeak_kwh": "offpeak_kwh_out",
+  "standard_r": "standard_r_out",
+  "peak_r": "peak_r_out",
+  "offpeak_r": "offpeak_r_out",
+  "demand_kva": "demand_kva",
+  "demand_r": "demand_r",
+  "nmd_kva": "nmd_kva",
+  "nmd_r": [
+   "nac_r",
+   "flat_netcap_r"
+  ],
+  "other_r": "other_eskom_r",
+  "total_ex_vat_r": "ex_vat_out"
+ },
+ "fields": [
+  {
+   "field": "esk_adj_interest_r",
+   "label": "Adjustment: interest",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "ADJUSTMENT\\s+Interest on overdue[^\\n]*?R\\s+(-?[\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "esk_adj_work_r",
+   "label": "Adjustment: connection work",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "ADJUSTMENT\\s+[A-Z ]*?(?:RE|DIS)?CONNECTION[^\\n]*?R\\s+(-?[\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "esk_adj_work_desc",
+   "label": "Adjustment: work wording",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "ADJUSTMENT\\s+([A-Z][A-Z ]*?(?:RE|DIS)?CONNECTION[A-Z ]*[A-Z])\\s+R\\s+-?[\\d, ]+\\.\\d{2}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "esk_adj_deposit_r",
+   "label": "Adjustment: sync deposit",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "ADJUSTMENT\\s+SYNC DEPOSIT[^\\n]*?R\\s+(-?[\\d, ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "eskom_security_r",
+   "label": "Security held (deposit)",
+   "scope": "document",
+   "pattern": "SECURITY HELD\\s+(-?[\\d ,]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "pattern": "YOUR ACCOUNT NO\\s+(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Billing Date",
+   "scope": "document",
+   "pattern": "BILLING DATE\\s+(\\d{4}-\\d{2}-\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "statement_month",
+   "label": "Account Month",
+   "scope": "document",
+   "pattern": "ACCOUNT M\\s?ONTH\\s+([A-Z]+ \\d{4})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "invoice_number",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "TAX INVOICE NO\\s+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "due_date",
+   "label": "Current Due Date",
+   "scope": "document",
+   "pattern": "CURRENT DUE DATE\\s+(\\d{4}-\\d{2}-\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "total_due",
+   "label": "Total Amount Due",
+   "scope": "document",
+   "pattern": "TOTAL DUE\\s+R\\s+(-?\\s*[\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "nmd_kva",
+   "label": "Notified Max Demand kVA",
+   "scope": "document",
+   "pattern": "NOTIFIED MAX DEMAND\\s+([\\d,\\.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "utilised_kva",
+   "label": "Utilised Capacity kVA",
+   "scope": "document",
+   "pattern": "UTILISED CAPACITY\\s+([\\d,\\.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "esk_meter",
+   "label": "Meter Number(s)",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "^\\s+(\\w[\\w ]*?)(?:\\s{2,}[A-Z])?\\s+[\\d,]+\\.\\d{4}\\s+[\\d,]+\\.\\d{4}\\s+[\\d,]+\\.\\d{4}\\s+[\\d,]+\\.\\d{4}\\s+[\\d,]+\\.\\d{4}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "esk_start_reading",
+    "esk_end_reading"
+   ],
+   "types": [
+    "number",
+    "number"
+   ],
+   "label": "Prev/Curr Meter Reading kWh (all meters summed)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^\\s+\\w[\\w ]*?(?:\\s{2,}[A-Z])?\\s+([\\d,]+\\.\\d{4})\\s+([\\d,]+\\.\\d{4})\\s+[\\d,]+\\.\\d{4}\\s+[\\d,]+\\.\\d{4}\\s+[\\d,]+\\.\\d{4}",
+   "required": false
+  },
+  {
+   "field": "esk_reading_type",
+   "label": "Reading Type (Actual/Estimate)",
+   "scope": "document",
+   "pattern": "READING TYPE:\\s*([A-Za-z]+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "esk_read_start_date",
+    "esk_read_end_date"
+   ],
+   "label": "Reading Dates",
+   "scope": "document",
+   "pattern": "READING DATES:\\s*(\\d{4}/\\d{2}/\\d{2})\\s*-\\s*(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "flat_total_kwh",
+   "label": "Total Energy Consumed (kWh)",
+   "scope": "document",
+   "pattern": "TOTAL ENERGY CONSUMED FOR BILLING PERIOD\\s*\\(kWh\\)\\s+([\\d,\\.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "label": "Reading Period",
+   "scope": "section:electricity",
+   "pattern": "CONSUMPTION DETAILS\\s*\\(\\s*(\\d{4}-\\d{2}-\\d{2})\\s*-\\s*(\\d{4}-\\d{2}-\\d{2})\\s*\\)",
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "tou_std_kwh",
+   "label": "Energy Consumption STD kWh",
+   "scope": "section:electricity",
+   "pattern": "ENERGY CONSUMPTION STD kWh\\s+([\\d,\\.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "tou_peak_kwh",
+   "label": "Energy Consumption PEAK kWh",
+   "scope": "section:electricity",
+   "pattern": "ENERGY CONSUMPTION PEAK kWh\\s+([\\d,\\.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "tou_offpeak_kwh",
+   "label": "Energy Consumption OFF PEAK kWh",
+   "scope": "section:electricity",
+   "pattern": "ENERGY CONSUMPTION OFF PEAK kWh\\s+([\\d,\\.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "all_kwh",
+   "label": "Energy Consumption ALL kWh",
+   "scope": "section:electricity",
+   "pattern": "ENERGY CONSUMPTION ALL kWh\\s+([\\d,\\.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "demand_offpeak_kva",
+   "label": "Demand Consumption Off-Peak",
+   "scope": "section:electricity",
+   "pattern": "DEMAND CONSUMPTION - OFF PEAK\\s+([\\d,\\.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "demand_peak_kva",
+   "label": "Demand Consumption Peak",
+   "scope": "section:electricity",
+   "pattern": "DEMAND CONSUMPTION - PEAK\\s+([\\d,\\.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "demand_kva",
+   "label": "Demand Reading kVA",
+   "scope": "section:electricity",
+   "pattern": "DEMAND READING - KW/KVA\\s+([\\d,\\.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "load_factor",
+   "label": "Load Factor",
+   "scope": "section:electricity",
+   "pattern": "LOAD FACTOR\\s+([\\d,\\.]+)",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "premise_id",
+   "label": "Premise ID",
+   "scope": "section:electricity",
+   "pattern": "PREMISE ID NUMBER\\s+(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "tariff_name",
+   "label": "Tariff Name",
+   "scope": "section:electricity",
+   "pattern": "TARIFF NAME:\\s*(.+?)(?:\\s{2,}|\\s*$)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "site_name",
+   "label": "Site Name (PID line)",
+   "scope": "section:electricity",
+   "pattern": "^\\s*([^\\n]*?PID\\d+[^\\n]*?)(?:\\s{2,}|\\s*$)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "hi_energy_kwh",
+    "hi_energy_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "High Season Energy kWh/Rands",
+   "scope": "section:electricity",
+   "pattern": "High Season Energy Charge\\s+([\\d,\\.]+)\\s+kWh[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "lo_energy_kwh",
+    "lo_energy_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Low Season Energy kWh/Rands",
+   "scope": "section:electricity",
+   "pattern": "Low Season Energy Charge\\s+([\\d,\\.]+)\\s+kWh[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "admin_r",
+   "label": "Administration Charge R",
+   "scope": "section:electricity",
+   "pattern": "Administration Charge[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "tx_kva",
+    "tx_network_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "TX Network Capacity kVA/R",
+   "scope": "section:electricity",
+   "pattern": "TX Network Capacity Charge\\s+([\\d,\\.]+)\\s+kVa[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "nac_kva",
+    "nac_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Network Capacity kVA/R (NAC)",
+   "scope": "section:electricity",
+   "pattern": "(?<!TX )Network Capacity Charge\\s+([\\d,\\.]+)\\s+kVA[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "number",
+   "required": false
+  },
+  {
+   "fields": [
+    "net_demand_kva",
+    "network_demand_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Network Demand kVA/R",
+   "scope": "section:electricity",
+   "pattern": "Network Demand Charge\\s+([\\d,\\.]+)\\s+kVA[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "number",
+   "required": false
+  },
+  {
+   "field": "ancillary_r",
+   "label": "Ancillary Service R",
+   "scope": "section:electricity",
+   "pattern": "Ancillary Service Charge[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "generator_cap_r",
+   "label": "Generator Capacity R",
+   "scope": "section:electricity",
+   "pattern": "Generator Capacity Charge[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "legacy_r",
+   "label": "Legacy Charge R",
+   "scope": "section:electricity",
+   "pattern": "Legacy Charge\\s+[\\d,\\.]+\\s+kWh[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "affordability_r",
+   "label": "Affordability Subsidy R",
+   "scope": "section:electricity",
+   "pattern": "Affordability Subsidy[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "electrification_r",
+   "label": "Electrification & Rural R",
+   "scope": "section:electricity",
+   "pattern": "Electrification and Rural Subsidy[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "demand_r"
+   ],
+   "types": [
+    "money"
+   ],
+   "label": "Energy Demand Charge R (summed)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Energy Demand Charge\\s+[\\d,\\.]+\\s+kVA[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "service_r",
+   "label": "Service Charge R",
+   "scope": "section:electricity",
+   "pattern": "Service Charge @[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "elec_total_ex_r",
+   "label": "Total Charges (Ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "TOTAL CHARGES\\s+R\\s+(-?\\s*[\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "rf_peak_kwh",
+    "rf_peak_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Ruraflex Peak Energy kWh/R",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Season Peak Energy Charge\\s+([\\d,\\.]+)\\s*kWh[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "required": false
+  },
+  {
+   "fields": [
+    "rf_offpeak_kwh",
+    "rf_offpeak_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Ruraflex Off-Peak Energy kWh/R",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Season Off[\\s-]*Peak Energy Charge\\s+([\\d,\\.]+)\\s*kWh[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "required": false
+  },
+  {
+   "fields": [
+    "rf_standard_kwh",
+    "rf_standard_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Ruraflex Standard Energy kWh/R",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Season Standard Energy Charge\\s+([\\d,\\.]+)\\s*kWh[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "required": false
+  },
+  {
+   "field": "flat_energy_r",
+   "type": "money",
+   "label": "Flat Energy Charge Rands (net of reversals)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?<!Season )(?<!Peak )(?<!Standard )Energy\\s+Charge\\s+[\\d,\\.]+\\s*kWh\\s*@\\s*R?\\s*[\\d\\.]+\\s*c?\\s*/kWh\\s+R?\\s*(-?\\s*[\\d,]+\\.\\d{2})",
+   "required": false
+  },
+  {
+   "field": "flat_energy_kwh",
+   "type": "number",
+   "label": "Flat Energy Charge kWh (billed lines only)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "(?<!Season )(?<!Peak )(?<!Standard )Energy\\s+Charge\\s+([\\d,\\.]+)\\s*kWh\\s*@\\s*R?\\s*[\\d\\.]+\\s*c?\\s*/kWh\\s+R?\\s*[\\d,]+\\.\\d{2}",
+   "required": false
+  },
+  {
+   "field": "flat_service_admin_r",
+   "label": "Service & Admin Charge R",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Service and Administration Charge\\s*@[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "flat_netcap_r",
+   "label": "Flat Network Capacity R",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Network Capacity Charge\\s*@[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "flat_netdemand_r",
+   "label": "Flat Network Demand R",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Network Demand Charge\\s+[\\d,\\.]+\\s*kWh\\s*@[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "flat_ancillary_r",
+   "label": "Flat Ancillary R",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "Ancillary service charge\\s+[\\d,\\.]+\\s*kWh\\s*@[^\\n]*?R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "flat_total_ex_r",
+   "label": "Flat Total Charges (Ex VAT)",
+   "scope": "section:electricity",
+   "pattern": "TOTAL CHARGES FOR BILLING PERIOD\\s+R\\s+(-?\\s*[\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "flat_site_name",
+   "label": "Flat Site Name",
+   "scope": "section:electricity",
+   "pattern": "TARIFF NAME:[^\\n]*\\n\\s*\\n?\\s*([A-Z0-9][A-Z0-9 /]+?)\\s{2,}",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "flat_vat_r",
+   "label": "Flat VAT Raised R",
+   "scope": "document",
+   "pattern": "VAT RAISED ON ITEMS AT 1[45]%\\s+R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "collect": "sum",
+   "required": false
+  },
+  {
+   "field": "elec_vat_r",
+   "label": "VAT Raised R",
+   "scope": "document",
+   "pattern": "VAT RAISED ON ITEMS AT 15%\\s+R\\s+([\\d,\\. ]+\\.\\d{2})",
+   "type": "money",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "_season_energy_r",
+   "op": "sum",
+   "of": [
+    "hi_energy_r",
+    "lo_energy_r"
+   ]
+  },
+  {
+   "field": "energy_r",
+   "op": "prefer",
+   "of": [
+    "_season_energy_r",
+    "flat_energy_r"
+   ]
+  },
+  {
+   "field": "_season_energy_kwh",
+   "op": "sum",
+   "of": [
+    "hi_energy_kwh",
+    "lo_energy_kwh"
+   ]
+  },
+  {
+   "field": "energy_kwh",
+   "op": "prefer",
+   "of": [
+    "_season_energy_kwh",
+    "flat_energy_kwh"
+   ]
+  },
+  {
+   "field": "peak_r_out",
+   "op": "prefer",
+   "of": [
+    "rf_peak_r"
+   ]
+  },
+  {
+   "field": "offpeak_r_out",
+   "op": "prefer",
+   "of": [
+    "rf_offpeak_r"
+   ]
+  },
+  {
+   "field": "standard_r_out",
+   "op": "prefer",
+   "of": [
+    "rf_standard_r",
+    "_season_energy_r",
+    "flat_energy_r"
+   ]
+  },
+  {
+   "field": "_rf_energy_r",
+   "op": "sum",
+   "of": [
+    "rf_peak_r",
+    "rf_offpeak_r",
+    "rf_standard_r"
+   ]
+  },
+  {
+   "field": "all_energy_r",
+   "op": "prefer",
+   "of": [
+    "_rf_energy_r",
+    "_season_energy_r",
+    "flat_energy_r"
+   ]
+  },
+  {
+   "field": "_rf_kwh",
+   "op": "sum",
+   "of": [
+    "rf_peak_kwh",
+    "rf_offpeak_kwh",
+    "rf_standard_kwh"
+   ]
+  },
+  {
+   "field": "kwh_out",
+   "op": "prefer",
+   "of": [
+    "all_kwh",
+    "flat_total_kwh",
+    "_rf_kwh",
+    "flat_energy_kwh"
+   ]
+  },
+  {
+   "field": "peak_kwh_out",
+   "op": "prefer",
+   "of": [
+    "tou_peak_kwh",
+    "rf_peak_kwh"
+   ]
+  },
+  {
+   "field": "offpeak_kwh_out",
+   "op": "prefer",
+   "of": [
+    "tou_offpeak_kwh",
+    "rf_offpeak_kwh"
+   ]
+  },
+  {
+   "field": "std_kwh_out",
+   "op": "prefer",
+   "of": [
+    "tou_std_kwh",
+    "rf_standard_kwh",
+    "flat_total_kwh",
+    "flat_energy_kwh"
+   ]
+  },
+  {
+   "field": "date_start_out",
+   "op": "prefer",
+   "of": [
+    "read_start",
+    "esk_read_start_date"
+   ]
+  },
+  {
+   "field": "date_end_out",
+   "op": "prefer",
+   "of": [
+    "read_end",
+    "esk_read_end_date"
+   ]
+  },
+  {
+   "field": "ex_vat_out",
+   "op": "prefer",
+   "of": [
+    "elec_total_ex_r",
+    "flat_total_ex_r"
+   ]
+  },
+  {
+   "field": "vat_out",
+   "op": "prefer",
+   "of": [
+    "elec_vat_r",
+    "flat_vat_r"
+   ]
+  },
+  {
+   "field": "elec_total_r",
+   "op": "sum",
+   "of": [
+    "ex_vat_out",
+    "vat_out"
+   ]
+  },
+  {
+   "field": "_flat_other_r",
+   "op": "sub",
+   "of": [
+    "flat_total_ex_r",
+    "flat_energy_r",
+    "flat_netcap_r"
+   ]
+  },
+  {
+   "field": "_tou_other_r",
+   "op": "sub",
+   "of": [
+    "elec_total_ex_r",
+    "all_energy_r",
+    "demand_r",
+    "nac_r"
+   ]
+  },
+  {
+   "field": "other_eskom_r",
+   "op": "prefer",
+   "of": [
+    "_tou_other_r",
+    "_flat_other_r"
+   ]
+  },
+  {
+   "field": "site_out",
+   "op": "prefer",
+   "of": [
+    "site_name",
+    "flat_site_name"
+   ]
+  },
+  {
+   "field": "other_r",
+   "op": "sub",
+   "of": [
+    "elec_total_ex_r",
+    "energy_r",
+    "demand_r"
+   ]
+  }
+ ],
+ "recon": {
+  "prev_balance": "BALANCE BROUGHT FORWARD[^\\n]*?R\\s+(-?[\\d, ]+\\.\\d{2})",
+  "incoming_payment": "PAYMENT\\(S\\) RECEIVED[^\\n]*?R\\s+(-?[\\d, ]+\\.\\d{2})(?!\\d)",
+  "vat": "VAT RAISED ON ITEMS[^\\n]*?R\\s+(-?[\\d, ]+\\.\\d{2})",
+  "current_ex": "TOTAL CHARGES FOR BILLING PERIOD\\s+R\\s+(-?[\\d, ]+\\.\\d{2})",
+  "total_due": "TOTAL AMOUNT DUE\\s+R\\s+(-?[\\d, ]+\\.\\d{2})",
+  "due_date": "CURRENT DUE DATE\\s+(\\d{4}-\\d{2}-\\d{2})"
+ }
+}

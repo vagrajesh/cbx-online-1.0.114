@@ -1,0 +1,302 @@
+{
+ "profile_id": "cederberg",
+ "profile_name": "Cederberg Local Municipality (Clanwilliam, Western Cape)",
+ "short_name": "Cederberg",
+ "fingerprint": {
+  "all": [
+   "Saldo oorgedra",
+   "Elektrisiteit"
+  ],
+  "any": [
+   "4000846164",
+   "Cederberg"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Elektrisiteit\\b"
+  },
+  "water": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Water\\b"
+  },
+  "refuse": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Vullis\\b"
+  },
+  "rates": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Belasting\\b"
+  },
+  "sundry": {
+   "start": "^[ \\t]*(?:\\S[^\\n]*accounts@|Rekening navrae|AMOUNT PAYABLE|>90 Dae)"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account No. / Rekening Nr.",
+   "scope": "header",
+   "pattern": "^[ \\t]*(?:Account No\\.|Rekening Nr\\.)[ \\t]{2,}(\\d{6,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Date / Datum",
+   "scope": "header",
+   "pattern": "^[ \\t]*(?:Date|Datum)[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "ced_invoice_no",
+   "label": "Tax invoice No./Nr.",
+   "scope": "header",
+   "pattern": "No\\./[ \\t]*Nr\\.[ \\t]*(\\d{8,})",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "Deposit / Deposito",
+   "scope": "header",
+   "pattern": "\\b(?:Deposit|Deposito)[ \\t]{2,}(\\d+\\.\\d{2})\\b",
+   "type": "money"
+  },
+  {
+   "field": "ced_street",
+   "label": "Buildings / Geboue (street)",
+   "scope": "document",
+   "pattern": "\\b(?:BUILDINGS|GEBOUE)[ \\t]+(\\S[^\\n]*?)[ \\t]{2,}(?:STREET No\\.|STRAAT Nr\\.)",
+   "type": "text"
+  },
+  {
+   "field": "ced_town",
+   "label": "Township / Dorpsgebied",
+   "scope": "document",
+   "pattern": "\\b(?:TOWNSHIP|DORPSGEBIED)[ \\t]+([A-Za-z][^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "ced_bf_r",
+   "label": "Saldo oorgedra (balance b/f)",
+   "scope": "document",
+   "pattern": "Saldo oorgedra:[ \\t]+(-?\\d+\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "ced_payments_r",
+   "label": "Payments (ACB/ander betalings / Betalings:)",
+   "scope": "document",
+   "pattern": "(?:betalings|Betalings:)[ \\t]{2,}(-?\\d+\\.\\d{2}-?)(?![\\d.])",
+   "type": "money"
+  },
+  {
+   "field": "ced_payable_r",
+   "label": "Amount payable (last aging column)",
+   "scope": "document",
+   "pattern": "^[ \\t]*(?:-?\\d+\\.\\d{2}-?[ \\t]+){4}(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "ced_nonelec_vat_r",
+    "ced_nonelec_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Dated ledger lines that are not electricity (VAT, Amount)",
+   "scope": "document",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+(?!Elektrisiteit)\\S[^\\n]*?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ced_elec_vat_r",
+    "ced_elec_incl_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Electricity ledger lines (VAT, Amount incl)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Elektrisiteit\\b[^\\n]*?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "required": true
+  },
+  {
+   "fields": [
+    "ced_basic_vat_r",
+    "ced_basic_incl_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Elektrisiteit Basies lines",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Elektrisiteit[ \\t]+Basies\\b[^\\n]*?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ced_dem_vat_r",
+    "ced_dem_incl_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Demand line (first non-basic Elektrisiteit line)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Elektrisiteit(?![ \\t]+Basies)[^\\n]*?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ced_en_vat_r",
+    "ced_en_incl_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Energy line (second non-basic Elektrisiteit line)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Elektrisiteit(?![ \\t]+Basies)[^\\n]*\\n(?:[ \\t]*\\n)*^[ \\t]*\\d{2}/\\d{2}[ \\t]+Elektrisiteit(?![ \\t]+Basies)[^\\n]*?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]*$"
+  },
+  {
+   "fields": [
+    "ced_dem_units",
+    "ced_en_units"
+   ],
+   "types": [
+    "number",
+    "number"
+   ],
+   "label": "Units printed on the demand/energy lines (older print only)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}[ \\t]+Elektrisiteit(?![ \\t]+Basies)[ \\t]{2,}(\\d+)[ \\t]{2,}-?\\d+\\.\\d{2}[^\\n]*\\n(?:[ \\t]*\\n)*^[ \\t]*\\d{2}/\\d{2}[ \\t]+Elektrisiteit(?![ \\t]+Basies)[ \\t]{2,}(\\d+)[ \\t]{2,}"
+  },
+  {
+   "fields": [
+    "ced_kva",
+    "ced_kva_from",
+    "ced_kva_to"
+   ],
+   "types": [
+    "number",
+    "date",
+    "date"
+   ],
+   "label": "Demand register (reading row above the TOU row)",
+   "scope": "document",
+   "pattern": "^[ \\t]*\\d+[ \\t]+\\d+[ \\t]+(\\d+)[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]*\\n(?:[ \\t]*\\n)*[ \\t]*TOU[ \\t]+TOU\\b"
+  },
+  {
+   "fields": [
+    "ced_kwh",
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "number",
+    "date",
+    "date"
+   ],
+   "label": "TOU kWh register row",
+   "scope": "document",
+   "pattern": "^[ \\t]*TOU[ \\t]+TOU[ \\t]+(\\d+)[ \\t]+(\\d{2}/\\d{2}/\\d{4})[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "ced_street",
+    "ced_town"
+   ]
+  },
+  {
+   "field": "ced_elec_ex_r",
+   "label": "Electricity ex VAT = sum(Amount) - sum(VAT)",
+   "op": "sub",
+   "of": [
+    "ced_elec_incl_r",
+    "ced_elec_vat_r"
+   ]
+  },
+  {
+   "field": "ced_dem_ex_r",
+   "op": "sub",
+   "of": [
+    "ced_dem_incl_r",
+    "ced_dem_vat_r"
+   ]
+  },
+  {
+   "field": "ced_en_ex_r",
+   "op": "sub",
+   "of": [
+    "ced_en_incl_r",
+    "ced_en_vat_r"
+   ]
+  },
+  {
+   "field": "ced_other_ex_r",
+   "label": "Basics + any further Elektrisiteit register line",
+   "op": "sub",
+   "of": [
+    "ced_elec_ex_r",
+    "ced_dem_ex_r",
+    "ced_en_ex_r"
+   ]
+  },
+  {
+   "field": "ced_bal_ex_r",
+   "label": "IDENTITY: payable - b/f - payments - other services - electricity VAT",
+   "op": "sub",
+   "of": [
+    "ced_payable_r",
+    "ced_bf_r",
+    "ced_payments_r",
+    "ced_nonelec_r",
+    "ced_elec_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "ced_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "ced_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "ced_kva",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "ced_en_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "ced_dem_ex_r",
+  "nmd_r": "_none",
+  "other_r": "ced_other_ex_r",
+  "total_ex_vat_r": "ced_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "_doc": "Cederberg one-page statement in two prints: an older English-labelled one (Date / Account No. / Deposit, units printed on the charge lines, no municipal VAT number) and the newer bilingual TAX INVOICE / BELASTINGFAKTUUR (masthead 'MUNISIPALITEIT CEDERBERG' + 'B.T.W Nr./ VAT No.', Datum / Rekening Nr. / Deposito, no units). Ledger: 'Saldo oorgedra', payments, then 'dd/mm description [units] VAT Amount(incl)' lines: two 'Elektrisiteit Basies', then 'Elektrisiteit' demand (kVA), energy (TOU kWh) and a third register usually at R0.00, Water Basies, Vullis Verwyder, Belasting (rates). The unlabelled METER READINGS table gives the demand register (row above the TOU row), the 'TOU TOU <kWh>' row with its reading dates, and further registers. Mapping: total_ex_vat_r = sum(Amount) - sum(VAT) of the Elektrisiteit lines; demand_r / standard_r = the first / second non-basic line (order confirmed by the units on the older print, kVA and kWh agree with the reading table); other_r = the basics plus the third register line. No meter numbers are printed. IDENTITY ced_bal_ex_r = amount payable - b/f - payments - every non-electricity line - electricity VAT: exact on 10/10. 10/10 routed, 0 checks. Fingerprint: 'Saldo oorgedra' + 'Elektrisiteit' + the municipal VAT number or the name Cederberg (the older print carries no VAT number; the same ledger words appear on Matzikama/Prince Albert/Khai-Ma/Overstrand bills, which do not carry the name)."
+}

@@ -1,0 +1,70 @@
+{
+  "title": "data.companies.title",
+  "columns": [
+    {
+      "key": "name",
+      "type": "text",
+      "label": "col.name",
+      "required": true
+    },
+    {
+      "key": "responsible",
+      "type": "text",
+      "label": "col.responsible"
+    },
+    {
+      "key": "responsible_account",
+      "type": "person",
+      "label": "col.responsible_account",
+      "who": "everyone"
+    },
+    {
+      "key": "responsible_email",
+      "type": "text",
+      "label": "col.responsible_email",
+      "mail": true
+    },
+    {
+      "key": "visible",
+      "type": "choice",
+      "label": "col.visible",
+      "options": [
+        "Everyone with the tool",
+        "Only its people"
+      ],
+      "default": "Everyone with the tool"
+    },
+    {
+      "key": "notes",
+      "type": "text",
+      "label": "col.notes",
+      "multiline": true
+    },
+    {
+      "key": "archived",
+      "type": "bool",
+      "label": "col.archived"
+    },
+    {
+      "key": "archived_reason",
+      "type": "text",
+      "label": "col.archived_reason"
+    }
+  ],
+  "write": "managers",
+  "scope": "members",
+  "members": {
+    "table": "company_people",
+    "person": "person",
+    "link": "company"
+  },
+  "open": {
+    "field": "visible",
+    "value": "Everyone with the tool"
+  },
+  "unique": [
+    [
+      "name"
+    ]
+  ]
+}

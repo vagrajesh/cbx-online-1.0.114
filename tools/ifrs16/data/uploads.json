@@ -1,0 +1,106 @@
+{
+  "kind": "table",
+  "title": "data.uploads.title",
+  "scope": "mine",
+  "write": "everyone",
+  "columns": [
+    {
+      "key": "summary",
+      "label": "col.summary",
+      "type": "text"
+    },
+    {
+      "key": "la",
+      "label": "col.la",
+      "type": "file",
+      "accept": [
+        "xlsx",
+        "xls"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "movements",
+      "label": "col.movements",
+      "type": "file",
+      "accept": [
+        "xlsx",
+        "xls"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "sequentra",
+      "label": "col.sequentra",
+      "type": "file",
+      "accept": [
+        "xlsx",
+        "xls"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "steps",
+      "label": "col.steps",
+      "type": "file",
+      "accept": [
+        "xlsx",
+        "xls"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "assets",
+      "label": "col.assets",
+      "type": "file",
+      "accept": [
+        "xlsx",
+        "xls",
+        "csv"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "ciw_master",
+      "label": "col.ciw_master",
+      "type": "file",
+      "accept": [
+        "xlsx",
+        "xls"
+      ],
+      "max_mb": 100
+    },
+    {
+      "key": "movement",
+      "label": "col.movement",
+      "type": "text"
+    },
+    {
+      "key": "months",
+      "label": "col.months",
+      "type": "text"
+    },
+    {
+      "key": "latest",
+      "label": "col.latest",
+      "type": "text"
+    },
+    {
+      "key": "status",
+      "label": "col.status",
+      "type": "choice",
+      "options": [
+        "New",
+        "Reading",
+        "Ready",
+        "Could not read"
+      ],
+      "default": "New"
+    },
+    {
+      "key": "note",
+      "label": "col.note",
+      "type": "text"
+    }
+  ]
+}

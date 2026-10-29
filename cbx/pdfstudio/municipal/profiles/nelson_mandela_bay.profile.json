@@ -1,0 +1,307 @@
+{
+ "profile_id": "nelson_mandela_bay",
+ "profile_name": "Nelson Mandela Bay Metropolitan Municipality (Port Elizabeth / Uitenhage / Despatch)",
+ "short_name": "NMB",
+ "_doc": "SCANNED-IMAGE LEDGER BILL. 11 of the 12 calibration PDFs carry NO text layer at all (1 image per page, 0 text chars); read_pdf(ocr='auto') OCRs them via Tesseract at 300dpi and _ocr_words_to_text rebuilds columns from word boxes, so [ \\t]{2,} column gaps work but individual DIGITS are unreliable (0/9, 7/2, 8/6, 8/5, 7/f, 3/#). Every row from those pages is force-flagged 'OCR - verify figures against the PDF'. That flag is correct: do not suppress it.\n\nLAYOUT (OCR shape, 11 files): a running account LEDGER, not a metered bill.\n  header       NELSON MANDELA BAY MUNICIPALITY | TAX INVOICE <MMDD NNNNNN>\n               VAT No 4490193473 / DEPOSIT <amt> / Statement Date <YYYYMMDD>\n               Account Number <12 digits> / UniPay Number 9100 x <account> x\n               '<HOLDER> REG. NO 1999/018572/07' = account holder (site name)\n  ledger       BROUGHT FORWARD <amt>\n               dd/mm  DR#### DEBIT ADJUSTMENT   <amt>       <- ELECTRICITY ex VAT\n                      CONSUMPTION   ELEC   <YYYY/MM>        <- consumption month\n               dd/mm  DR#### DEBIT ADJUSTMENT   <amt>       <- ELECTRICITY VAT\n                      CONSUMPTION   ELEC   VAT\n               dd/mm  UNMETERED FIRE SUPPL      <amt>       <- WATER ex VAT\n                      VAT @ 15.0%  <vat>  <inc>             <- water VAT + inc VAT\n               dd/mm  ...THANK YOU FOR YOUR PAYMENT <amt>CR / INTEREST / ROUNDING DISCOUNT\n               <bare amount on its own line>                <- closing subtotal = TOTAL PAYABLE\n               TOTAL PAYABLE R <amt> / THIS MONTH: R <amt> / PAYABLE BEFORE: yyyy-mm-dd\n\nNO METER, NO READINGS, NO kWh, NO TARIFF, NO DEMAND are printed anywhere on this bill - it is a consolidated unmetered/bulk account billed as a monthly DEBIT ADJUSTMENT. All of those canonical columns are mapped '_none' deliberately. The electricity charge goes to other_r (NOT standard_r): there is no kWh, and standard_r would raise a false 0KWH+ENERGY exception.\n\nRULE ZERO / RECONCILE IS CIRCULAR HERE. The bill prints the electricity charge exactly ONCE (the ex-VAT DEBIT ADJUSTMENT amount). total_ex_vat_r and other_r therefore both read that same figure and 'reconcile' trivially - that check proves nothing. The real, independent checks are:\n  (a) elec VAT == 15% of elec ex VAT  (two separately printed numbers)\n  (b) fire ex + fire VAT == fire inc VAT (three separately printed numbers)\n  (c) the closing subtotal line == BROUGHT FORWARD +/- every ledger line.\n\n12th FILE HAS A REAL TEXT LAYER (NMBM_[number removed]_[number removed].pdf, 2,980 chars, 0 images): a clerk-printed 'Consolidated Billing / STATEMENT FOR ACCOUNT' report (CBS06021.QRP) covering TWO months (last billed + current). Its meta is read by the fallback patterns below; the FIRST month block wins (first-match, no collect:sum), which is the completed/billed month carrying 'TAX INVOICE NO'. Its ledger amounts use SOUTH AFRICAN COMMA DECIMALS ('489 068,70'), which the app's _to_decimal strips as a thousands separator - 489068,70 would become [number removed].00, a 100x error. Every money pattern here therefore REQUIRES a period decimal ('\\.\\d{2}'), so that file yields correct meta and BLANK money rather than wrong money. The verbatim strings are captured into nmb_*_printed text fields so a human can read them. Fixing this properly needs a one-line locale change in _to_decimal, not a profile change.\n\nWHY MONEY PATTERNS ARE STRICT: the thousands group is '(?:[ ,]?\\d{3})*', i.e. exactly three digits per group and at most ONE separator. That is deliberate. OCR turns '97 388.37' into '07   388.37' and '77 527.35' into 'i?   527.35'; a looser pattern captures 7388.37 / 527.35 - plausible, wrong, and unflagged. With the strict pattern those fields MISS instead. A miss is visible in Diagnostics; a wrong number is not.\n\nCALIBRATION LIMIT: all 12 files are ONE account ([number removed], Telkom SA Ltd consolidated). NMBM's per-site metered bills will print a meter/reading/kWh table this profile has no rules for; those will route here (the fingerprint is correct) but produce only the ledger fields. Add metered rules when such a bill appears.\nDELIBERATELY NOT MAPPED — recon prev_balance and incoming_payment. Both are single printed figures with no on-bill cross-check, and OCR gets them wrong often enough to be untrustworthy: over the 12 calibration bills BROUGHT FORWARD came out 6 right / 2 wrong (576 930.00 for 526 930.00; 749 651.40 for 749 851.40) / 4 unreadable, and THANK YOU FOR YOUR PAYMENT 3 right / 2 wrong (472 733.15 for 772 733.15; 568 497.95 for 568 492.95) / 7 unreadable - and it only ever captures the FIRST of up to two payments in a month. Neither adds anything: BROUGHT FORWARD is by definition the previous statement's closing subtotal, which recon 'subtotal' reads correctly on 11 of 11 scans. Leaving them out is what keeps this profile's output correct-or-blank with no wrong numbers anywhere. Re-enable only with a digit-verified OCR pass. The regexes were:\n  prev_balance     BROUGHT FORWARD[ \\t]{2,}((?<![\\d.])-?\\d{1,3}(?:[ ,]?\\d{3})*\\.\\d{2}(?:[ \\t]*[Cc][Rr])?)\n  incoming_payment THANK YOU FOR YOUR PAYMENT[ \\t]{2,}((?<![\\d.])\\d{1,3}(?:[ ,]?\\d{3})*\\.\\d{2})(?=[ \\t]*[Cc]?[Rr])\n\nAPP-LEVEL FINDINGS (not fixable in a profile):\n 1. _to_decimal() strips ',' as a thousands separator, so it cannot read South African comma-decimal money at all ('489 068,70' -> [number removed].00). NMBM's consolidated statement uses it.\n 2. _recon_money() does s.replace('R','') BEFORE testing for a trailing 'CR', so any recon capture ending in upper-case 'CR' ('749 852.90CR') is silently blanked. Affects every profile that captures trailing-CR credits into a recon column.\n 3. _exc_date() cannot parse 'YYYYMMDD', which is how this bill prints its statement date, so no date-based exceptions (DUE<BILL, BILL-FUTURE, BILL-OLD) can fire on NMB rows.\n 4. Raising the OCR dpi does NOT fix these scans - it trades errors (400dpi repairs '07 388.37'->'97 388.37' but breaks '73 812.07'->'73 612.07'; 600dpi is worse). The amount column is printed on a pale-blue shaded band with JPEG colour fringing. Greyscale + autocontrast + unsharp + per-line --psm 7 recovers some ('49? 332.98' -> '492 332.98') but not all. The real fix is source-side: NMBM's own e-billing produces text PDFs (this pack contains one), so ask for those.",
+ "fingerprint": {
+  "all": [],
+  "any": [
+   "4490193473",
+   "NELSON MANDELA BAY MUNICIPALITY",
+   "PORT ELIZABETH | UITENHAGE | DESPATCH"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "DEBIT[ \\t]+ADJUSTMENT",
+   "require": "CONSUMPTION[ \\t]+ELEC"
+  },
+  "water": {
+   "start": "UNMETERED[ \\t]+FIRE[ \\t]+SUPPL"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "patterns": [
+    "Account[ \\t]*Number[ \\t]{2,}((?<!\\d)\\d{8,14}(?!\\d))[ \\t]*$",
+    "(?<!\\d)9100\\d(\\d{12})\\d(?!\\d)",
+    "STATEMENT[ \\t]+FOR[ \\t]+ACCOUNT[ \\t]+(\\d[\\d ]{8,20}\\d)"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Account holder",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]*([A-Z][A-Z0-9 .&'()/-]{2,40}?)[ \\t]+REG\\.?[ \\t]*NO[ \\t]*\\d{4}/",
+    "STATEMENT[ \\t]+FOR[ \\t]+ACCOUNT[ \\t]+[\\d ]+\\n+[ \\t]*([A-Z][A-Z0-9 .&'()/-]{2,40}?)[ \\t]+REG"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "nmb_stmt_date",
+   "label": "Statement Date (as printed)",
+   "scope": "document",
+   "patterns": [
+    "Statement[ \\t]*Date[ \\t]{2,}((?<!\\d)20[12]\\d(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\\d|3[01])(?!\\d))",
+    "Last[ \\t]+Billed[ \\t]+(\\d{1,2}-[A-Za-z]{3}-20[12]\\d)"
+   ],
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "nmb_stmt_date_ocr",
+   "label": "Statement Date (raw OCR, unvalidated)",
+   "scope": "document",
+   "pattern": "Statement[ \\t]*Date[ \\t]{2,}([^\\n]{4,20}?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "nmb_cons_month",
+   "label": "Consumption month (ELEC)",
+   "scope": "document",
+   "pattern": "CONSUMPTION[ \\t]+ELEC[ \\t]+(20[12]\\d[ \\t]*/[ \\t]*(?:0[1-9]|1[0-2]))(?![\\d/])",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "due_date",
+   "label": "Payable before",
+   "scope": "document",
+   "patterns": [
+    "PAYABLE[ \\t]*BEFORE[ \\t]*:?[ \\t]*((?<!\\d)20[12]\\d-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])(?!\\d))",
+    "Latest[ \\t]+Due[ \\t]+Date[ \\t]+(\\d{1,2}-[A-Za-z]{3}-20[12]\\d)",
+    "DUE[ \\t]+DATE[ \\t]*:?[ \\t]*\\n?[ \\t]*((?:0[1-9]|[12]\\d|3[01])-(?:0[1-9]|1[0-2])-20[12]\\d)"
+   ],
+   "type": "date",
+   "required": false
+  },
+  {
+   "field": "nmb_invoice_no",
+   "label": "Tax invoice no",
+   "scope": "document",
+   "patterns": [
+    "TAX[ \\t]+INVOICE(?:[ \\t]+NO)?[ \\t]{2,}((?<!\\d)\\d{4}[ \\t]+\\d{6}(?!\\d))",
+    "^[ \\t]*((?<!\\d)\\d{4}[ \\t]+\\d{6}(?!\\d))[ \\t]*$"
+   ],
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "nmb_deposit",
+   "label": "Deposit held",
+   "scope": "document",
+   "pattern": "DEPOSIT[ \\t]{2,}((?<![\\d.])\\d{1,3}(?:[ ,]?\\d{3})*\\.\\d{2})[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "nmb_holder_vat",
+   "label": "Account holder VAT reg",
+   "scope": "document",
+   "type": "text",
+   "required": false,
+   "patterns": [
+    "VAT/BTW[ \\t]*REG\\.?[^\\n]{0,20}?(?<!\\d)(\\d{10})(?!\\d)",
+    "ACCOUNT[ \\t]+HOLDER[ \\t]+VAT[\\s\\S]{0,80}?REGISTRATION[ \\t]+NO:[ \\t]*(?<!\\d)(\\d{10})(?!\\d)"
+   ]
+  },
+  {
+   "field": "nmb_elec_txn_date",
+   "label": "Ledger date (elec adjustment)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{2}[ \\t]*/[ \\t]*\\d{2})[ \\t]+\\S{0,10}[ \\t]*DEBIT[ \\t]+ADJUSTMENT",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "nmb_elec_ex_r",
+   "label": "Electricity consumption ex VAT",
+   "scope": "section:electricity",
+   "pattern": "DEBIT[ \\t]+ADJUSTMENT[ \\t]{2,}((?<![\\d.])-?\\d{1,3}(?:[ ,]?\\d{3})*\\.\\d{2}(?:[ \\t]*[Cc][Rr])?)[ \\t]*$\\n(?:[^\\n]*DEBIT[ \\t]+ADJUSTMENT[^\\n]*\\n){0,2}?[ \\t]*CONSUMPTION[ \\t]+ELEC[ \\t]+(?![VW]AT\\b)\\S",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "nmb_elec_vat_r",
+   "label": "Electricity VAT",
+   "scope": "section:electricity",
+   "pattern": "DEBIT[ \\t]+ADJUSTMENT[ \\t]{2,}((?<![\\d.])-?\\d{1,3}(?:[ ,]?\\d{3})*\\.\\d{2}(?:[ \\t]*[Cc][Rr])?)[ \\t]*$\\n(?:[^\\n]*DEBIT[ \\t]+ADJUSTMENT[^\\n]*\\n){0,2}?[ \\t]*CONSUMPTION[ \\t]+ELEC[ \\t]+[VW]AT\\b",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "nmb_elec_ex_printed",
+   "label": "Electricity ex VAT (verbatim)",
+   "scope": "section:electricity",
+   "pattern": "DEBIT[ \\t]+ADJUSTMENT[ \\t]{2,}([^\\n]+?)[ \\t]*$\\n(?:[^\\n]*DEBIT[ \\t]+ADJUSTMENT[^\\n]*\\n){0,2}?[ \\t]*CONSUMPTION[ \\t]+ELEC[ \\t]+(?![VW]AT\\b)\\S",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "nmb_elec_vat_printed",
+   "label": "Electricity VAT (verbatim)",
+   "scope": "section:electricity",
+   "pattern": "DEBIT[ \\t]+ADJUSTMENT[ \\t]{2,}([^\\n]+?)[ \\t]*$\\n(?:[^\\n]*DEBIT[ \\t]+ADJUSTMENT[^\\n]*\\n){0,2}?[ \\t]*CONSUMPTION[ \\t]+ELEC[ \\t]+[VW]AT\\b",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "nmb_fire_ex_r",
+   "label": "Unmetered fire supply ex VAT",
+   "scope": "section:water",
+   "pattern": "UNMETERED[ \\t]+FIRE[ \\t]+SUPPL[A-Z]*[ \\t]{2,}((?<![\\d.])-?\\d{1,3}(?:[ ,]?\\d{3})*\\.\\d{2}(?:[ \\t]*[Cc][Rr])?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "nmb_fire_vat_r",
+    "nmb_fire_inc_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Fire supply VAT + inc VAT",
+   "scope": "section:water",
+   "pattern": "VAT[ \\t]*@[ \\t]*15[.,]0[ \\t]*%[ \\t]{2,}((?<![\\d.])-?\\d{1,3}(?:[ ,]?\\d{3})*\\.\\d{2}(?:[ \\t]*[Cc][Rr])?)(?:[ \\t]{2,}((?<![\\d.])-?\\d{1,3}(?:[ ,]?\\d{3})*\\.\\d{2}(?:[ \\t]*[Cc][Rr])?))?[^\\n]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "nmb_fire_printed",
+   "label": "Fire supply line (verbatim)",
+   "scope": "section:water",
+   "pattern": "UNMETERED[ \\t]+FIRE[ \\t]+SUPPL[A-Z]*[ \\t]{2,}([^\\n]+?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "w_reading_type",
+   "label": "Reading type (none printed)",
+   "scope": "section:water",
+   "pattern": "(UNMETERED)",
+   "type": "text",
+   "required": false
+  }
+ ],
+ "computes": [
+  {
+   "field": "billing_date",
+   "op": "prefer",
+   "of": [
+    "nmb_stmt_date",
+    "nmb_cons_month"
+   ]
+  },
+  {
+   "field": "statement_month",
+   "op": "prefer",
+   "of": [
+    "nmb_cons_month",
+    "nmb_stmt_date"
+   ]
+  },
+  {
+   "field": "nmb_elec_inc_r",
+   "op": "sum",
+   "of": [
+    "nmb_elec_ex_r",
+    "nmb_elec_vat_r"
+   ]
+  },
+  {
+   "field": "nmb_elec_total_ex",
+   "op": "prefer",
+   "of": [
+    "nmb_elec_ex_r"
+   ]
+  },
+  {
+   "field": "water_usage_r",
+   "op": "prefer",
+   "of": [
+    "nmb_fire_ex_r"
+   ]
+  },
+  {
+   "field": "nmb_fire_vat_derived",
+   "op": "sub",
+   "of": [
+    "nmb_fire_inc_r",
+    "nmb_fire_ex_r"
+   ]
+  },
+  {
+   "field": "water_vat_r",
+   "op": "prefer",
+   "of": [
+    "nmb_fire_vat_derived",
+    "nmb_fire_vat_r"
+   ]
+  },
+  {
+   "field": "nmb_fire_sum_r",
+   "op": "sum",
+   "of": [
+    "nmb_fire_ex_r",
+    "water_vat_r"
+   ]
+  },
+  {
+   "field": "water_charges_r",
+   "op": "prefer",
+   "of": [
+    "nmb_fire_inc_r",
+    "nmb_fire_sum_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "tariff_name": "_none",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "total_kwh": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "_none",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "nmb_elec_ex_r",
+  "total_ex_vat_r": "nmb_elec_total_ex",
+  "deposit_r": "nmb_deposit",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "subtotal": "^[ \\t]*((?<![\\d.])-?\\d{1,3}(?:[ ,]\\d{3})+\\.\\d{2})[ \\t]*$",
+  "total_due": "^[ \\t]*((?<![\\d.])-?\\d{1,3}(?:[ ,]\\d{3})+\\.\\d{2})[ \\t]*$",
+  "vat": "DEBIT ADJUSTMENT[ \\t]{2,}((?<![\\d.])-?\\d{1,3}(?:[ ,]?\\d{3})*\\.\\d{2}(?:[ \\t]*[Cc][Rr])?)[ \\t]*$\\n(?:[^\\n]*DEBIT[ \\t]+ADJUSTMENT[^\\n]*\\n){0,2}?[ \\t]*CONSUMPTION[ \\t]+ELEC[ \\t]+[VW]AT",
+  "billing_date": "CONSUMPTION[ \\t]+ELEC[ \\t]+(20[12]\\d[ \\t]*/[ \\t]*(?:0[1-9]|1[0-2]))(?![\\d/])",
+  "due_date": "PAYABLE[ \\t]*BEFORE[ \\t]*:?[ \\t]*((?<!\\d)20[12]\\d-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])(?!\\d))",
+  "deposito": "DEPOSIT[ \\t]{2,}((?<![\\d.])\\d{1,3}(?:[ ,]?\\d{3})*\\.\\d{2})[ \\t]*$",
+  "current_ex": "DEBIT ADJUSTMENT[ \\t]{2,}((?<![\\d.])-?\\d{1,3}(?:[ ,]?\\d{3})*\\.\\d{2}(?:[ \\t]*[Cc][Rr])?)[ \\t]*$\\n(?:[^\\n]*DEBIT[ \\t]+ADJUSTMENT[^\\n]*\\n){0,2}?[ \\t]*CONSUMPTION[ \\t]+ELEC[ \\t]+(?![VW]AT)\\S"
+ }
+}

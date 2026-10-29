@@ -1,0 +1,111 @@
+{
+  "title": "page.settings.title",
+  "intro": "page.settings.intro",
+  "menu": true,
+  "style": {
+    "width": "normal"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_companies",
+                "type": "table",
+                "title": "page.settings.companies",
+                "source": {
+                  "data": "companies"
+                },
+                "search": true,
+                "row_link": true,
+                "columns": [
+                  {
+                    "key": "name"
+                  },
+                  {
+                    "key": "responsible"
+                  },
+                  {
+                    "key": "responsible_account"
+                  },
+                  {
+                    "key": "responsible_email"
+                  },
+                  {
+                    "key": "visible"
+                  },
+                  {
+                    "key": "archived"
+                  }
+                ],
+                "filters": [
+                  "visible",
+                  "archived"
+                ]
+              },
+              {
+                "id": "w_types",
+                "type": "table",
+                "title": "page.settings.types",
+                "source": {
+                  "data": "doc_types"
+                },
+                "search": false,
+                "row_link": true,
+                "columns": [
+                  {
+                    "key": "name"
+                  },
+                  {
+                    "key": "short"
+                  },
+                  {
+                    "key": "order"
+                  },
+                  {
+                    "key": "warn_days"
+                  },
+                  {
+                    "key": "shown"
+                  }
+                ],
+                "sort": {
+                  "key": "order",
+                  "desc": false
+                }
+              },
+              {
+                "id": "w_people",
+                "type": "table",
+                "title": "page.settings.people",
+                "source": {
+                  "data": "company_people"
+                },
+                "search": true,
+                "row_link": true,
+                "columns": [
+                  {
+                    "key": "company"
+                  },
+                  {
+                    "key": "person"
+                  },
+                  {
+                    "key": "note"
+                  }
+                ],
+                "filters": [
+                  "company"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

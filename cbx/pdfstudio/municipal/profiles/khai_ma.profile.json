@@ -1,0 +1,249 @@
+{
+ "profile_id": "khai_ma",
+ "profile_name": "Khai-Ma Local Municipality (Pofadder, Northern Cape)",
+ "short_name": "Khai-Ma",
+ "_doc": "Scanned (OCR) Afrikaans 'Tax Invoice / BTW Faktuur' ledger (Datum / Besonderhede / Debiet / Krediet / Saldo); every ledger amount is printed twice (Debiet and Saldo columns), amounts are EX VAT with one 'TOTALE BTW' line per invoice. One PDF holds several accounts' invoices plus 'Current Account Details' screen prints; the row is read from the FIRST invoice only (section = first 'SALDO OORGEBRING' to the first 'TOTALE BEDRAG VERSKULDIG', page-2 continuation included; the charge pattern never crosses a 'Rekeningnommer' header). Electricity = 'ELEKTR n FASE nnA' consumption line (-> standard_r; followed by a reading box: date / TARIFF / UNITS, current reading, previous reading, consumption) + 'ELKTR. n FASE nnA' basic line (-> other_r); some months have only the basic line. OCR SAFETY: a charge is taken only when its two printed copies carry the same digits (a '.' read as ',' is tolerated), kWh only when UNITS equals the consumption line, dates only with a 20xx year, deposit only when cleanly printed; if two electricity lines exist and either is damaged, both stay blank. Interest on electricity is excluded from the total. tariff_name = supply size; site_name = erf number. FINGERPRINT: the municipality's BTW-nommer (with/without spaces), name, Pofadder, and OCR-robust layout words (Abeyence/Afwag, SANITASIE HUISPOMPING, OORGEBRINGWD) so the two sideways-scanned PDFs still route. IDENTITY kha_bal_elec_r = TOTALE BEDRAG VERSKULDIG - opening balance + receipts - every non-electricity ledger line - TOTALE BTW: exact on 8 of 9 electricity rows; the 9th differs because three receipt lines are OCR-damaged (their copies disagree), not the electricity figure; independently TOTALE BTW / 0.15 minus the other VAT-able lines agrees within 7c on all 9. Two PDFs are rotated scans whose OCR is column-scrambled: they route but give no row (no account/date legible). Checked on 11 bills.",
+ "fingerprint": {
+  "all": [],
+  "any": [
+   "4640104602",
+   "4640 104 602",
+   "464 010 4602",
+   "Khai-Ma",
+   "KhaiMa",
+   "Khai Ma",
+   "Pofadder",
+   "Abeyence/Afwag",
+   "SANITASIE HUISPOMPING",
+   "OORGEBRINGWD"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[^\\n]*SALDO[ \\t]*OORGEBRING",
+   "overlay": true,
+   "end": "^[^\\n]*?OTALE[ \\t]+BEDRAG",
+   "require": "KTR\\.?[ \\t]+\\d[ \\t]*FASE"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Rekeningnommer (first invoice)",
+   "scope": "document",
+   "pattern": "Rekeningnommer:?[^\\d\\n]{0,8}(?<!\\d)(\\d{6})(?![\\d/])",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Rekening Datum",
+   "scope": "document",
+   "pattern": "Rekening[ \\t]*Datum:?[ \\t]+(20\\d{2}/[01]\\d/[0-3]\\d)(?![\\d])",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "kha_due_date",
+   "label": "Vervaldatum",
+   "scope": "document",
+   "pattern": "Vervaldatum:?[ \\t]+(20\\d{2}/[01]\\d/[0-3]\\d)(?![\\d])",
+   "type": "date"
+  },
+  {
+   "field": "kha_erf",
+   "label": "Erfnommer",
+   "scope": "document",
+   "pattern": "Erfnommer:?[ \\t]+(\\d{8})(?:[ \\t]+\\d{5})?(?![\\d:])",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "U Verbruikersdeposito (R) (held, in brackets)",
+   "scope": "document",
+   "pattern": "Verbruikersdeposit[oa]:?[ \\t]*[({]R[)}][ \\t]*\\((\\d{1,6}\\.\\d{2})[)}\\]]",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "kha_x1",
+    "kha_x2",
+    "kha_cons_r",
+    "kha_x1",
+    "kha_x2",
+    "kha_basic_r"
+   ],
+   "label": "ELEKTR consumption line + ELKTR. basic line (each printed twice; copies must agree)",
+   "scope": "section:electricity",
+   "type": "money",
+   "patterns": [
+    "\\A(?:(?!Rekeningnommer)[\\s\\S])*?^[^\\n]*?KTR\\.?[ \\t]+\\d[ \\t]*FASE[ \\t]+\\d+[ \\t]*A[^\\d\\n]{1,12}?(?<![\\d.,\\-])(?=(\\d{1,6})[.,](\\d{2})(?![\\d]))(\\d{1,6}[.,]\\d{2})(?![\\d])[^\\n]{1,25}?(?<![\\d.,])\\1[.,]\\2(?![\\d.,])[^\\n]*\\n(?=[^\\n]*TARIFF)(?:(?!Rekeningnommer)[\\s\\S])*?^[^\\n]*?KTR\\.?[ \\t]+\\d[ \\t]*FASE[ \\t]+\\d+[ \\t]*A[^\\d\\n]{1,12}?(?<![\\d.,\\-])(?=(\\d{1,6})[.,](\\d{2})(?![\\d]))(\\d{1,6}[.,]\\d{2})(?![\\d])[^\\n]{1,25}?(?<![\\d.,])\\4[.,]\\5(?![\\d.,])[^\\n]*\\n(?![^\\n]*TARIFF)",
+    "\\A()()()(?![\\s\\S]*?KTR\\.?[ \\t]+\\d[ \\t]*FASE[\\s\\S]*?KTR\\.?[ \\t]+\\d[ \\t]*FASE)(?![\\s\\S]*?TARIFF)[\\s\\S]*?^[^\\n]*?KTR\\.?[ \\t]+\\d[ \\t]*FASE[ \\t]+\\d+[ \\t]*A[^\\d\\n]{1,12}?(?<![\\d.,\\-])(?=(\\d{1,6})[.,](\\d{2})(?![\\d]))(\\d{1,6}[.,]\\d{2})(?![\\d])[^\\n]{1,25}?(?<![\\d.,])\\4[.,]\\5(?![\\d.,])",
+    "\\A(?![\\s\\S]*?KTR\\.?[ \\t]+\\d[ \\t]*FASE[\\s\\S]*?KTR\\.?[ \\t]+\\d[ \\t]*FASE)[\\s\\S]*?^[^\\n]*?KTR\\.?[ \\t]+\\d[ \\t]*FASE[ \\t]+\\d+[ \\t]*A[^\\d\\n]{1,12}?(?<![\\d.,\\-])(?=(\\d{1,6})[.,](\\d{2})(?![\\d]))(\\d{1,6}[.,]\\d{2})(?![\\d])[^\\n]{1,25}?(?<![\\d.,])\\1[.,]\\2(?![\\d.,])[^\\n]*\\n(?=[^\\n]*TARIFF)()()()"
+   ]
+  },
+  {
+   "fields": [
+    "read_end",
+    "end_reading_kwh",
+    "total_kwh",
+    "start_reading_kwh"
+   ],
+   "label": "Reading box: date TARIFF UNITS / current tariff units / previous / consumption (units must equal consumption)",
+   "scope": "section:electricity",
+   "types": [
+    "date",
+    "number",
+    "number",
+    "number"
+   ],
+   "pattern": "^[^\\n\\d]*?(?:(20\\d{2}/[01]\\d/[0-3]\\d)|[^\\n]*?)[ \\t]+TARIFF[ \\t]+UNITS[^\\n]*\\n[ \\t]*(\\d{3,7}\\.\\d)[ \\t]+\\d+\\.\\d{2}[ \\t]+(\\d{1,6})\\.000(?![\\d])[^\\n]*\\n[ \\t]*(\\d{3,7}\\.\\d)[ \\t]+0\\.000[^\\n]*\\n[ \\t]*\\3\\.0[ \\t]+0\\.000"
+  },
+  {
+   "fields": [
+    "kha_ph",
+    "kha_amp"
+   ],
+   "label": "Supply size (n FASE nnA)",
+   "scope": "section:electricity",
+   "type": "text",
+   "pattern": "KTR\\.?[ \\t]+(\\d[ \\t]?FASE)[ \\t]+(\\d+[ \\t]?A)\\b"
+  },
+  {
+   "fields": [
+    "kha_x1",
+    "kha_x2",
+    "kha_open_r"
+   ],
+   "label": "SALDO OORGEBRINGWD (both copies agree)",
+   "scope": "section:electricity",
+   "pattern": "SALDO[ \\t]*OORGEBRING\\w*[^\\d\\n]{1,12}?(?<![\\d.,\\-])(?=(\\d{1,6})[.,](\\d{2})(?![\\d]))(\\d{1,6}[.,]\\d{2})(?![\\d])[^\\n]{1,25}?(?<![\\d.,])\\1[.,]\\2(?![\\d.,])",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "kha_x1",
+    "kha_x2",
+    "kha_receipts_r"
+   ],
+   "label": "RECEIPT credits (both copies agree; sum, positive)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "RECEIPT[^\\d\\n]{1,12}?(?<![\\d.,])(?=(\\d{1,6})[.,](\\d{2})(?![\\d]))(\\d{1,6}[.,]\\d{2})(?![\\d])[^\\n]{1,25}?(?<![\\d.,])\\1[.,]\\2(?![\\d.,])",
+   "type": "money"
+  },
+  {
+   "label": "Every other ledger line (services, interest; both copies agree; sum)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "fields": [
+    "kha_x1",
+    "kha_x2",
+    "kha_otherlines_r"
+   ],
+   "pattern": "^(?![^\\n]*(?:SALDO|RECEIPT|KTR\\.?[ \\t]+\\d[ \\t]*FASE|BEDRAG))[^\\n]*?[A-Z]{3}[^\\n\\d]*?(?<![\\d.,\\-])(?=(\\d{1,6})[.,](\\d{2})(?![\\d]))(\\d{1,6}[.,]\\d{2})(?![\\d])[^\\n]{1,25}?(?<![\\d.,])\\1[.,]\\2(?![\\d.,])[^\\d\\n]*$",
+   "type": "money"
+  },
+  {
+   "label": "INTEREST ON (BASIC) ELECTRICITY (excluded from total)",
+   "scope": "section:electricity",
+   "fields": [
+    "kha_x1",
+    "kha_x2",
+    "kha_elec_interest_r"
+   ],
+   "collect": "sum",
+   "pattern": "INTEREST[ \\t]+ON[ \\t]+(?:BASIC[ \\t]+)?ELECTRICITY[^\\d\\n]*?(?<![\\d.,\\-])(?=(\\d{1,6})[.,](\\d{2})(?![\\d]))(\\d{1,6}[.,]\\d{2})(?![\\d])[^\\n]{1,25}?(?<![\\d.,])\\1[.,]\\2(?![\\d.,])",
+   "type": "money"
+  },
+  {
+   "field": "kha_vat_r",
+   "label": "TOTALE BTW (first invoice)",
+   "scope": "document",
+   "pattern": "OTALE[ \\t]+B[TI1]W[ \\t]+(?<![\\d.,])(\\d{1,6}\\.\\d{2})(?![\\d])",
+   "type": "money"
+  },
+  {
+   "field": "kha_close_r",
+   "label": "TOTALE BEDRAG VERSKULDIG (first invoice)",
+   "scope": "document",
+   "patterns": [
+    "OTALE[ \\t]+BEDRAG[ \\t]+VERSKULDIG[^\\n]*?20\\d{2}/\\d{2}/\\d{2}[ \\t]+(?<![\\d.,])(\\d{1,6}\\.\\d{2})(?![\\d])"
+   ],
+   "type": "money"
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "kha_erf"
+   ]
+  },
+  {
+   "field": "tariff_name",
+   "op": "concat",
+   "of": [
+    "kha_ph",
+    "kha_amp"
+   ]
+  },
+  {
+   "field": "kha_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "kha_cons_r",
+    "kha_basic_r"
+   ]
+  },
+  {
+   "field": "kha_tmp_r",
+   "op": "sum",
+   "of": [
+    "kha_close_r",
+    "kha_receipts_r"
+   ]
+  },
+  {
+   "field": "kha_bal_elec_r",
+   "op": "sub",
+   "of": [
+    "kha_tmp_r",
+    "kha_open_r",
+    "kha_otherlines_r",
+    "kha_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_name",
+  "account_number": "account_number",
+  "meter": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "kha_cons_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "kha_basic_r",
+  "total_ex_vat_r": "kha_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

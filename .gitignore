@@ -1,0 +1,10 @@
+/data/
+__pycache__/
+*.pyc
+.venv/
+.env
+*.sqlite3
+.pytest_cache/
+.scratch/
+/dist/
+/knowledgebase/

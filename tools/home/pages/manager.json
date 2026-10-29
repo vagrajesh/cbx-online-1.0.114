@@ -1,0 +1,134 @@
+{
+  "title": "page.manager.title",
+  "intro": "page.manager.intro",
+  "menu": false,
+  "style": {
+    "width": "wide"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "mine",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "manager_mine",
+                "type": "metrics",
+                "title": "w.manager_mine.title",
+                "items": [
+                  {
+                    "metric": "my.requests_open"
+                  },
+                  {
+                    "metric": "flows.waiting_for_me"
+                  },
+                  {
+                    "metric": "my.messages_unread"
+                  },
+                  {
+                    "metric": "my.todo_open"
+                  },
+                  {
+                    "metric": "compliance.due"
+                  },
+                  {
+                    "metric": "pdf.to_check"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "lists",
+        "columns": [
+          {
+            "width": 6,
+            "widgets": [
+              {
+                "id": "manager_requests",
+                "type": "table",
+                "title": "w.manager_requests.title",
+                "source": {
+                  "provider": "core.my_requests"
+                },
+                "columns": [
+                  {
+                    "key": "number",
+                    "label": "col.number"
+                  },
+                  {
+                    "key": "title",
+                    "label": "col.title"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  },
+                  {
+                    "key": "created_at",
+                    "label": "col.created_at",
+                    "type": "date"
+                  }
+                ],
+                "search": false,
+                "row_link": true,
+                "limit": 6
+              }
+            ]
+          },
+          {
+            "width": 6,
+            "widgets": [
+              {
+                "id": "manager_batches",
+                "type": "table",
+                "title": "w.manager_batches.title",
+                "source": {
+                  "provider": "core.my_batches"
+                },
+                "columns": [
+                  {
+                    "key": "name",
+                    "label": "col.name"
+                  },
+                  {
+                    "key": "status",
+                    "label": "col.status"
+                  },
+                  {
+                    "key": "for_you",
+                    "label": "col.for_you",
+                    "type": "int"
+                  }
+                ],
+                "search": false,
+                "row_link": true,
+                "limit": 6
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "canvas": {
+    "widgets": {
+      "manager_mine": {
+        "x": 250,
+        "y": 780
+      },
+      "manager_requests": {
+        "x": 250,
+        "y": 870
+      },
+      "manager_batches": {
+        "x": 250,
+        "y": 960
+      }
+    }
+  }
+}

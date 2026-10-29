@@ -1,0 +1,50 @@
+{
+  "title": "flow.api_check.title",
+  "enabled": true,
+  "trigger": {
+    "type": "row_added",
+    "data": "api"
+  },
+  "run_as": "starter",
+  "start": "if1",
+  "steps": {
+    "if1": {
+      "type": "if",
+      "match": "all",
+      "when": [
+        {
+          "left": "{{trigger.row.kind}}",
+          "op": "equals",
+          "value": "Check"
+        }
+      ],
+      "yes": "s1"
+    },
+    "s1": {
+      "type": "action",
+      "action": "ifrs16.api_check",
+      "data": "api",
+      "row": "{{trigger.row.id}}",
+      "in": {
+        "month": "month"
+      },
+      "out": {
+        "result": "result",
+        "ok": "ok"
+      },
+      "fail": {
+        "status": "Failed",
+        "note": "{{error}}"
+      },
+      "next": "s2"
+    },
+    "s2": {
+      "type": "update_row",
+      "data": "api",
+      "row": "{{trigger.row.id}}",
+      "values": {
+        "status": "Done"
+      }
+    }
+  }
+}

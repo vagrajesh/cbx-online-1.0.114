@@ -1,0 +1,288 @@
+{
+ "profile_id": "cape_agulhas",
+ "profile_name": "Cape Agulhas Local Municipality (Bredasdorp, Western Cape)",
+ "short_name": "Cape Agulhas",
+ "fingerprint": {
+  "all": [
+   "4570109571"
+  ],
+  "any": [
+   "Cape Agulhas",
+   "capeagulhas.gov.za"
+  ],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Service Type[ \\t]",
+   "require": "\\bElectricity[ \\t]+(?:C/amps:\\d+[ \\t]+)?EK\\d+"
+  },
+  "sundry": {
+   "start": "\\*\\*[ \\t]*Total Monthly:"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "ACCOUNT No.",
+   "scope": "header",
+   "pattern": "ACCOUNT No\\.:[ \\t]+(\\d{6,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "DATE OF ACCOUNT",
+   "scope": "header",
+   "pattern": "DATE OF ACCOUNT:[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "cag_tax_invoice",
+   "label": "Tax invoice no",
+   "scope": "header",
+   "pattern": "TAX INVOICE No\\.:[ \\t]+(\\d{6,})",
+   "type": "text"
+  },
+  {
+   "field": "cag_site",
+   "label": "SITE",
+   "scope": "header",
+   "pattern": "\\bSITE:[ \\t]+(\\S+(?:[ \\t]\\S+)*)",
+   "type": "text"
+  },
+  {
+   "field": "cag_town",
+   "label": "Town (after ERF)",
+   "scope": "header",
+   "pattern": "\\bERF:[ \\t]+\\d+[ \\t]+([A-Z][A-Z]+)\\b",
+   "type": "text"
+  },
+  {
+   "field": "deposit_r",
+   "label": "DEPOSIT",
+   "scope": "header",
+   "pattern": "\\bDEPOSIT:[ \\t]+(\\d+\\.\\d{2})\\b",
+   "type": "money"
+  },
+  {
+   "fields": [
+    "meter",
+    "cag_prev_lead",
+    "cag_prev_rest",
+    "end_reading_kwh",
+    "cag_meter_kwh",
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "text",
+    "text",
+    "text",
+    "number",
+    "number",
+    "date",
+    "date"
+   ],
+   "label": "Electricity kWh register row (E; the previous reading's leading digit prints inside the meter column)",
+   "scope": "header",
+   "pattern": "^[ \\t]*E[ \\t]+(\\d+)(?:[ \\t](\\d))?[ \\t]+(\\d{5,})[ \\t]+(\\d+)[ \\t]+(\\d+)[ \\t]+(\\d{2}/\\d{2})-(\\d{2}/\\d{2})\\b"
+  },
+  {
+   "field": "cag_kva_reg",
+   "label": "Demand register row (E, previous 0)",
+   "scope": "header",
+   "pattern": "^[ \\t]*E[ \\t]+\\d+[ \\t]+0[ \\t]+\\d+[ \\t]+(\\d+)[ \\t]+\\d{2}/\\d{2}-",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "cag_amps",
+    "cag_basic_tariff",
+    "cag_basic_ex_r",
+    "cag_basic_vat_r",
+    "cag_basic_incl_r"
+   ],
+   "types": [
+    "text",
+    "text",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity C/amps basic line (no units)",
+   "scope": "section:electricity",
+   "pattern": "\\bElectricity[ \\t]+C/amps:(\\d+)[ \\t]+(EK\\d+)[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})(?![\\d.])"
+  },
+  {
+   "fields": [
+    "cag_kva",
+    "cag_demand_ex_r",
+    "cag_demand_vat_r",
+    "cag_demand_incl_r"
+   ],
+   "types": [
+    "number",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity C/amps demand line (kVA units)",
+   "scope": "section:electricity",
+   "pattern": "\\bElectricity[ \\t]+C/amps:\\d+[ \\t]+EK\\d+[ \\t]+(\\d+)[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})(?![\\d.])"
+  },
+  {
+   "fields": [
+    "cag_energy_tariff",
+    "cag_kwh",
+    "cag_energy_ex_r",
+    "cag_energy_vat_r",
+    "cag_energy_incl_r"
+   ],
+   "types": [
+    "text",
+    "number",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Electricity energy line (EKnn kWh)",
+   "scope": "section:electricity",
+   "pattern": "\\bElectricity[ \\t]+(EK\\d+)[ \\t]+(\\d+)[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})(?![\\d.])",
+   "required": true
+  },
+  {
+   "fields": [
+    "cag_elec_ex_r",
+    "cag_elec_vat_r",
+    "cag_elec_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "All Electricity lines (Basic=ex, VAT, Total)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "\\bElectricity\\b[^\\n]*?[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})[ \\t]+(-?\\d+\\.\\d{2})(?![\\d.])",
+   "required": true
+  },
+  {
+   "field": "cag_nonelec_incl_r",
+   "label": "Water / Sewerage / Refuse / Interest line totals",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "\\b(?:Water|Sewerage|Refuse|Interest|Rates)\\b[^\\n]*?[ \\t]-?\\d+\\.\\d{2}[ \\t]+-?\\d+\\.\\d{2}[ \\t]+(-?\\d+\\.\\d{2})(?![\\d.])",
+   "type": "money"
+  },
+  {
+   "field": "cag_bf_r",
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "Balance brought forward:[ \\t]+(-?\\d+\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "cag_receipts_r",
+   "label": "Receipts",
+   "scope": "document",
+   "pattern": "Receipts:[ \\t]+(-?\\d+\\.\\d{2}-?)",
+   "type": "money"
+  },
+  {
+   "field": "cag_total_monthly_r",
+   "label": "** Total Monthly",
+   "scope": "document",
+   "pattern": "\\*\\*[ \\t]*Total Monthly:[ \\t]+(-?\\d+\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "site_name",
+   "op": "concat",
+   "of": [
+    "cag_site",
+    "cag_town"
+   ]
+  },
+  {
+   "field": "cag_prev_txt",
+   "op": "concat",
+   "of": [
+    "cag_prev_lead",
+    "cag_prev_rest"
+   ]
+  },
+  {
+   "field": "start_reading_kwh",
+   "label": "Previous reading (detached leading digit re-joined)",
+   "op": "sum",
+   "of": [
+    "cag_prev_txt"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "cag_bal_ex_r",
+   "label": "IDENTITY: Total Monthly - b/f - receipts - water/sewer/refuse/interest totals - electricity VAT",
+   "op": "sub",
+   "of": [
+    "cag_total_monthly_r",
+    "cag_bf_r",
+    "cag_receipts_r",
+    "cag_nonelec_incl_r",
+    "cag_elec_vat_r"
+   ]
+  },
+  {
+   "field": "tariff_out",
+   "op": "concat",
+   "of": [
+    "cag_energy_tariff",
+    "cag_basic_tariff"
+   ]
+  },
+  {
+   "field": "demand_kva_out",
+   "op": "prefer",
+   "of": [
+    "cag_kva",
+    "cag_kva_reg"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "tariff_out",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "cag_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "cag_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "demand_kva_out",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "cag_energy_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "cag_demand_ex_r",
+  "nmd_r": "_none",
+  "other_r": "cag_basic_ex_r",
+  "total_ex_vat_r": "cag_elec_ex_r",
+  "deposit_r": "deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "_doc": "Cape Agulhas one-page STATEMENT/TAX INVOICE whose PDF text interleaves the charge table with the right-hand office/payment columns, so charge lines are matched mid-line (the energy line usually prints at the END of the basic line). Header: municipality 'VAT REGISTRATION NO.', ACCOUNT No., DATE OF ACCOUNT, SITE, ERF + town, DEPOSIT. Meter table: 'E <meter> 0 <kVA> <kVA> dd/mm-dd/mm' (demand register) and 'E <meter> <prev> <new> <kWh> dd/mm-dd/mm' (the previous reading's leading digit prints detached, e.g. 'd dddddd'; captured with the space, which the number parser drops - new - prev = kWh on 10/10), W rows for water. Charge table columns Service Type | Tariff | Consumption | Basic (= ex VAT) | VAT | Total: 'Electricity C/amps:<n> <tariff>' basic (no units) -> other_r, 'Electricity C/amps:<n> <tariff> <kVA>' -> demand, 'Electricity <tariff> <kWh>' -> standard (single band). total_ex_vat_r = the Basic (ex) column summed over the electricity lines. IDENTITY cag_bal_ex_r = '** Total Monthly' - b/f - receipts - the Water/Sewerage/Refuse/Interest line totals - electricity VAT (fails if a line is missed or misclassified): exact on 10/10. 10/10 routed, 0 checks. Fingerprint: municipality VAT number + name/website."
+}

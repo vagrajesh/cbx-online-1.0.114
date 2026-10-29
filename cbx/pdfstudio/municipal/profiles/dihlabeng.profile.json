@@ -1,0 +1,470 @@
+{
+ "profile_id": "dihlabeng",
+ "profile_name": "Dihlabeng Local Municipality (Bethlehem / Clarens / Fouriesburg)",
+ "short_name": "Dihlabeng",
+ "_doc": "Free State ledger bill, same print family as mangaung / overstrand / maluti (ACCOUNT NO: + street on one line, DEPOSIT DATE header block, 'TAX INVOICE (VAT REG. NO.:nnnn)', DETAILS/DATE/REFERENCE/AMOUNT ledger, '120 + DAYS' ageing row, per-service summary block bottom-right). Dihlabeng's own VAT reg is 4000846529 - that is the fingerprint. NOTE: these PDFs carry [address removed] (and one carries [address removed]), which is why they used to hijack the mangaung profile; never fingerprint on the CBRE recipient address. LAYOUT: (1) the two dates in the meter-table header line 'TYPE  METER NUMBER  YYYY/MM/DD  YYYY/MM/DD' ARE the period start/end - there is no other period print. (2) Meter rows are 'EL <meter> <prev> <new> <consumed> <tariffcode> 0+ @ <rate>'. Rows whose rate is 0.0* are the no-charge sub-meter (ledger line 'ELEC NO CHARGE ME03(NOT APPLICABLE)'); they are captured separately (dih_nc_*) and kept OUT of the canonical kWh/reading columns. Billed row: consumed x rate == the ledger charge to the cent on 11 of 12 bills (DIH_JUN 25 spans the 1-July tariff change so the printed rate is the new one only). new-prev == consumed on all 12. (3) The electricity charge is the ledger line whose REFERENCE column holds the elec meter number ('INDUSTRIAL<500 KVA(BELOW)' on this account) - matched structurally (DETAILS / date / numeric reference / amount, excluding BALANCE B/FWD, RECEIPT and ELEC NO CHARGE) so a different tariff description still works. That description is used as Tariff Name. (4) '** VAT **' is ONE VAT figure for the whole bill (electricity + sundry), not a per-service VAT, so there is no ex/inc split per service in the ledger. (5) The bottom-right summary block prints RATES/SANIT/WATER/REFUSE/SUNDRY/ELECT/REST/TOTAL with SEQUENCE/CURRENT/AMOUNT DUE columns; 'ELECT' there is INCLUSIVE of VAT (ELECT == elec ex-VAT x 1.15 to the cent on all 11 normally-issued bills) so it is NOT mapped into any canonical Rand column - it is kept as dih_sum_elect_r and used as the independent identity check. (6) The bill is single-band: one energy charge, no TOU, no demand, no NMD, no Actual/Estimate flag -> those canonical columns are '_none'. (7) [number removed].pdf is a REPRINT (Nov-2025 period, tax invoice no dated 2026/07/21, recipient DIANAB@ instead of gyro_utilities@): its ledger is real but the summary block and the ageing CURRENT column were re-rendered as 0.00/0.01, so summary-derived identities do not hold on that one file. That is why total_ex_vat_r is taken from the ledger charge lines, not from the summary. (8) Water/sanitation/refuse are 0.00 on every bill of this account and print no meter or ledger line, so no water/sewerage/refuse sections are defined; the summary-block figures are still captured at document scope (dih_sum_water_r etc.) so a future Dihlabeng account with water shows up immediately.",
+ "fingerprint": {
+  "all": [
+   "4000846529"
+  ],
+  "any": [],
+  "reject_if_text": [
+   "requires Adobe Reader 8 or higher",
+   "Prepayment Account Update"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*TYPE[ \\t]+METER NUMBER",
+   "require": "^[ \\t]*EL[ \\t]+\\d+"
+  },
+  "sundry": {
+   "start": "^[ \\t]*SIGNAGE\\b"
+  },
+  "rates": {
+   "start": "^[ \\t]*LEVY RATES\\b"
+  }
+ },
+ "fields": [
+  {
+   "fields": [
+    "account_number",
+    "site_name"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "Account no + street",
+   "scope": "document",
+   "pattern": "^[ \\t]*ACCOUNT NO:[ \\t]*(\\d+)[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "dih_vat_reg",
+   "label": "Municipal VAT reg",
+   "scope": "document",
+   "pattern": "TAX INVOICE \\(VAT REG\\. NO\\.:(\\d+)\\)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_deposit_date",
+    "deposit",
+    "dih_property_value"
+   ],
+   "types": [
+    "date",
+    "money",
+    "number"
+   ],
+   "label": "Deposit date / amount / property value",
+   "scope": "document",
+   "pattern": "DEPOSIT DATE[\\s\\S]*?\\n[ \\t]*(\\d{4}/\\d{2}/\\d{2})[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2})[ \\t]{2,}(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "invoice_number",
+   "label": "Tax invoice no",
+   "scope": "document",
+   "pattern": "TAX INVOICE NO[\\s\\S]*?(\\d{6,}/\\d{4}/\\d{2}/\\d{2})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "dih_invoice_date",
+   "label": "Tax invoice date (from invoice no)",
+   "scope": "document",
+   "pattern": "TAX INVOICE NO[\\s\\S]*?\\d{6,}/(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "dih_statement_date",
+   "label": "Payments included to (statement date)",
+   "scope": "document",
+   "pattern": "PAYMENTS INCLUDED TO[\\s\\S]*?(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "dih_due_date",
+   "label": "Due date",
+   "scope": "document",
+   "pattern": "\\bDUE[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Reading dates (meter table header = period)",
+   "scope": "section:electricity",
+   "pattern": "TYPE[ \\t]+METER NUMBER[ \\t]+(\\d{4}/\\d{2}/\\d{2})[ \\t]+(\\d{4}/\\d{2}/\\d{2})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "meter",
+    "start_reading_kwh",
+    "end_reading_kwh",
+    "dih_tariff_code",
+    "dih_rate"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "text",
+    "number"
+   ],
+   "label": "Billed elec meter (non-zero rate)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*EL[ \\t]+(\\d+)[ \\t]+([\\d.]+)[ \\t]+([\\d.]+)[ \\t]+[\\d.]+[ \\t]+(\\w+)[ \\t]+[^\\n]*?@[ \\t]*(?!0\\.0)([\\d.]+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "total_kwh",
+   "label": "Units consumed (billed meters)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*EL[ \\t]+\\d+[ \\t]+[\\d.]+[ \\t]+[\\d.]+[ \\t]+([\\d.]+)[ \\t]+\\w+[ \\t]+[^\\n]*?@[ \\t]*(?!0\\.0)[\\d.]+",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_nc_meter",
+    "dih_nc_end_reading",
+    "dih_nc_units",
+    "dih_nc_tariff_code"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "text"
+   ],
+   "label": "No-charge sub-meter (rate 0.000000)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*EL[ \\t]+(\\d+)[ \\t]+[\\d.]+[ \\t]+([\\d.]+)[ \\t]+([\\d.]+)[ \\t]+(\\w+)[ \\t]+[^\\n]*?@[ \\t]*0\\.0+[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "dih_tariff_name",
+   "label": "Tariff / charge description",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?![^\\n]*(?:BALANCE B/FWD|RECEIPT|ELEC NO CHARGE))([A-Z][^\\n]*?)[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}[ \\t]{2,}\\d{3,}[ \\t]{2,}(?:-?[\\d ,]*\\d\\.\\d{2})-?[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "dih_energy_r",
+   "label": "Electricity energy charge (ex VAT)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*(?![^\\n]*(?:BALANCE B/FWD|RECEIPT|ELEC NO CHARGE))[A-Z][^\\n]*?[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}[ \\t]{2,}\\d{3,}[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "dih_nc_desc",
+   "label": "No-charge elec ledger line",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(ELEC NO CHARGE[^\\n]*?)[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}[ \\t]{2,}\\d{3,}[ \\t]{2,}(?:-?[\\d ,]*\\d\\.\\d{2})-?[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "dih_nocharge_r",
+   "label": "No-charge elec amount",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*ELEC NO CHARGE[^\\n]*?[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}[ \\t]{2,}\\d{3,}[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "field": "dih_rates_levy_r",
+   "label": "Rates levy (ex VAT, VAT-exempt)",
+   "scope": "section:rates",
+   "collect": "sum",
+   "pattern": "^[ \\t]*LEVY RATES[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_rates_basis",
+    "dih_rates_basis_r"
+   ],
+   "types": [
+    "text",
+    "money"
+   ],
+   "label": "Rates basis line (value X cent-in-rand / 12)",
+   "scope": "section:rates",
+   "pattern": "^[ \\t]*(\\d+ X [\\d.]+ / \\d+)[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "dih_sundry_desc",
+   "label": "Sundry charge description",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*([A-Z][^\\n]*?)[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}[ \\t]{2,}(?:-?[\\d ,]*\\d\\.\\d{2})-?[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "dih_sundry_r",
+   "label": "Sundry charge (ex VAT)",
+   "scope": "section:sundry",
+   "collect": "sum",
+   "pattern": "^[ \\t]*[A-Z][^\\n]*?[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_bf_date",
+    "dih_balance_bf_r"
+   ],
+   "types": [
+    "date",
+    "money"
+   ],
+   "label": "Balance brought forward",
+   "scope": "document",
+   "pattern": "^[ \\t]*BALANCE B/FWD[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2})[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_receipt_date",
+    "dih_receipt_ref",
+    "dih_receipt_r"
+   ],
+   "types": [
+    "date",
+    "text",
+    "money"
+   ],
+   "label": "Receipt (payment, trailing minus = credit)",
+   "scope": "document",
+   "pattern": "^[ \\t]*(?:\\d+[ \\t]+)?RECEIPT[ \\t]{2,}(\\d{4}/\\d{2}/\\d{2})[ \\t]{2,}(\\d+)[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "dih_vat_total_r",
+   "label": "** VAT ** (whole bill)",
+   "scope": "document",
+   "pattern": "\\*\\* VAT \\*\\*[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_sum_rates_r",
+    "dih_sum_rates_due_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Summary block RATES current / due",
+   "scope": "document",
+   "pattern": "\\bRATES[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_sum_sanit_r",
+    "dih_sum_sanit_due_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Summary block SANIT current / due",
+   "scope": "document",
+   "pattern": "\\bSANIT[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_sum_water_r",
+    "dih_sum_water_due_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Summary block WATER current / due",
+   "scope": "document",
+   "pattern": "\\bWATER[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_sum_refuse_r",
+    "dih_sum_refuse_due_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Summary block REFUSE current / due",
+   "scope": "document",
+   "pattern": "\\bREFUSE[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_sum_sundry_r",
+    "dih_sum_sundry_due_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Summary block SUNDRY current / due (incl VAT)",
+   "scope": "document",
+   "pattern": "\\bSUNDRY[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_sum_elect_r",
+    "dih_sum_elect_due_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Summary block ELECT current / due (INCL VAT)",
+   "scope": "document",
+   "pattern": "\\bELECT[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_sum_total_r",
+    "dih_sum_total_due_r"
+   ],
+   "types": [
+    "money",
+    "money"
+   ],
+   "label": "Summary block TOTAL current / due (incl VAT)",
+   "scope": "document",
+   "pattern": "\\bTOTAL[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "dih_age_120_r",
+    "dih_age_90_r",
+    "dih_age_60_r",
+    "dih_age_30_r",
+    "dih_current_incl_r",
+    "dih_due_incl_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Ageing row 120+/90/60/30/CURRENT/DUE",
+   "scope": "document",
+   "pattern": "120 \\+ DAYS[^\\n]*\\n[ \\t]*((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]+((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]+((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]+((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]+((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]+((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "dih_amount_due_r",
+   "label": "Amount due (payment slip)",
+   "scope": "document",
+   "pattern": "ACCOUNT NO\\.[^\\n]*AMOUNT DUE[^\\n]*\\n[ \\t]*\\d+[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)",
+   "type": "money",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "billing_date",
+   "op": "prefer",
+   "of": [
+    "dih_statement_date",
+    "dih_invoice_date"
+   ]
+  },
+  {
+   "field": "dih_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "dih_energy_r",
+    "dih_nocharge_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "account_number": "account_number",
+  "tariff_name": "dih_tariff_name",
+  "meter": "meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "dih_energy_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "dih_nocharge_r",
+  "total_ex_vat_r": "dih_elec_ex_r",
+  "deposit_r": "deposit",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "incoming_payment": "RECEIPT[ \\t]{2,}\\d{4}/\\d{2}/\\d{2}[ \\t]{2,}\\d+[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)",
+  "current_incl": "120 \\+ DAYS[^\\n]*\\n[ \\t]*(?:-?[\\d ,]*\\d\\.\\d{2}-?[ \\t]+){4}(-?[\\d ,]*\\d\\.\\d{2}-?)",
+  "total_due": "120 \\+ DAYS[^\\n]*\\n[ \\t]*(?:-?[\\d ,]*\\d\\.\\d{2}-?[ \\t]+){5}(-?[\\d ,]*\\d\\.\\d{2}-?)",
+  "vat": "\\*\\* VAT \\*\\*[ \\t]{2,}((?<![\\d.])-?[\\d ,]*\\d\\.\\d{2}-?)"
+ }
+}

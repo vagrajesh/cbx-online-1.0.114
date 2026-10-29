@@ -1,0 +1,489 @@
+{
+ "profile_id": "swellendam",
+ "profile_name": "Swellendam Municipality (Western Cape)",
+ "short_name": "Swellendam",
+ "_doc": "SWELLENDAM MUNICIPALITY - Telkom account [number removed] (addressee BIDVEST FACILITIES MANAGEMENT PTY LTD, Centurion), SITE ADDRESS 'MEENT', ERF 1, one electricity meter 4579027366. 10 bills, Oct-2025 .. Jul-2026.\n\nPAGE STRUCTURE - measured, not assumed. Every bill is ONE PDF page, 6.3k-7.1k chars, 87-89 lines, ZERO '\\f' breaks, longest line 173 chars. There is NO reverse-side terms page inside the PDF - the bill prints 'PLEASE SEE REVERSE FOR IMPORTANT NOTES.' and the reverse is a separate physical sheet that was never scanned in. So the Breede Valley whitespace-soup problem (BV page 2 alone = ~176,000 chars, single lines of 29k/35k/58k) DOES NOT OCCUR here, and there is no newsletter insert. File byte size (0.45-0.46MB) is ~72% embedded raster artwork (6-7 images) and carries no information about text volume, as on Drakenstein. The Breede Valley discipline is applied anyway: NO rule uses 'document' scope, and a RULES-FREE 'sundry' boundary section at '^ ALLOCATION:  ACCOUNT NUMBER:' terminates the electricity span at the foot of the page.\n\nTHE ONE ODD FILE - 'SWE_[number removed]_[number removed].pdf' (229KB) IS A SCANNED IMAGE, not a digital bill. read_pdf reports ocr:True scanned:True and Tesseract recovers 2,144 chars. It is the MISSING MONTH (statement date 31/05/2026; the other nine are Oct/Nov/Dec-2025, Jan/Feb/Mar/Apr/Jun/Jul-2026). It is routed deliberately, because OCR recovers the masthead, the account/statement identifiers, the balance table and BOTH charge lines correctly and the app already marks OCR-sourced rows (row['_ocr'] -> highlighted). What OCR destroys is the meter-reading line, which comes out as 'Tp. E 4579027366 Meter No. Previ <[number removed] New Readi Fact Cc 47.000 ti is0a-1808 PeriodDa_ ily 1324 Aver.' - the meter number survives but the readings, the units and the period are corrupt. So the meter-line rule is deliberately required:false and that bill yields a PARTIAL row: no meter number, no start/end reading, no period. Its kWh still lands, because total_kwh is a prefer() chain whose fallback is the 'Electricity Consumption' charge line's own units column (437 kWh) - an independently printed figure. Its numbers were verified by hand: balance row 1155.23 + 0.00 + 2413.29 + 8.79 + 0.00 + 362.00 = 3939.31 closing, and 906.52 + (1732.79 - 226.02) = 2413.29 == the printed CHARGE column. Nothing in the profile was bent to catch this file; it matches on Swellendam's own VAT number like the other nine.\n\nMAILER WRAPPER: every digital bill starts '<![number removed]|[address removed]|true|31|07|2026|1|1|1234|1288.75|...!>' - the same e-delivery envelope as Breede Valley / Drakenstein / Stellenbosch / Dihlabeng. '[address removed]' is exactly what shipped-mangaung fingerprints on, which is why these bills HIJACKED mangaung before the mangaung fix. NOTHING in this profile touches any cbreexcellerate address. FINGERPRINT is '4000846271' = SWELLENDAM'S OWN VAT registration, printed 'VAT No: 4000846271' directly under the masthead; scanned over all 487 PDFs in /mnt/user-data/uploads/Telkom it appears in these 10 bills (including the scan) and nowhere else. NOTE: 'PRIVATE BAG X3' is NOT usable as a marker - Swellendam prints 'PRIVATE BAG X317' (the Bidvest addressee's postal address) and Breede Valley prints 'PRIVATE BAG X3046', so that string hits 30 files in three folders. Swellendam also does NOT print Telkom's VAT number: the 'CLIENT VAT NO.' label is printed but blank on all 10 bills.\n\nLAYOUT. Masthead (header scope): SWELLENDAM MUNICIPALITY / VAT No / PO BOX 20, SWELLENDAM, 6740 / TEL / EMAIL [address removed], then STATEMENT DATE, TAX INVOICE NO., ACCOUNT NO., RECEIPTS POSTED TILL, SUBURB, DEPOSIT, ERF, SITE ADDRESS, CLIENT VAT NO., VALUATION. Several of those labels share a text line with the addressee block, so their rules use '^[^\\n]*?\\bLABEL' rather than '^[ \\t]*LABEL' (the same trap as Drakenstein's STAND NUMBER / TAX INVOICE NO).\nThen the ACCOUNT MOVEMENT table, whose header is 'SERVICE BALANCE  RECEIPTS  CHARGE  INTEREST  ADJUST  VAT  BALANCE' (an OPENING/CLOSING strapline sits above it) and whose body is UNLABELLED LINES of exactly seven money values - row 1 = monthly services, row 2 = annual services, last row = TOTAL. Nine bills print three rows; [number removed] prints only two (no annual movement) and they are identical. TWO rules read it:\n  * the MONTHLY row (first end-anchored seven-money line after the header) supplies swe_charge_ex_r -> total_ex_vat_r. Row 1 is the right choice for electricity: electricity is the only MONTHLY service on this account, the annual row is 0.00 for CHARGE and VAT on all 10 bills, and a future annual (rates) charge would land in row 2 without contaminating the electricity row. Verified: monthly CHARGE == TOTAL CHARGE on all 10 (swe_charge_rows_gap_r == 0.00).\n  * the TOTAL row (same pattern with a GREEDY prefix, so it lands on the LAST seven-money line, with the trailing 'EXCLUDING PUBLIC HOLIDAYS' right-column text optional) supplies the account-level recon columns. This matters: the ADJUST column moves money between the monthly and annual buckets, so on the credit months ([number removed], [number removed]) row 1's RECEIPTS and CLOSING BALANCE are NOT the account's payment and balance - row 1 closes at 0.00 while the account is 4161.40 in credit. Using row 1 for recon would make prev_balance + payment + current + VAT miss total_due by the ADJUST value; using the TOTAL row makes that identity close exactly on all 9 digital bills (e.g. [number removed]: 830.96 - 2370.84 + 2459.69 + 368.95 = 1288.76).\nAMOUNT DUE is the TOTAL-row CLOSING BALANCE TRUNCATED DOWN to the nearest 5c (578.22 -> 578.20, 1288.76 -> 1288.75, 3044.93 -> 3044.90), so swe_due_vs_close_r sits between -0.04 and +0.04 (truncation is toward zero, so credit months round up) - by design, never a miss.\nThen 'TOTAL VAT / ARREARS / CURRENT / DUE DATE / AMOUNT DUE', then the FUTURE/CURRENT/30/60/90/90+ aging grid, then the charge lines, then PAYMENT DETAILS, then the meter table at the very foot of the page.\n\nVAT BASIS - the Drakenstein trap, half-present. The charge table columns are: service / description / qty / TARIFF-COST / AMOUNT / VAT, and THE AMOUNT COLUMN IS VAT-INCLUSIVE:\n  Electricity  Basic         35   943.61   1085.15   141.54     -> 1085.15 - 141.54 = 943.61\n  Electricity  Consumption  429   353.40   1743.49   227.41     -> 1743.49 - 227.41 = 1516.08 = 429 x R3.5340\nSo the canonical ex-VAT Rand columns are DERIVED as (printed AMOUNT - printed VAT) per line, verified on all 10 bills. The TARIFF-COST column is a UNIT RATE on the Consumption line (353.40 = 35.340c... i.e. R3.5340/kWh) but is the FLAT MONTHLY COST on the Basic line (where the qty column holds the 35 DAYS in the period, not a multiplier) - so it must never be used as a multiplier. It is kept as a native and cross-checked: on the Basic line printed TARIFF-COST == AMOUNT - VAT to the cent on all 10 bills (swe_basic_rate_gap_r == 0.00).\nEvery charge line has RIGHT-COLUMN PROSE GLUED ONTO IT ('It  is  the  responsibility  of  each  and  every ...'), so the charge patterns are NOT end-anchored - they stop after the VAT column with a (?![\\d]) guard.\n\nRULE ZERO - THIS ONE RECONCILES GENUINELY. Unlike Breede Valley and Stellenbosch, Swellendam DOES print an independent ex-VAT current-charges total: the CHARGE column of the account-movement table. total_ex_vat_r is mapped to that figure (swe_charge_ex_r), which is captured by a different rule, in a different scope (header), from a different block of the bill, and is not constructed from the charge lines at all. The harness's reconcile therefore really tests 'basic_ex + consumption_ex == printed CHARGE', i.e. (AMOUNT-VAT) summed over the charge lines against a separately printed total - a silently-missed charge line fails reconcile by the whole line instead of hiding in other_r. Max deviation 0.00 on all 10 bills (swe_charge_check_r).\nFour further independent identities, all computed inside the profile:\n  swe_vat_check_r      = balance-table VAT column - SUM(per-line VAT columns)                    == 0.00\n  swe_totals_vat_gap_r = printed 'TOTAL VAT' - balance-table VAT column (two separate blocks)     == 0.00\n  swe_close_gap_r      = (OPENING + RECEIPTS + CHARGE + INTEREST + ADJUST + VAT) - CLOSING BALANCE == 0.00\n  swe_kwh_from_readings vs total_kwh vs the charge line's own units: three prints of the same kWh  == equal\n\nSINGLE FLAT BAND. 'Electricity Consumption' is one flat energy tariff - no TOU, no demand, no NMD, no reactive. Following the CoJ-flat / Ekurhuleni / Breede Valley / Drakenstein convention the single band routes to STANDARD; peak/off-peak/demand/NMD are '_none'. 'Electricity Basic' -> other_r. Money uses trailing-minus credits ('4161.40-', '2370.84-') which _to_decimal handles.\n\nPERIOD DATES PRINT WITHOUT A YEAR ('12/06-14/07'), exactly as on Breede Valley and Stellenbosch, and read_start/read_end are kept EXACTLY as printed per the 'date == as printed' rule. Nothing is synthesised.\n\nREADING TYPE IS NOT PRINTED. The meter table's columns are Tp. / Meter No. / Previous / New Reading / Factor / Consumption / Period / Daily Aver. - there is no Actual/Estimate flag column, and the Factor column is blank on all 10 bills. reading_type is therefore DERIVED as 'Actual' by label_present, exactly as on Breede Valley, and flagged as an inference. Supporting evidence: PREVIOUS equals the previous bill's NEW READING on every consecutive pair present in the folder (78118-78564-78955-79363-79868-80307-81122, and 81559-81894-82323 after the May scan). A defensive swe_est_flag rule is in place and will flip the value to 'Estimated' the moment an A/E letter is printed after the New Reading.\n\nNEVER PRINTED by Swellendam: a tariff code or tariff name (only the descriptions 'Basic' and 'Consumption') -> tariff_name '_none'; TOU bands, demand kVA, notified maximum demand, reactive energy; a period year; a reading-type flag; Telkom's client VAT number; a valuation; any cash/guarantee security. DEPOSIT is genuinely printed (0.00 on all 10 digital bills) so deposit_r carries it as printed; cash/guarantee/security are '_none'.",
+ "fingerprint": {
+  "all": [
+   "4000846271"
+  ],
+  "any": [
+   "SWELLENDAM MUNICIPALITY",
+   "info@swellendam.gov.za",
+   "PO BOX 20, SWELLENDAM",
+   "e-statements@swellendam.gov.za"
+  ],
+  "reject_if_text": [
+   "Please wait... If this message is not eventually replaced",
+   "requires Adobe Reader 8 or higher",
+   "Prepayment Account Update",
+   "PREPAID ELECTRICITY PURCHASE SLIP"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Electricity[ \\t]{2,}(?:Basic|Consumption)\\b",
+   "require": "^[ \\t]*Electricity[ \\t]{2,}Consumption\\b"
+  },
+  "sundry": {
+   "start": "^[ \\t]*ALLOCATION:[ \\t]{2,}ACCOUNT NUMBER:"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account number",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bACCOUNT NO\\.[ \\t]{2,}(\\d{6,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Statement date",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bSTATEMENT DATE[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "swe_tax_invoice_no",
+   "label": "Tax invoice number",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bTAX INVOICE NO\\.[ \\t]{2,}(\\d{5,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "swe_munic_vat_no",
+   "label": "Swellendam VAT registration (fingerprint anchor)",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bVAT No:[ \\t]*(\\d{9,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "swe_receipts_posted",
+   "label": "Receipts posted till",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bRECEIPTS POSTED TILL[^\\d\\n]*(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "swe_site_address",
+   "label": "Site address",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bSITE ADDRESS[ \\t]{2,}(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "swe_suburb",
+   "label": "Suburb code",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bSUBURB[ \\t]{2,}(\\S+)",
+   "type": "text"
+  },
+  {
+   "field": "swe_erf",
+   "label": "Erf",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bERF[ \\t]{2,}(\\S+)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "swe_deposit_r",
+   "label": "Deposit held (printed as 0.00 on every digital bill)",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bDEPOSIT[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "field": "swe_client_vat_no",
+   "label": "CLIENT VAT NO. (label printed, blank on every bill seen)",
+   "scope": "header",
+   "pattern": "^[^\\n]*?\\bCLIENT VAT NO\\.[ \\t]{2,}(\\d{9,})\\b",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "swe_open_bal_r",
+    "swe_receipts_r",
+    "swe_charge_ex_r",
+    "swe_interest_r",
+    "swe_adjust_r",
+    "swe_vat_r",
+    "swe_close_bal_r"
+   ],
+   "label": "Account movement, monthly row: OPENING / RECEIPTS / CHARGE(ex VAT) / INTEREST / ADJUST / VAT / CLOSING",
+   "scope": "header",
+   "patterns": [
+    "^[ \\t]*SERVICE BALANCE[^\\n]*\\n(?:[^\\n]*\\n)*?[ \\t]*(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+    "^[^\\n]*?(?<![\\d.,-])(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "fields": [
+    "swe_open_bal_total_r",
+    "swe_receipts_total_r",
+    "swe_charge_total_ex_r",
+    "swe_interest_total_r",
+    "swe_adjust_total_r",
+    "swe_vat_total_r",
+    "swe_close_bal_total_r"
+   ],
+   "label": "Account movement, TOTAL row = the LAST seven-money line of the block (greedy prefix)",
+   "scope": "header",
+   "pattern": "^[ \\t]*SERVICE BALANCE[^\\n]*\\n(?:[^\\n]*\\n)*[ \\t]*(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)(?:[ \\t]{2,}EXCLUDING PUBLIC HOLIDAYS)?[ \\t]*$",
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "swe_total_vat_r",
+    "swe_arrears_r",
+    "swe_current_r",
+    "due_date",
+    "swe_amount_due_r"
+   ],
+   "label": "TOTAL VAT / ARREARS / CURRENT / DUE DATE / AMOUNT DUE",
+   "scope": "header",
+   "pattern": "^[ \\t]*TOTAL VAT[ \\t]{2,}ARREARS[^\\n]*\\n(?:[^\\n]*\\n)*?[ \\t]*(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money",
+    "money",
+    "date",
+    "money"
+   ]
+  },
+  {
+   "fields": [
+    "swe_ag_future_r",
+    "swe_ag_current_r",
+    "swe_ag_30_r",
+    "swe_ag_60_r",
+    "swe_ag_90_r",
+    "swe_ag_90plus_r",
+    "swe_payment_date"
+   ],
+   "label": "Monthly aging row: FUTURE / CURRENT / 30 / 60 / 90 / 90+ / payment date",
+   "scope": "header",
+   "pattern": "^[ \\t]*MONTHLY[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})",
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "date"
+   ]
+  },
+  {
+   "fields": [
+    "swe_basic_days",
+    "swe_basic_incl_r",
+    "swe_basic_vat_r"
+   ],
+   "label": "Electricity Basic line: days / AMOUNT inc VAT / VAT (prose glued to the right, so no $ anchor)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity[ \\t]{2,}Basic[ \\t]{2,}([\\d,]+(?:\\.\\d+)?)[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "swe_basic_rate_r",
+   "label": "Electricity Basic TARIFF-COST column (the flat monthly cost, NOT a per-day rate)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity[ \\t]{2,}Basic[ \\t]{2,}[\\d,]+(?:\\.\\d+)?[ \\t]{2,}([\\d,]+\\.\\d{2,5})[ \\t]{2,}-?[\\d,]+\\.\\d{2}",
+   "type": "money",
+   "required": true
+  },
+  {
+   "fields": [
+    "swe_cons_kwh",
+    "swe_cons_incl_r",
+    "swe_cons_vat_r"
+   ],
+   "label": "Electricity Consumption line: kWh / AMOUNT inc VAT / VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity[ \\t]{2,}Consumption[ \\t]{2,}([\\d,]+(?:\\.\\d+)?)[ \\t]{2,}[\\d,]+\\.\\d{2,5}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+   "types": [
+    "number",
+    "money",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "field": "swe_cons_rate_c",
+   "label": "Electricity Consumption TARIFF-COST column (cents per kWh)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*Electricity[ \\t]{2,}Consumption[ \\t]{2,}[\\d,]+(?:\\.\\d+)?[ \\t]{2,}([\\d,]+\\.\\d{2,5})[ \\t]{2,}-?[\\d,]+\\.\\d{2}",
+   "type": "number",
+   "required": true
+  },
+  {
+   "fields": [
+    "meter",
+    "swe_start_reading",
+    "swe_end_reading",
+    "swe_meter_kwh",
+    "swe_read_start",
+    "swe_read_end",
+    "swe_daily_avg"
+   ],
+   "label": "Meter reading line (destroyed by OCR on the scanned May-2026 bill -> not required)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*E[ \\t]{2,}(\\d{6,})[ \\t]{2,}(\\d+)[ \\t]{2,}(\\d+)[ \\t]{2,}([\\d,]+\\.\\d{3})[ \\t]{2,}(\\d{2}/\\d{2})-(\\d{2}/\\d{2})[ \\t]{2,}([\\d.]+)[ \\t]*$",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number",
+    "date",
+    "date",
+    "number"
+   ]
+  },
+  {
+   "field": "swe_est_flag",
+   "label": "Reading estimate flag (never printed on any bill seen)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*E[ \\t]{2,}\\d{6,}[ \\t]{2,}\\d+[ \\t]{2,}\\d+[ \\t]*([AE])[ \\t]{2,}[\\d,]+\\.\\d{3}",
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "swe_basic_ex_r",
+   "label": "Basic charge EX VAT = printed AMOUNT - printed VAT",
+   "op": "sub",
+   "of": [
+    "swe_basic_incl_r",
+    "swe_basic_vat_r"
+   ]
+  },
+  {
+   "field": "swe_cons_ex_r",
+   "label": "Consumption EX VAT = printed AMOUNT - printed VAT",
+   "op": "sub",
+   "of": [
+    "swe_cons_incl_r",
+    "swe_cons_vat_r"
+   ]
+  },
+  {
+   "field": "swe_elec_vat_r",
+   "label": "Electricity VAT = sum of the printed per-line VAT columns",
+   "op": "sum",
+   "of": [
+    "swe_basic_vat_r",
+    "swe_cons_vat_r"
+   ]
+  },
+  {
+   "field": "swe_elec_incl_r",
+   "label": "Electricity INC VAT = sum of the printed AMOUNT columns",
+   "op": "sum",
+   "of": [
+    "swe_basic_incl_r",
+    "swe_cons_incl_r"
+   ]
+  },
+  {
+   "field": "swe_total_kwh_out",
+   "label": "Total kWh - meter line, fallback the charge line's own units (used on the OCR'd bill)",
+   "op": "prefer",
+   "of": [
+    "swe_meter_kwh",
+    "swe_cons_kwh"
+   ]
+  },
+  {
+   "field": "reading_type",
+   "label": "Actual/Estimate (DERIVED - no flag column exists on this bill)",
+   "op": "label_present",
+   "of": [
+    "swe_est_flag",
+    "swe_cons_kwh"
+   ],
+   "labels": [
+    "Estimated",
+    "Actual"
+   ]
+  },
+  {
+   "field": "swe_kwh_from_readings",
+   "label": "New reading - previous reading (independent kWh check)",
+   "op": "diff",
+   "of": [
+    "swe_end_reading",
+    "swe_start_reading"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "swe_charge_check_r",
+   "label": "IDENTITY: printed CHARGE column - (basic ex + consumption ex) (must be 0.00)",
+   "op": "sub",
+   "of": [
+    "swe_charge_ex_r",
+    "swe_basic_ex_r",
+    "swe_cons_ex_r"
+   ]
+  },
+  {
+   "field": "swe_vat_check_r",
+   "label": "IDENTITY: balance-table VAT column - sum of per-line VAT columns (must be 0.00)",
+   "op": "sub",
+   "of": [
+    "swe_vat_r",
+    "swe_elec_vat_r"
+   ]
+  },
+  {
+   "field": "swe_totals_vat_gap_r",
+   "label": "IDENTITY: printed TOTAL VAT - balance-table VAT column (must be 0.00)",
+   "op": "sub",
+   "of": [
+    "swe_total_vat_r",
+    "swe_vat_r"
+   ]
+  },
+  {
+   "field": "swe_basic_rate_gap_r",
+   "label": "IDENTITY: Basic TARIFF-COST column - (AMOUNT - VAT) (must be 0.00)",
+   "op": "sub",
+   "of": [
+    "swe_basic_rate_r",
+    "swe_basic_ex_r"
+   ]
+  },
+  {
+   "field": "swe_close_sum_r",
+   "label": "OPENING + RECEIPTS + CHARGE + INTEREST + ADJUST + VAT",
+   "op": "sum",
+   "of": [
+    "swe_open_bal_r",
+    "swe_receipts_r",
+    "swe_charge_ex_r",
+    "swe_interest_r",
+    "swe_adjust_r",
+    "swe_vat_r"
+   ]
+  },
+  {
+   "field": "swe_close_gap_r",
+   "label": "IDENTITY: the movement chain - printed CLOSING BALANCE (must be 0.00)",
+   "op": "sub",
+   "of": [
+    "swe_close_sum_r",
+    "swe_close_bal_r"
+   ]
+  },
+  {
+   "field": "swe_total_row_sum_r",
+   "label": "TOTAL row: OPENING + RECEIPTS + CHARGE + INTEREST + ADJUST + VAT",
+   "op": "sum",
+   "of": [
+    "swe_open_bal_total_r",
+    "swe_receipts_total_r",
+    "swe_charge_total_ex_r",
+    "swe_interest_total_r",
+    "swe_adjust_total_r",
+    "swe_vat_total_r"
+   ]
+  },
+  {
+   "field": "swe_total_row_gap_r",
+   "label": "IDENTITY: TOTAL-row chain - TOTAL-row CLOSING BALANCE (must be 0.00)",
+   "op": "sub",
+   "of": [
+    "swe_total_row_sum_r",
+    "swe_close_bal_total_r"
+   ]
+  },
+  {
+   "field": "swe_charge_rows_gap_r",
+   "label": "IDENTITY: monthly-row CHARGE - TOTAL-row CHARGE (0.00 while electricity is the only service)",
+   "op": "sub",
+   "of": [
+    "swe_charge_ex_r",
+    "swe_charge_total_ex_r"
+   ]
+  },
+  {
+   "field": "swe_due_vs_close_r",
+   "label": "AMOUNT DUE - TOTAL-row CLOSING BALANCE (the bill truncates down to 5c; |dev| <= 0.05)",
+   "op": "sub",
+   "of": [
+    "swe_amount_due_r",
+    "swe_close_bal_total_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "swe_site_address",
+  "billing_date": "billing_date",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "reading_type",
+  "read_start": "swe_read_start",
+  "read_end": "swe_read_end",
+  "start_reading_kwh": "swe_start_reading",
+  "end_reading_kwh": "swe_end_reading",
+  "total_kwh": "swe_total_kwh_out",
+  "peak_kwh": "_none",
+  "standard_kwh": "swe_cons_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "swe_cons_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "swe_basic_ex_r",
+  "total_ex_vat_r": "swe_charge_ex_r",
+  "deposit_r": "swe_deposit_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "^[ \\t]*SERVICE BALANCE[^\\n]*\\n(?:[^\\n]*\\n)*[ \\t]*(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?(?:[ \\t]{2,}EXCLUDING PUBLIC HOLIDAYS)?[ \\t]*$",
+  "incoming_payment": "^[ \\t]*SERVICE BALANCE[^\\n]*\\n(?:[^\\n]*\\n)*[ \\t]*-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?(?:[ \\t]{2,}EXCLUDING PUBLIC HOLIDAYS)?[ \\t]*$",
+  "current_ex": "^[ \\t]*SERVICE BALANCE[^\\n]*\\n(?:[^\\n]*\\n)*[ \\t]*-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?(?:[ \\t]{2,}EXCLUDING PUBLIC HOLIDAYS)?[ \\t]*$",
+  "vat": "^[ \\t]*TOTAL VAT[ \\t]{2,}ARREARS[^\\n]*\\n(?:[^\\n]*\\n)*?[ \\t]*(-?[\\d,]+\\.\\d{2}-?)[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]*$",
+  "total_due": "^[ \\t]*TOTAL VAT[ \\t]{2,}ARREARS[^\\n]*\\n(?:[^\\n]*\\n)*?[ \\t]*-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}\\d{2}/\\d{2}/\\d{4}[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "due_date": "^[ \\t]*TOTAL VAT[ \\t]{2,}ARREARS[^\\n]*\\n(?:[^\\n]*\\n)*?[ \\t]*-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]{2,}(\\d{2}/\\d{2}/\\d{4})[ \\t]{2,}-?[\\d,]+\\.\\d{2}-?[ \\t]*$",
+  "deposito": "^[^\\n]*?\\bDEPOSIT[ \\t]{2,}(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$"
+ }
+}

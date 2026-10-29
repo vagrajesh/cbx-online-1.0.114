@@ -1,0 +1,1656 @@
+{
+ "profile_id": "newcastle",
+ "profile_name": "Newcastle Municipality (KwaZulu-Natal)",
+ "short_name": "Newcastle",
+ "_doc": "Newcastle Municipality (KwaZulu-Natal) ledger tax invoice. This pack is ONE account, [number removed] (TFMC PTY LTD, SCOTT 60B, Newcastle Town), 9 PDFs, Dec 2025 - Aug 2026. The master list has 20 Newcastle accounts; the other 19 are not in this folder, so nothing here is calibrated on them.\n\nFINGERPRINT is the bare string 4000791824 - Newcastle's own VAT registration number, printed as 'VAT REGISTRATION NO. 4000791824' under the masthead on every page of every file (it survives OCR as 'VAT REGISTRATION NO, 4000791824'). Unique across the 487-PDF tree. NEVER fingerprint on the addressee block (TELKOM SA LTD / TFMC PTY LTD / PRIVATE BAG X137 / CENTURION), on Telkom's VAT 4880188612, or on the cbreexcellerate address inside the <! ... !> control string - those appear on scores of other municipalities' bills and are exactly what makes the shipped 'mangaung' profile hijack five other folders.\n\nLAYOUT. Header block 'ACCOUNT No. / INVOICE DATE / INVOICE NO / FINAL PAY DATE / NOTIFIED DEMAND' with the five values on the NEXT line. Then a deposit block (CASH / GUARANTEE / HOUSE). Then a METER READINGS table (Meter No. / Meter Type / Prev. Reading / Prev. Reading Date / New Reading / Reading Date / Consumption; Meter Type is KWh, KVA or kl and the reading date may carry an 'Rdg' prefix). Then an ACCOUNT DETAILS ledger (Date / Code / Description / Units / Tariff / Value). Then an ageing strip 120+/90/60/30 DAYS / CURRENT / VAT / TOTAL DUE. Page 2 is notes and a notice only; every section ends at 'KINDLY TAKE NOTE', which is the last line of page 1.\n\nSERVICE CODES on this account: E035 and E030 are kWh energy, E034 is maximum demand kVA, ENAC is notified maximum demand kVA (its Units equal the NOTIFIED DEMAND header value, 179), E104/E105 is electricity availability (a fixed charge, Units 0), W001/W101 water, S001 sewer, R009 refuse, T#### assessment rates (never billed on this account). Codes are matched with [E<pound>]0xx because the scans OCR 'E' as a pound sign; the water/sewer/refuse lines are matched on their DESCRIPTION instead of their code, because OCR turns W001 into 'Wwo01' and R009 into 'ROOY' / 'ROOD'.\n\nMONEY IS VAT-INCLUSIVE, THE TARIFF IS THE EX-VAT UNIT RATE. Value = Units x Tariff x 1.15 to the cent on every charge line of every bill; on the fixed-charge lines (Units 0: E104, W101, R009) the Tariff column IS the line's ex-VAT amount. So the canonical Rand columns are built EX VAT with 'mul' computes (Units x Tariff), never by reading the inclusive Value into an ex-VAT column - the CoT mistake in the handbook. The inclusive figures are kept in parallel as nc_*_inc_r, and nc_elec_vat_r is the electricity VAT (inclusive minus ex).\n\nDECIMAL COMMAS - HOW THEY ARE HANDLED HERE, AND WHY IT IS NOT THE ditsobotla RAND-PART CONVENTION. Eight of the nine files print money and tariffs with a COMMA decimal ('5651,72', '2,73030'); only 7778-...-2026-05-22 uses periods. _to_decimal deletes ',' outright, so capturing '5651,72' whole reads 565172 - exactly 100x too big - and dropping the decimals (the ditsobotla rand-part convention) would cost up to R0.99 per figure and, far worse, would destroy the 5-decimal TARIFF (1,48030 -> 1, i.e. a 32% error once multiplied by 84316 units).\n  Instead every money and tariff is captured as TWO groups, '(-?\\d+)[.,](\\d{2})' and '(\\d+)[.,](\\d{5})' - separator-agnostic, so the same pattern reads both the comma and the period bills - and rebuilt with a 'concat' compute joined to nc_dot, a literal '.' captured from the bill's own text ('VAT REGISTRATION NO.'). concat joins with a SPACE and _to_decimal strips spaces, so concat('5651', '.', '72') = '5651 . 72' -> Decimal 5651.72. A following one-operand 'sum' compute puts it back through the money/number cleaner. Result: every Rand figure is cent-exact and every tariff is exact to 5 decimals on ALL nine bills, comma or period.\n  THE ONE EDGE CASE, stated plainly: concat skips a part identical to one already joined, so an amount whose rand part and cent digits are the same two-character string (R80.80, R12.12 - only possible under R100) rebuilds as '80 .' = R80.00, losing the cents. Nothing in this folder hits it (the nearest is W101's 80,70). It degrades to the rand-part convention rather than breaking.\n  nc_dot is required:true on purpose. If it ever missed, concat would emit '5651 72' and every money figure would be 100x too big; as a required field a miss shows as a red flag in Diagnostics instead of slipping through, and identity B below would blow up loudly as well.\n  ONE-LINE ENGINE FIX that makes all of this unnecessary: in _to_decimal, before the strip, add\n      if re.fullmatch(r'-?\\d[\\d ]*,\\d+', s): s = s.replace(' ', '').replace(',', '.')\n  After that the two-group captures could collapse back to single-group ones and nc_dot could go.\n\nRULE ZERO / WHAT ACTUALLY PROVES THE NUMBERS. canonical total_ex_vat_r is nc_elec_ex_total, the sum of its own four parts (energy + demand + NMD + availability), so the engine's reconcile check is STRUCTURALLY CIRCULAR here and cannot fail - said plainly, it is not evidence. Newcastle prints no ex-VAT total for electricity or for anything else. The real, non-circular checks are built into the profile as leak guards:\n  IDENTITY A - nc_charges_inc_total sums the ten charge lines' printed inclusive Values (electricity x5, water x2, sewer, refuse, rates) and nc_current_leak_r is the absolute difference against the bill's own printed CURRENT in the ageing strip, a figure this profile does not construct. 0.00 on all 7 bills whose ageing strip survives.\n  IDENTITY B - nc_charges_ex_total sums the same ten lines' Units x Tariff ex-VAT amounts; nc_vat_calc_r = printed CURRENT minus that sum, and nc_vat_leak_r is the difference against the bill's own printed VAT. 0.00 on all 7. This one tests every units capture AND every 5-decimal tariff capture against a printed figure, so a wrong tariff or a lost line cannot hide.\n  nc_ex_total_leak_r cross-checks the same ex-VAT sum against (printed CURRENT - printed VAT). 0.00 on all 7.\n  nc_water_kl_leak checks the water meter's printed Consumption against the kL billed on the W001 line. 0.00 on all 9.\n  On the two SCANNED files the ageing strip is destroyed by OCR, so CURRENT / VAT / TOTAL DUE come out BLANK rather than wrong and A/B cannot run there; for those two the check is the ledger chain instead - each bill's charge total equals the NEXT month's printed OPENING BALANCE (Mar 2026: 248,253.52 = the Apr statement's opening balance; Apr 2026: 247,726.53 = the May statement's opening balance). Both hold exactly.\n\nkWh AND THE CT METER. total_kwh is the BILLED energy, E030 units + E035 units. Meter [number removed]'s printed Consumption equals the E030 units exactly (84,316 every month - a fixed/estimated figure that has not moved since Dec 2025). Meter 160995 is a CT meter: its printed Consumption x120 equals the E035 units (11 x 120 = 1320, 13 x 120 = 1560). So start_reading_kwh / end_reading_kwh (the two KWh registers summed, as printed) do NOT differ by total_kwh - they are short by the CT factor on that one register, and on the Apr/May statements register [number removed] also ROLLS OVER (924286 -> 8602), which makes end < start. Both are printed facts, kept as printed. nc_kwh_reg_cons keeps the registers' own printed consumption so the gap is visible.\n\nMULTI-ACCOUNT BUNDLE - 'Account Statements TFMC.pdf' (1.37 MB, 16 pages) IS A SCANNED BUNDLE OF 15 DIFFERENT ACCOUNTS, one invoice per page, all dated [number removed]: [number removed], [number removed], [number removed], [number removed] (twice), [number removed], [number removed], [number removed], [number removed], [number removed], [number removed], [number removed], [number removed], [number removed], [number removed], [number removed]. THE APP'S RECORD SHAPE IS ONE BILL = ONE ACCOUNT AND CANNOT REPRESENT IT. Page 1 is account [number removed]'s April-2026 invoice - the one month otherwise missing from the pack - so extraction is deliberately confined to page 1 (every section ends at the first 'KINDLY TAKE NOTE') and THE OTHER 14 ACCOUNTS ARE DROPPED. Split the PDF one page per file if they are wanted.\n  nc_accounts_in_file (join_unique over every ACCOUNT No. in the file) makes this visible in the data instead of silent: one value = a normal single-account invoice, more than one = a bundle whose later pages were dropped.\n  THE RATES SECTION LEAK THIS EXPOSED, AND THE FIX. split_sections() searches each section's start regex over the WHOLE document, so a plain 'RATES BUSINESS' start matched a rates line on a LATER PAGE of the bundle - another account's assessment rates - and hung it on [number removed]'s record as a rates row. The rates start is therefore anchored '\\A(?:(?!KINDLY TAKE NOTE)[\\s\\S])*?RATES ...': \\A forces the only possible match position to be the top of the document, and the negative-lookahead run forbids crossing the first 'KINDLY TAKE NOTE', so the section can only open on a rates line belonging to the FIRST invoice in the file. The bundle now produces no rates row at all (correct - page 1 has no rates line) and a genuine single-account bill with rates would still be picked up.\n\nSCANNED FILES / KNOWN BAD OCR. '[number removed]_2026-03-20.pdf' (809 KB) and the bundle are read via OCR (ocr='auto', tesseract) and their rows are force-flagged OCR by the engine - a human must check them. Two OCR defects are known and NOT parser errors: (1) on 2026-03-20 the CASH deposit OCRs as '140390,00' instead of 10390,00, so nc_cash_r / deposit_r read R140,390.00 on that one row; (2) on the same bill the VAT OCRs as '32380,50' where the arithmetic says 32,380.90 (CURRENT 248,253.52 x 15/115). Both are read exactly as the OCR text presents them rather than being silently corrected.\n\nFIELDS THE BILL SIMPLY NEVER PRINTS -> canonical '_none': tariff_name (no tariff name anywhere), reading_type (no Actual/Estimated marker), peak_kwh / offpeak_kwh / peak_r / offpeak_r (single-band energy, no TOU bands - E035 and E030 are two supply registers, not bands, and neither line carries any band label), guarantee_r and security_held_r (the GUARANTEE and HOUSE deposit columns are printed but always ,00 on this account). standard_kwh carries the whole billed kWh, standard_r the whole energy Rand, following the single-band convention used for Ekurhuleni and KwaDukuza.\n\nDATES are kept exactly as printed, YYYYMMDD (type 'date' does no reformatting): billing_date is the INVOICE DATE, read_start / read_end are the meter table's Prev. Reading Date / Reading Date, nc_due_date is FINAL PAY DATE.\n\nWATER / SEWERAGE / REFUSE / RATES rows are populated in the general view's own field names (w_meter, w_read_start/end, start_reading_kl, end_reading_kl, total_kl, water_usage_r, water_levy_r, water_charges_r, sewer_kl, sewer_r, refuse_charges_r, rates_total_r) and carry EX-VAT Rands, on the same Units x Tariff basis as electricity.",
+ "fingerprint": {
+  "all": [
+   "4000791824"
+  ],
+  "any": [],
+  "reject_if_text": []
+ },
+ "sections": {
+  "electricity": {
+   "start": "(?:METER[ \\t]*READINGS|Meter No\\.)",
+   "overlay": true,
+   "end": "KINDLY TAKE NOTE",
+   "require": "ELECTRICITY (?:CONSUMPTION|AVAILABILITY)"
+  },
+  "water": {
+   "start": "(?:^[ \\t]*[A-Z0-9]+(?:[ \\t][A-Z0-9]+)?[ \\t]+kl[ \\t]+\\d+[ \\t]+\\d{8}|WATER (?:CONSUMPTION|AVAILABILITY))",
+   "overlay": true,
+   "end": "KINDLY TAKE NOTE",
+   "require": "WATER (?:CONSUMPTION|AVAILABILITY)"
+  },
+  "sewerage": {
+   "start": "SEWER[ \\t]+[A-Z]",
+   "overlay": true,
+   "end": "KINDLY TAKE NOTE"
+  },
+  "refuse": {
+   "start": "REFUSE[ \\t]+[A-Z]",
+   "overlay": true,
+   "end": "KINDLY TAKE NOTE"
+  },
+  "rates": {
+   "start": "\\A(?:(?!KINDLY TAKE NOTE)[\\s\\S])*?RATES[ \\t]+(?:BUSINESS|COMMERCIAL|RESIDENTIAL)",
+   "overlay": true,
+   "end": "KINDLY TAKE NOTE",
+   "require": "RATES[ \\t]+(?:BUSINESS|COMMERCIAL|RESIDENTIAL)"
+  }
+ },
+ "fields": [
+  {
+   "fields": [
+    "account_number",
+    "billing_date",
+    "nc_invoice_no",
+    "nc_due_date",
+    "nc_nmd_kva"
+   ],
+   "types": [
+    "text",
+    "date",
+    "text",
+    "date",
+    "number"
+   ],
+   "label": "Header row: account / invoice date / invoice no / final pay date / notified demand",
+   "scope": "document",
+   "pattern": "NOTIFIED DEMAND[^\\n]*\\n[ \\t]*(\\d{9,12})[ \\t]+(\\d{8})[ \\t]+(\\d{9,12})[ \\t]+(\\d{8})[ \\t]+(\\d+)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "nc_accounts_in_file",
+   "label": "BUNDLE DETECTOR: every ACCOUNT No. printed in the file (one value = a normal single-account invoice; more than one = a multi-account bundle and only the first page was extracted)",
+   "scope": "document",
+   "collect": "join_unique",
+   "pattern": "NOTIFIED DEMAND[^\\n]*\\n[ \\t]*(\\d{9,12})[ \\t]",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "nc_dot",
+   "label": "A literal '.' taken from the bill's own text - the only way to give the comma-decimal rebuild a decimal point (see _doc, DECIMAL COMMAS). Required: if this ever misses, every rebuilt money figure would be 100x too big, so it must show as a red required MISS, not slip through.",
+   "scope": "document",
+   "patterns": [
+    "VAT REGISTRATION NO(\\.)",
+    "ACCOUNT No(\\.)",
+    "Meter No(\\.)",
+    "(\\.)"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "municipality",
+   "label": "Municipality",
+   "scope": "document",
+   "pattern": "(The Newcastle Municipality)",
+   "type": "text"
+  },
+  {
+   "field": "site_name",
+   "label": "Street address / stand",
+   "scope": "document",
+   "patterns": [
+    "STREET ADDRESS / STAND[^\\n]*\\n[ \\t]*([A-Z][A-Z0-9/'.-]*(?:[ ][A-Z0-9/'.-]+)*)[ \\t]*$",
+    "STREET([A-Z][A-Z0-9/'.-]*(?:[ ][A-Z0-9/'.-]+)*?)ADDRESS / STAND",
+    "BRANCH NO\\.:[ \\t]*\\d+[ \\t]{2,}([A-Z][A-Z0-9]*(?:[ ][A-Z0-9]+)*)(?:[ \\t]{2,}[\\d ]+)?[ \\t]*$"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "nc_location",
+   "label": "Location",
+   "scope": "document",
+   "pattern": "LOCATION[:\\s]+([A-Z][A-Z ]*[A-Z])",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "nc_cash_rand",
+    "nc_cash_cents"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "DEPOSIT - CASH (rand / cents)",
+   "scope": "document",
+   "patterns": [
+    "\\bCASH\\b[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})",
+    "^[^\\n]*?(?<![\\d.,])(-?\\d+)[.,](\\d{2})[^\\n]*\\bCASH\\b[ \\t]+GUARANTEE"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "nc_meter",
+   "label": "Electricity meter(s)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*([A-Z0-9]+(?:[ \\t][A-Z0-9]+)?)[ \\t]+(?:KWh|KVA)[ \\t]+\\d+[ \\t]+\\d{8}[ \\t]",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "nc_kwh_start_reading",
+    "nc_kwh_end_reading",
+    "nc_kwh_reg_cons"
+   ],
+   "types": [
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "kWh registers: prev / new reading and printed consumption, summed over registers",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*[A-Z0-9]+(?:[ \\t][A-Z0-9]+)?[ \\t]+KWh[ \\t]+(\\d+)[ \\t]+\\d{8}[ \\t]+(\\d+)[ \\t]+(?:Rdg[ \\t]+)?\\d{8}[ \\t]+(\\d+)[ \\t]*$",
+   "type": "number"
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "Reading period (prev reading date / reading date)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*[A-Z0-9]+(?:[ \\t][A-Z0-9]+)?[ \\t]+KWh[ \\t]+\\d+[ \\t]+(\\d{8})[ \\t]+\\d+[ \\t]+(?:Rdg[ \\t]+)?(\\d{8})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "fields": [
+    "nc_kva_meter",
+    "nc_kva_start_reading",
+    "nc_kva_end_reading",
+    "nc_kva_cons"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number"
+   ],
+   "label": "kVA demand register",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*([A-Z0-9]+(?:[ \\t][A-Z0-9]+)?)[ \\t]+KVA[ \\t]+(\\d+)[ \\t]+\\d{8}[ \\t]+(\\d+)[ \\t]+(?:Rdg[ \\t]+)?\\d{8}[ \\t]+(\\d+)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "w_meter",
+    "start_reading_kl",
+    "w_read_start",
+    "end_reading_kl",
+    "w_read_end",
+    "nc_water_cons_kl"
+   ],
+   "types": [
+    "text",
+    "number",
+    "date",
+    "number",
+    "date",
+    "number"
+   ],
+   "label": "Water meter: readings, reading dates and printed consumption (kl)",
+   "scope": "section:water",
+   "pattern": "^[ \\t]*([A-Z0-9]+(?:[ \\t][A-Z0-9]+)?)[ \\t]+kl[ \\t]+(\\d+)[ \\t]+(\\d{8})[ \\t]+(\\d+)[ \\t]+(?:Rdg[ \\t]+)?(\\d{8})[ \\t]+(\\d+)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "nc_avail_code",
+   "label": "Electricity availability tariff code as printed",
+   "scope": "section:electricity",
+   "pattern": "([E£]10\\d)[ \\t|]+ELECTRICITY AVAILABILITY",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "nc_e035_units",
+    "nc_e035_t_int",
+    "nc_e035_t_frac",
+    "nc_e035_v_rand",
+    "nc_e035_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "E035 electricity energy (CT meter 160995, x120) - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:electricity",
+   "pattern": "[E£]035[ \\t|]+ELECTRICITY CONSUMPTION[ \\t]+(\\d+)[ \\t)]+(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "nc_e035_txt",
+   "type": "text",
+   "label": "E035 electricity energy (CT meter 160995, x120) - value exactly as printed",
+   "scope": "section:electricity",
+   "pattern": "[E£]035[ \\t|]+ELECTRICITY CONSUMPTION[^\\n]*?((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nc_e030_units",
+    "nc_e030_t_int",
+    "nc_e030_t_frac",
+    "nc_e030_v_rand",
+    "nc_e030_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "E030 electricity energy (meter [number removed]) - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:electricity",
+   "pattern": "[E£]030[ \\t|]+ELECTRICITY CONSUMPTION[ \\t]+(\\d+)[ \\t)]+(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "nc_e030_txt",
+   "type": "text",
+   "label": "E030 electricity energy (meter [number removed]) - value exactly as printed",
+   "scope": "section:electricity",
+   "pattern": "[E£]030[ \\t|]+ELECTRICITY CONSUMPTION[^\\n]*?((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nc_e034_units",
+    "nc_e034_t_int",
+    "nc_e034_t_frac",
+    "nc_e034_v_rand",
+    "nc_e034_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "E034 maximum demand kVA - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:electricity",
+   "pattern": "[E£]034[ \\t|]+ELECTRICITY CONSUMPTION[ \\t]+(\\d+)[ \\t)]+(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "nc_e034_txt",
+   "type": "text",
+   "label": "E034 maximum demand kVA - value exactly as printed",
+   "scope": "section:electricity",
+   "pattern": "[E£]034[ \\t|]+ELECTRICITY CONSUMPTION[^\\n]*?((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nc_enac_units",
+    "nc_enac_t_int",
+    "nc_enac_t_frac",
+    "nc_enac_v_rand",
+    "nc_enac_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "ENAC notified maximum demand kVA - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:electricity",
+   "pattern": "ENAC[ \\t|]+ELECTRICITY CONSUMPTION[ \\t]+(\\d+)[ \\t)]+(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "nc_enac_txt",
+   "type": "text",
+   "label": "ENAC notified maximum demand kVA - value exactly as printed",
+   "scope": "section:electricity",
+   "pattern": "ENAC[ \\t|]+ELECTRICITY CONSUMPTION[^\\n]*?((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nc_avail_units",
+    "nc_avail_t_int",
+    "nc_avail_t_frac",
+    "nc_avail_v_rand",
+    "nc_avail_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "E104/E105 electricity availability (fixed) - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:electricity",
+   "pattern": "ELECTRICITY AVAILABILITY[ \\t]+(\\d*)[ \\t)]*(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "nc_avail_txt",
+   "type": "text",
+   "label": "E104/E105 electricity availability (fixed) - value exactly as printed",
+   "scope": "section:electricity",
+   "pattern": "ELECTRICITY AVAILABILITY[^\\n]*?((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nc_x_w001_units",
+    "nc_x_w001_t_int",
+    "nc_x_w001_t_frac",
+    "nc_x_w001_v_rand",
+    "nc_x_w001_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Water consumption (identity copy) - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:electricity",
+   "pattern": "WATER CONSUMPTION[ \\t]+(\\d+)[ \\t)]+(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "nc_x_w101_units",
+    "nc_x_w101_t_int",
+    "nc_x_w101_t_frac",
+    "nc_x_w101_v_rand",
+    "nc_x_w101_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Water availability (identity copy) - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:electricity",
+   "pattern": "WATER AVAILABILITY[ \\t]+(\\d*)[ \\t)]*(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "nc_x_s001_units",
+    "nc_x_s001_t_int",
+    "nc_x_s001_t_frac",
+    "nc_x_s001_v_rand",
+    "nc_x_s001_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Sewer (identity copy) - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:electricity",
+   "pattern": "SEWER[ \\t]+[A-Z][A-Z ]*?[ \\t]+(\\d+)[ \\t)]+(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "nc_x_r009_units",
+    "nc_x_r009_t_int",
+    "nc_x_r009_t_frac",
+    "nc_x_r009_v_rand",
+    "nc_x_r009_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Refuse (identity copy) - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:electricity",
+   "pattern": "REFUSE[ \\t]+[A-Z][A-Z ]*?[ \\t]+(\\d*)[ \\t)]*(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "nc_x_rates_units",
+    "nc_x_rates_t_int",
+    "nc_x_rates_t_frac",
+    "nc_x_rates_v_rand",
+    "nc_x_rates_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Assessment rates (identity copy) - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:electricity",
+   "pattern": "RATES[ \\t]+(?:BUSINESS|COMMERCIAL|RESIDENTIAL)[A-Z ]*?[ \\t]+(\\d*)[ \\t)]*(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "nc_w001_units",
+    "nc_w001_t_int",
+    "nc_w001_t_frac",
+    "nc_w001_v_rand",
+    "nc_w001_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Water consumption - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:water",
+   "pattern": "WATER CONSUMPTION[ \\t]+(\\d+)[ \\t)]+(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "nc_w001_txt",
+   "type": "text",
+   "label": "Water consumption - value exactly as printed",
+   "scope": "section:water",
+   "pattern": "WATER CONSUMPTION[^\\n]*?((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nc_w101_units",
+    "nc_w101_t_int",
+    "nc_w101_t_frac",
+    "nc_w101_v_rand",
+    "nc_w101_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Water availability - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:water",
+   "pattern": "WATER AVAILABILITY[ \\t]+(\\d*)[ \\t)]*(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "nc_w101_txt",
+   "type": "text",
+   "label": "Water availability - value exactly as printed",
+   "scope": "section:water",
+   "pattern": "WATER AVAILABILITY[^\\n]*?((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nc_s001_units",
+    "nc_s001_t_int",
+    "nc_s001_t_frac",
+    "nc_s001_v_rand",
+    "nc_s001_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Sewer - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:sewerage",
+   "pattern": "SEWER[ \\t]+[A-Z][A-Z ]*?[ \\t]+(\\d+)[ \\t)]+(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "nc_s001_txt",
+   "type": "text",
+   "label": "Sewer - value exactly as printed",
+   "scope": "section:sewerage",
+   "pattern": "SEWER[ \\t]+[A-Z][A-Z ]*?[^\\n]*?((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nc_r009_units",
+    "nc_r009_t_int",
+    "nc_r009_t_frac",
+    "nc_r009_v_rand",
+    "nc_r009_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Refuse - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:refuse",
+   "pattern": "REFUSE[ \\t]+[A-Z][A-Z ]*?[ \\t]+(\\d*)[ \\t)]*(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "nc_r009_txt",
+   "type": "text",
+   "label": "Refuse - value exactly as printed",
+   "scope": "section:refuse",
+   "pattern": "REFUSE[ \\t]+[A-Z][A-Z ]*?[^\\n]*?((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nc_rates_units",
+    "nc_rates_t_int",
+    "nc_rates_t_frac",
+    "nc_rates_v_rand",
+    "nc_rates_v_cents"
+   ],
+   "types": [
+    "number",
+    "text",
+    "text",
+    "text",
+    "text"
+   ],
+   "label": "Assessment rates - units, tariff (int/frac), value (rand/cents)",
+   "scope": "section:rates",
+   "pattern": "RATES[ \\t]+(?:BUSINESS|COMMERCIAL|RESIDENTIAL)[A-Z ]*?[ \\t]+(\\d*)[ \\t)]*(?<![\\d.,])(\\d+)[.,](\\d{5})[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "nc_rates_txt",
+   "type": "text",
+   "label": "Assessment rates - value exactly as printed",
+   "scope": "section:rates",
+   "pattern": "RATES[ \\t]+(?:BUSINESS|COMMERCIAL|RESIDENTIAL)[A-Z ]*?[^\\n]*?((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$"
+  },
+  {
+   "fields": [
+    "nc_open_rand",
+    "nc_open_cents"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "OPENING BALANCE (rand / cents)",
+   "scope": "section:electricity",
+   "pattern": "OPENING BALANCE[^\\n]*?(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "nc_payment_rand",
+    "nc_payment_cents"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "PAYMENT received (rand / cents)",
+   "scope": "section:electricity",
+   "pattern": "PAYMENT[ \\t]+B\\d+[^\\n]*?(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "nc_vat_rand",
+    "nc_vat_cents"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "VAT for the whole account (rand / cents) - ageing strip",
+   "scope": "section:electricity",
+   "patterns": [
+    "120\\+[ \\t]*DAYS[^\\n]*?(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$",
+    "^[ \\t]*(?<![\\d.,])(-?\\d+)[.,](\\d{2})[^\\n]*120\\+[ \\t]*DAYS",
+    "PAYMENT[ \\t]+B\\d+[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*(?<![\\d.,])(-?\\d+)[.,](\\d{2})[ \\t]*$"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "nc_vat_txt",
+   "type": "text",
+   "label": "VAT exactly as printed",
+   "scope": "section:electricity",
+   "patterns": [
+    "120\\+[ \\t]*DAYS[^\\n]*?((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$",
+    "^[ \\t]*((?<![\\d.,])-?\\d+[.,]\\d{2})[^\\n]*120\\+[ \\t]*DAYS",
+    "PAYMENT[ \\t]+B\\d+[^\\n]*\\n(?:[ \\t]*\\n)*[ \\t]*((?<![\\d.,])-?\\d+[.,]\\d{2})[ \\t]*$"
+   ]
+  },
+  {
+   "fields": [
+    "nc_current_rand",
+    "nc_current_cents"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "CURRENT charges, VAT inclusive (rand / cents) - ageing strip",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*(?:[.,]00[ \\t]+){4}(?<![\\d.,])(-?\\d+)[.,](\\d{2})(?!\\d)",
+    "(?<![\\d.,])(-?\\d+)[.,](\\d{2})[^\\n]*\\bTOTAL DUE\\b"
+   ],
+   "type": "text"
+  },
+  {
+   "field": "nc_current_txt",
+   "type": "text",
+   "label": "CURRENT exactly as printed",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(?:[.,]00[ \\t]+){4}((?<![\\d.,])-?\\d+[.,]\\d{2})(?!\\d)"
+  },
+  {
+   "fields": [
+    "nc_due_rand",
+    "nc_due_cents"
+   ],
+   "types": [
+    "text",
+    "text"
+   ],
+   "label": "TOTAL DUE (rand / cents)",
+   "scope": "section:electricity",
+   "patterns": [
+    "\\bTOTAL DUE\\b[^\\n]*?(?<![\\d.,])(-?\\d+)[.,](\\d{2})",
+    "^[ \\t]*(?:[.,]00[ \\t]+){4}(?:-?\\d+)[.,]\\d{2}[ \\t]+(?<![\\d.,])(-?\\d+)[.,](\\d{2})(?!\\d)"
+   ],
+   "type": "text"
+  }
+ ],
+ "computes": [
+  {
+   "field": "nc_cash_cat",
+   "op": "concat",
+   "of": [
+    "nc_cash_rand",
+    "nc_dot",
+    "nc_cash_cents"
+   ]
+  },
+  {
+   "field": "nc_cash_r",
+   "op": "sum",
+   "of": [
+    "nc_cash_cat"
+   ]
+  },
+  {
+   "field": "nc_e035_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_e035_t_int",
+    "nc_dot",
+    "nc_e035_t_frac"
+   ]
+  },
+  {
+   "field": "nc_e035_rate",
+   "op": "sum",
+   "of": [
+    "nc_e035_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_e035_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_e035_v_rand",
+    "nc_dot",
+    "nc_e035_v_cents"
+   ]
+  },
+  {
+   "field": "nc_e035_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_e035_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_e035_ex_r",
+   "op": "mul",
+   "of": [
+    "nc_e035_units",
+    "nc_e035_rate"
+   ]
+  },
+  {
+   "field": "nc_e030_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_e030_t_int",
+    "nc_dot",
+    "nc_e030_t_frac"
+   ]
+  },
+  {
+   "field": "nc_e030_rate",
+   "op": "sum",
+   "of": [
+    "nc_e030_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_e030_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_e030_v_rand",
+    "nc_dot",
+    "nc_e030_v_cents"
+   ]
+  },
+  {
+   "field": "nc_e030_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_e030_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_e030_ex_r",
+   "op": "mul",
+   "of": [
+    "nc_e030_units",
+    "nc_e030_rate"
+   ]
+  },
+  {
+   "field": "nc_e034_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_e034_t_int",
+    "nc_dot",
+    "nc_e034_t_frac"
+   ]
+  },
+  {
+   "field": "nc_e034_rate",
+   "op": "sum",
+   "of": [
+    "nc_e034_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_e034_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_e034_v_rand",
+    "nc_dot",
+    "nc_e034_v_cents"
+   ]
+  },
+  {
+   "field": "nc_e034_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_e034_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_e034_ex_r",
+   "op": "mul",
+   "of": [
+    "nc_e034_units",
+    "nc_e034_rate"
+   ]
+  },
+  {
+   "field": "nc_enac_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_enac_t_int",
+    "nc_dot",
+    "nc_enac_t_frac"
+   ]
+  },
+  {
+   "field": "nc_enac_rate",
+   "op": "sum",
+   "of": [
+    "nc_enac_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_enac_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_enac_v_rand",
+    "nc_dot",
+    "nc_enac_v_cents"
+   ]
+  },
+  {
+   "field": "nc_enac_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_enac_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_enac_ex_r",
+   "op": "mul",
+   "of": [
+    "nc_enac_units",
+    "nc_enac_rate"
+   ]
+  },
+  {
+   "field": "nc_avail_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_avail_t_int",
+    "nc_dot",
+    "nc_avail_t_frac"
+   ]
+  },
+  {
+   "field": "nc_avail_rate",
+   "op": "sum",
+   "of": [
+    "nc_avail_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_avail_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_avail_v_rand",
+    "nc_dot",
+    "nc_avail_v_cents"
+   ]
+  },
+  {
+   "field": "nc_avail_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_avail_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_avail_ex_r",
+   "op": "sum",
+   "of": [
+    "nc_avail_rate"
+   ]
+  },
+  {
+   "field": "nc_x_w001_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_x_w001_t_int",
+    "nc_dot",
+    "nc_x_w001_t_frac"
+   ]
+  },
+  {
+   "field": "nc_x_w001_rate",
+   "op": "sum",
+   "of": [
+    "nc_x_w001_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_x_w001_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_x_w001_v_rand",
+    "nc_dot",
+    "nc_x_w001_v_cents"
+   ]
+  },
+  {
+   "field": "nc_x_w001_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_x_w001_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_x_w001_ex_r",
+   "op": "mul",
+   "of": [
+    "nc_x_w001_units",
+    "nc_x_w001_rate"
+   ]
+  },
+  {
+   "field": "nc_x_w101_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_x_w101_t_int",
+    "nc_dot",
+    "nc_x_w101_t_frac"
+   ]
+  },
+  {
+   "field": "nc_x_w101_rate",
+   "op": "sum",
+   "of": [
+    "nc_x_w101_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_x_w101_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_x_w101_v_rand",
+    "nc_dot",
+    "nc_x_w101_v_cents"
+   ]
+  },
+  {
+   "field": "nc_x_w101_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_x_w101_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_x_w101_ex_r",
+   "op": "sum",
+   "of": [
+    "nc_x_w101_rate"
+   ]
+  },
+  {
+   "field": "nc_x_s001_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_x_s001_t_int",
+    "nc_dot",
+    "nc_x_s001_t_frac"
+   ]
+  },
+  {
+   "field": "nc_x_s001_rate",
+   "op": "sum",
+   "of": [
+    "nc_x_s001_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_x_s001_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_x_s001_v_rand",
+    "nc_dot",
+    "nc_x_s001_v_cents"
+   ]
+  },
+  {
+   "field": "nc_x_s001_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_x_s001_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_x_s001_ex_r",
+   "op": "mul",
+   "of": [
+    "nc_x_s001_units",
+    "nc_x_s001_rate"
+   ]
+  },
+  {
+   "field": "nc_x_r009_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_x_r009_t_int",
+    "nc_dot",
+    "nc_x_r009_t_frac"
+   ]
+  },
+  {
+   "field": "nc_x_r009_rate",
+   "op": "sum",
+   "of": [
+    "nc_x_r009_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_x_r009_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_x_r009_v_rand",
+    "nc_dot",
+    "nc_x_r009_v_cents"
+   ]
+  },
+  {
+   "field": "nc_x_r009_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_x_r009_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_x_r009_ex_r",
+   "op": "sum",
+   "of": [
+    "nc_x_r009_rate"
+   ]
+  },
+  {
+   "field": "nc_x_rates_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_x_rates_t_int",
+    "nc_dot",
+    "nc_x_rates_t_frac"
+   ]
+  },
+  {
+   "field": "nc_x_rates_rate",
+   "op": "sum",
+   "of": [
+    "nc_x_rates_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_x_rates_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_x_rates_v_rand",
+    "nc_dot",
+    "nc_x_rates_v_cents"
+   ]
+  },
+  {
+   "field": "nc_x_rates_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_x_rates_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_x_rates_ex_r",
+   "op": "sum",
+   "of": [
+    "nc_x_rates_rate"
+   ]
+  },
+  {
+   "field": "nc_w001_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_w001_t_int",
+    "nc_dot",
+    "nc_w001_t_frac"
+   ]
+  },
+  {
+   "field": "nc_w001_rate",
+   "op": "sum",
+   "of": [
+    "nc_w001_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_w001_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_w001_v_rand",
+    "nc_dot",
+    "nc_w001_v_cents"
+   ]
+  },
+  {
+   "field": "nc_w001_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_w001_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_w001_ex_r",
+   "op": "mul",
+   "of": [
+    "nc_w001_units",
+    "nc_w001_rate"
+   ]
+  },
+  {
+   "field": "nc_w101_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_w101_t_int",
+    "nc_dot",
+    "nc_w101_t_frac"
+   ]
+  },
+  {
+   "field": "nc_w101_rate",
+   "op": "sum",
+   "of": [
+    "nc_w101_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_w101_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_w101_v_rand",
+    "nc_dot",
+    "nc_w101_v_cents"
+   ]
+  },
+  {
+   "field": "nc_w101_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_w101_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_w101_ex_r",
+   "op": "sum",
+   "of": [
+    "nc_w101_rate"
+   ]
+  },
+  {
+   "field": "nc_s001_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_s001_t_int",
+    "nc_dot",
+    "nc_s001_t_frac"
+   ]
+  },
+  {
+   "field": "nc_s001_rate",
+   "op": "sum",
+   "of": [
+    "nc_s001_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_s001_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_s001_v_rand",
+    "nc_dot",
+    "nc_s001_v_cents"
+   ]
+  },
+  {
+   "field": "nc_s001_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_s001_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_s001_ex_r",
+   "op": "mul",
+   "of": [
+    "nc_s001_units",
+    "nc_s001_rate"
+   ]
+  },
+  {
+   "field": "nc_r009_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_r009_t_int",
+    "nc_dot",
+    "nc_r009_t_frac"
+   ]
+  },
+  {
+   "field": "nc_r009_rate",
+   "op": "sum",
+   "of": [
+    "nc_r009_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_r009_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_r009_v_rand",
+    "nc_dot",
+    "nc_r009_v_cents"
+   ]
+  },
+  {
+   "field": "nc_r009_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_r009_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_r009_ex_r",
+   "op": "sum",
+   "of": [
+    "nc_r009_rate"
+   ]
+  },
+  {
+   "field": "nc_rates_rate_cat",
+   "op": "concat",
+   "of": [
+    "nc_rates_t_int",
+    "nc_dot",
+    "nc_rates_t_frac"
+   ]
+  },
+  {
+   "field": "nc_rates_rate",
+   "op": "sum",
+   "of": [
+    "nc_rates_rate_cat"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_rates_inc_cat",
+   "op": "concat",
+   "of": [
+    "nc_rates_v_rand",
+    "nc_dot",
+    "nc_rates_v_cents"
+   ]
+  },
+  {
+   "field": "nc_rates_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_rates_inc_cat"
+   ]
+  },
+  {
+   "field": "nc_rates_ex_r",
+   "op": "sum",
+   "of": [
+    "nc_rates_rate"
+   ]
+  },
+  {
+   "field": "nc_open_r_cat",
+   "op": "concat",
+   "of": [
+    "nc_open_rand",
+    "nc_dot",
+    "nc_open_cents"
+   ]
+  },
+  {
+   "field": "nc_open_r",
+   "op": "sum",
+   "of": [
+    "nc_open_r_cat"
+   ]
+  },
+  {
+   "field": "nc_payment_r_cat",
+   "op": "concat",
+   "of": [
+    "nc_payment_rand",
+    "nc_dot",
+    "nc_payment_cents"
+   ]
+  },
+  {
+   "field": "nc_payment_r",
+   "op": "sum",
+   "of": [
+    "nc_payment_r_cat"
+   ]
+  },
+  {
+   "field": "nc_vat_r_cat",
+   "op": "concat",
+   "of": [
+    "nc_vat_rand",
+    "nc_dot",
+    "nc_vat_cents"
+   ]
+  },
+  {
+   "field": "nc_vat_r",
+   "op": "sum",
+   "of": [
+    "nc_vat_r_cat"
+   ]
+  },
+  {
+   "field": "nc_current_incl_r_cat",
+   "op": "concat",
+   "of": [
+    "nc_current_rand",
+    "nc_dot",
+    "nc_current_cents"
+   ]
+  },
+  {
+   "field": "nc_current_incl_r",
+   "op": "sum",
+   "of": [
+    "nc_current_incl_r_cat"
+   ]
+  },
+  {
+   "field": "nc_total_due_r_cat",
+   "op": "concat",
+   "of": [
+    "nc_due_rand",
+    "nc_dot",
+    "nc_due_cents"
+   ]
+  },
+  {
+   "field": "nc_total_due_r",
+   "op": "sum",
+   "of": [
+    "nc_total_due_r_cat"
+   ]
+  },
+  {
+   "field": "nc_total_kwh",
+   "op": "sum",
+   "of": [
+    "nc_e030_units",
+    "nc_e035_units"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_e034_kva",
+   "op": "sum",
+   "of": [
+    "nc_e034_units"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "nc_energy_ex_r",
+   "op": "sum",
+   "of": [
+    "nc_e030_ex_r",
+    "nc_e035_ex_r"
+   ]
+  },
+  {
+   "field": "nc_energy_inc_r",
+   "op": "sum",
+   "of": [
+    "nc_e030_inc_r",
+    "nc_e035_inc_r"
+   ]
+  },
+  {
+   "field": "nc_elec_ex_total",
+   "op": "sum",
+   "of": [
+    "nc_e030_ex_r",
+    "nc_e035_ex_r",
+    "nc_e034_ex_r",
+    "nc_enac_ex_r",
+    "nc_avail_ex_r"
+   ]
+  },
+  {
+   "field": "nc_elec_inc_total",
+   "op": "sum",
+   "of": [
+    "nc_e030_inc_r",
+    "nc_e035_inc_r",
+    "nc_e034_inc_r",
+    "nc_enac_inc_r",
+    "nc_avail_inc_r"
+   ]
+  },
+  {
+   "field": "nc_elec_vat_r",
+   "op": "sub",
+   "of": [
+    "nc_elec_inc_total",
+    "nc_elec_ex_total"
+   ]
+  },
+  {
+   "field": "nc_charges_inc_total",
+   "op": "sum",
+   "of": [
+    "nc_e030_inc_r",
+    "nc_e035_inc_r",
+    "nc_e034_inc_r",
+    "nc_enac_inc_r",
+    "nc_avail_inc_r",
+    "nc_x_w001_inc_r",
+    "nc_x_w101_inc_r",
+    "nc_x_s001_inc_r",
+    "nc_x_r009_inc_r",
+    "nc_x_rates_inc_r"
+   ]
+  },
+  {
+   "field": "nc_current_leak_r",
+   "op": "diff",
+   "of": [
+    "nc_current_incl_r",
+    "nc_charges_inc_total"
+   ]
+  },
+  {
+   "field": "nc_charges_ex_total",
+   "op": "sum",
+   "of": [
+    "nc_e030_ex_r",
+    "nc_e035_ex_r",
+    "nc_e034_ex_r",
+    "nc_enac_ex_r",
+    "nc_avail_ex_r",
+    "nc_x_w001_ex_r",
+    "nc_x_w101_ex_r",
+    "nc_x_s001_ex_r",
+    "nc_x_r009_ex_r",
+    "nc_x_rates_ex_r"
+   ]
+  },
+  {
+   "field": "nc_vat_calc_r",
+   "op": "sub",
+   "of": [
+    "nc_current_incl_r",
+    "nc_charges_ex_total"
+   ]
+  },
+  {
+   "field": "nc_vat_leak_r",
+   "op": "diff",
+   "of": [
+    "nc_vat_calc_r",
+    "nc_vat_r"
+   ]
+  },
+  {
+   "field": "nc_current_ex_r",
+   "op": "sub",
+   "of": [
+    "nc_current_incl_r",
+    "nc_vat_r"
+   ]
+  },
+  {
+   "field": "nc_ex_total_leak_r",
+   "op": "diff",
+   "of": [
+    "nc_current_ex_r",
+    "nc_charges_ex_total"
+   ]
+  },
+  {
+   "field": "total_kl",
+   "op": "sum",
+   "of": [
+    "nc_w001_units"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "water_usage_r",
+   "op": "sum",
+   "of": [
+    "nc_w001_ex_r"
+   ]
+  },
+  {
+   "field": "water_levy_r",
+   "op": "sum",
+   "of": [
+    "nc_w101_ex_r"
+   ]
+  },
+  {
+   "field": "water_charges_r",
+   "op": "sum",
+   "of": [
+    "nc_w001_ex_r",
+    "nc_w101_ex_r"
+   ]
+  },
+  {
+   "field": "nc_water_kl_leak",
+   "op": "diff",
+   "of": [
+    "nc_water_cons_kl",
+    "total_kl"
+   ]
+  },
+  {
+   "field": "sewer_kl",
+   "op": "sum",
+   "of": [
+    "nc_s001_units"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "sewer_r",
+   "op": "sum",
+   "of": [
+    "nc_s001_ex_r"
+   ]
+  },
+  {
+   "field": "refuse_charges_r",
+   "op": "sum",
+   "of": [
+    "nc_r009_ex_r"
+   ]
+  },
+  {
+   "field": "rates_total_r",
+   "op": "sum",
+   "of": [
+    "nc_rates_ex_r"
+   ]
+  },
+  {
+   "field": "statement_month",
+   "op": "prefer",
+   "of": [
+    "billing_date"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "municipality": "municipality",
+  "tariff_name": "_none",
+  "account_number": "account_number",
+  "meter": "nc_meter",
+  "reading_type": "_none",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "nc_kwh_start_reading",
+  "end_reading_kwh": "nc_kwh_end_reading",
+  "total_kwh": "nc_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "nc_total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "nc_e034_kva",
+  "nmd_kva": "nc_nmd_kva",
+  "peak_r": "_none",
+  "standard_r": "nc_energy_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "nc_e034_ex_r",
+  "nmd_r": "nc_enac_ex_r",
+  "other_r": "nc_avail_ex_r",
+  "total_ex_vat_r": "nc_elec_ex_total",
+  "deposit_r": "nc_cash_r",
+  "cash_r": "nc_cash_r",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "OPENING BALANCE[^\\n]*?(?<![\\d.,])(-?\\d+)[.,]\\d{2}[ \\t]*$",
+  "incoming_payment": "PAYMENT[ \\t]+B\\d+[^\\n]*?(?<![\\d.,])(-?\\d+)[.,]\\d{2}[ \\t]*$",
+  "current_incl": "^[ \\t]*(?:[.,]00[ \\t]+){4}(?<![\\d.,])(-?\\d+)[.,]\\d{2}(?!\\d)",
+  "vat": "120\\+[ \\t]*DAYS[^\\n]*?(?<![\\d.,])(-?\\d+)[.,]\\d{2}[ \\t]*$",
+  "total_due": "(?i)\\bTOTAL DUE\\b[^\\n]*?(?<![\\d.,])(-?\\d+)[.,]\\d{2}",
+  "due_date": "NOTIFIED DEMAND[^\\n]*\\n[ \\t]*\\d{9,12}[ \\t]+\\d{8}[ \\t]+\\d{9,12}[ \\t]+(\\d{8})",
+  "deposito": "\\bCASH\\b[ \\t]+(?<![\\d.,])(\\d+)[.,]\\d{2}"
+ }
+}

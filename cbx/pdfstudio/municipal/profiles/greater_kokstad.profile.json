@@ -1,0 +1,468 @@
+{
+ "profile_id": "greater_kokstad",
+ "profile_name": "Greater Kokstad Municipality (KwaZulu-Natal, KZN433)",
+ "short_name": "Greater Kokstad",
+ "_doc": "EMUNSOFT 'TAX INVOICE / STATEMENT OF ACCOUNT' (KwaZulu-Natal, KZN433). Real masthead: 'GREATER KOKSTAD MUNICIPALITY / PO BOX 8 KOKSTAD 4700 / VAT No: 4330101702'. FINGERPRINT: all=['GREATER KOKSTAD MUNICIPALITY','4330101702'] - both are 9/487 files in this tree and hit only this folder. Do NOT fingerprint on the bare word 'KOKSTAD' (10/487: it also appears as 'WATER GOVT KOKSTAD' / 'SANITATION KOKSTAD' on the Harry Gwala District bill that sits in this folder), nor on 'EMUNSOFT' (32/487, 5 folders - Alfred Duma 10, Mogale City 9, Phokwane 3, Emalahleni 1 all run the same billing engine), nor on 'TAX INVOICE / STATEMENT OF ACCOUNT' (14/487, 4 folders - + Emalahleni 1, Maluti-A-Phofung 1, Phokwane 3). Re-verified by whole-tree substring scan over all 487 cached texts: 'GREATER KOKSTAD MUNICIPALITY' 9 files/1 folder, '4330101702' 9/1, portal URL 9/1, bare 'KOKSTAD' 10/1 (the extra one is the HGDM bill), '4000846081' 1 file (the HGDM bill only). reject_if_text carries 4000846081 = Harry Gwala District Municipality's council VAT number, so an HGDM bill can never be swallowed even if it names Kokstad. THREE TEXT SHAPES in the folder (grouped by actual text, not by filename): (A) 1-page, real text layer, one statement with a METER READINGS table - 4 files (202511, 202512, 202601, 202607; 3994-4122 chars). (B) 2-page, real text layer, TWO statements in one PDF - 3 files (202605+202606, 202602+202603, 202606+202607; 6090-6621 chars). Page 1 always carries the METER READINGS table and the month's charges; page 2 is the following month's 'first of the month' balance-carry statement with NO METER READINGS block and no charge lines. That is why the electricity section is an OVERLAY bounded by 'end': '^[ \\t]*REMITTANCE ADVICE' - it pins extraction to page 1's statement, so the collect:sum payment rule cannot pull page 2's payment into page 1's row. (C) 1-page SCANNED IMAGE, no text layer at all (read_pdf(ocr='never') returns 0 chars) - 2 files (202603 'March', 202604 'April'; Sharp SKM_C550i copier scans). OCR via tesseract recovers 2348/2365 chars and every number needed; the app force-flags these rows OCR. OCR damage is confined to: (1) the reading-status letter, printed 'I', which OCR reads as '|' - the flag rule restricts to [AIE] so it comes out BLANK rather than wrong; (2) the aging-strip amounts, which OCR drops entirely (the '120+ DAYS ... CLOSING BALANCE' header survives, the number row does not) - that rule is required:false, so those two files leave kok_age_* / kok_closing_balance_r blank, which is correct-by-absence. Nothing else differs: the 202603 and 202604 ledgers close to their printed TOTAL DUE to R0.00. NOT A KOKSTAD BILL: HGDM_[number removed]_SKM_C550i[number removed].pdf (4 scanned pages) is a HARRY GWALA DISTRICT MUNICIPALITY water/sanitation tax invoice - Ixopo address, council VAT 4000846081, accounts [number removed] and [number removed], no electricity at all. It bills the SAME physical Telkom site (stand [number removed] / BARKER ST 31) because water and sanitation in Kokstad are a district-level service, but it is a different municipality and it correctly stays UNRECOGNIZED here. LAYOUT. Header: 'Account Number:', 'Consumer Name:', 'Account Date: 30 NOV 2025' (kept EXACTLY as printed - a day/MON/year string, not a slash date), 'Tax Invoice No: [number removed]' (account + YYYYMM -> statement_month), 'ERF Description:', 'Street:' (-> site_name), the consumer-portal URL and Internet Pin. METER READINGS table: two register rows on ONE physical meter [number removed] - 'ELECTRICITY' (kWh: OLD READING, NEW READING, status letter, CONSUMPTION, LEVIED AMOUNT, READING DATES) and 'KVA' (max-demand register: old reading always '.000', new reading = the month's maximum demand in kVA). The KVA row is matched with 'KVA\\b(?![ \\t]*DEMAND)' so it can never pick up the 'KVA DEMAND BASIC CHARGE' ledger line. ACCOUNT DETAILS ledger, keyed on the printed CODE column (the descriptions drift - SKIPBIN vs DN REFUSE <n>, LOW vs HIGH SEASON - the codes do not): 000802 refuse, 000401 FIRE LEVY, 000519 NOTIFIED DEMAND -> nmd_kva/nmd_r, 000503 ENERGY CHARGE -> standard_kwh/standard_r (single band, non-TOU, routed to STANDARD by the same convention as CoJ flat-rate), 001508 ACTUAL DEMAND AND BASIC CHARGE -> demand_kva/demand_r, 001508 KVA DEMAND BASIC CHARGE -> other_r, 009008 VAT, 008888 payments (trailing minus). PAYMENT LINES ARE NOT UNIVERSAL: 202605 prints NO 008888 line at all (that month's payment lands on the 202606 statement instead, which prints TWO), so kok_payments_r is required:false and collect:'sum'. The whole-ledger closure still holds on both months. NOTE the recon-row limitation: extract_recon runs ONE re.search per rule, so on 202606 the recon 'incoming_payment' / computed 'subtotal' columns see only the FIRST of the two payments. The main extraction field kok_payments_r sums both correctly - only the recon row is affected, and that is an engine constraint, not a pattern that can be fixed with a single capture group. Charge lines print '<units>@<rate> * <value>'; the VALUE column is EX VAT (verified: 15% of the summed values, rounded per line, equals the printed 009008 VAT line to R0.01 max on 9/9 bills) and the '*' marks the line as VAT-able. Money is comma-thousands / dot-decimal ('21,069.37') so the stock money cleaner is correct - there is NO comma-decimal 100x trap on this layout. Two tariff-print generations coexist: rates print with 6 decimals ('276.020000') on 202511-202601 and 8 ('276.[number removed]') from 202602, and the units/rate cell is sometimes GLUED ('[address removed],552.[number removed]'); the charge pattern tolerates both. RULE ZERO - DECLARED: this bill prints NO independent ex-VAT electricity total. total_ex_vat_r is therefore the SUM of standard_r + demand_r + nmd_r + other_r and the harness reconcile on it is CIRCULAR. The real checks, both against figures the extraction does not construct, are (a) the METER READINGS 'LEVIED AMOUNT' column: elec_levied + kva_levied == standard_r + demand_r, max deviation R0.00 on 9/9, and (b) the printed 009008 VAT line vs 15% of (refuse + fire levy + nmd_r + standard_r + demand_r + other_r) rounded per line, max deviation R0.01 on 9/9. Whole-ledger closure (OPENING BALANCE + payments + all charges + VAT == TOTAL DUE) is R0.00 on 9/9, and the aging strip closes to TOTAL DUE at R0.00 on the 7 non-OCR bills. NOT PRINTED ANYWHERE -> mapped '_none': TOU peak/off-peak registers (single-band tariff), consumer deposit / cash / guarantee / security held. reading_type carries the raw single-letter status code the bill prints: 'A' on 202511 (which TRANSLATE maps to 'Actual') and 'I' on the other 6 text bills. THE BILL DOES NOT PRINT A LEGEND FOR 'I' and TRANSLATE has no entry for it, so it passes through as 'I' - do not guess 'Interim'/'Estimated'; the readings chain continuously month to month with no correcting reversal, so 'I' is certainly not a later-corrected estimate. One answer from Kokstad finance turns this into a one-line TRANSLATE addition. tariff_name carries the ENERGY CHARGE description ('ENERGY CHARGE HIGH SEASON') because that is the only tariff-identifying text on the bill; there is no tariff name or tariff code column. KNOWN LIMITS: (1) a 2-page file yields ONE row - page 2's balance-carry statement is deliberately not extracted (it has no electricity data), so its Tax Invoice No never appears; (2) a standalone balance-carry statement with no METER READINGS block would match the fingerprint and produce NO row; (3) all 9 bills are the same account [number removed] and the same single-meter NMD tariff - Kokstad has 4 accounts in the master list and the other 3 have not been seen.",
+ "fingerprint": {
+  "all": [
+   "GREATER KOKSTAD MUNICIPALITY",
+   "4330101702"
+  ],
+  "any": [
+   "TAX INVOICE / STATEMENT OF ACCOUNT",
+   "mymunicipality-kzn433.emunsoft.co.za"
+  ],
+  "reject_if_text": [
+   "4000846081",
+   "Please wait...",
+   "does not support the use of JavaScript"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*METER READINGS[ \\t]*$",
+   "end": "^[ \\t]*REMITTANCE ADVICE\\b",
+   "overlay": true,
+   "require": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]"
+  },
+  "refuse": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000802\\b",
+   "end": "\\n",
+   "overlay": true
+  },
+  "sundry": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000401\\b",
+   "end": "\\n",
+   "overlay": true
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Account Number",
+   "scope": "document",
+   "patterns": [
+    "^[ \\t]*Account Number:[ \\t]*(\\d{4,})",
+    "^[ \\t]*ACCOUNT NUMBER[ \\t]{2,}(\\d{4,})"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "kok_consumer_name",
+   "label": "Consumer name",
+   "scope": "document",
+   "pattern": "^[ \\t]*Consumer Name:[ \\t]*(\\S[^\\n]*?)(?:[ \\t]{2,}|[ \\t]*$)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Account Date (as printed)",
+   "scope": "document",
+   "pattern": "Account Date:[ \\t]*(\\d{1,2}[ \\t]+[A-Za-z]{3,}[ \\t]+\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "kok_invoice_no",
+   "label": "Tax Invoice No",
+   "scope": "document",
+   "pattern": "Tax Invoice No:[ \\t]*(\\d{6,})",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "statement_month",
+   "label": "Statement month (YYYYMM tail of the invoice no)",
+   "scope": "document",
+   "pattern": "Tax Invoice No:[ \\t]*\\d+?(20\\d{4})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "kok_erf",
+   "label": "ERF description",
+   "scope": "document",
+   "pattern": "ERF Description:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "site_name",
+   "label": "Street address",
+   "scope": "document",
+   "pattern": "^[^\\n]*?\\bStreet:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "kok_portal",
+   "label": "Consumer portal URL",
+   "scope": "document",
+   "pattern": "(mymunicipality-kzn433\\.emunsoft\\.co\\.za)",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "kok_internet_pin",
+   "label": "Internet PIN",
+   "scope": "document",
+   "pattern": "Internet Pin:[ \\t]*(\\d+)",
+   "type": "text",
+   "required": false
+  },
+  {
+   "field": "kok_total_due_r",
+   "label": "TOTAL DUE",
+   "scope": "document",
+   "pattern": "^[ \\t]*T?TOTAL DUE[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "due_date",
+   "label": "TOTAL DUE ON OR BEFORE",
+   "scope": "document",
+   "pattern": "TOTAL DUE ON OR BEFORE[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "kok_bank_acc",
+   "label": "Municipal bank account",
+   "scope": "document",
+   "pattern": "ACCOUNT NUMBER[ \\t]+(5\\d{10})",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "meter",
+    "start_reading_kwh",
+    "end_reading_kwh"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number"
+   ],
+   "label": "ELECTRICITY register: meter no, old reading, new reading",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+ELECTRICITY[ \\t]+([\\d,]*\\.\\d{3})[ \\t]+([\\d,]*\\.\\d{3})",
+   "required": true
+  },
+  {
+   "fields": [
+    "kok_elec_cons_kwh",
+    "kok_elec_levied_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "ELECTRICITY register: CONSUMPTION + LEVIED AMOUNT columns",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]*[^\\d\\s]?[ \\t]+([\\d,]+\\.\\d{3})[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+   "required": true
+  },
+  {
+   "fields": [
+    "read_start",
+    "read_end"
+   ],
+   "types": [
+    "date",
+    "date"
+   ],
+   "label": "ELECTRICITY register: READING DATES",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[^\\n]*?(\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "kok_read_flag",
+   "label": "Reading status code as printed (A / I / E)",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+ELECTRICITY[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+([AIE])[ \\t]+[\\d,]*\\.\\d{3}[ \\t]",
+   "type": "text",
+   "required": false
+  },
+  {
+   "fields": [
+    "kok_kva_meter",
+    "kok_kva_old",
+    "kok_kva_new"
+   ],
+   "types": [
+    "text",
+    "number",
+    "number"
+   ],
+   "label": "KVA register: meter no, old reading, new (max demand) reading",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*(\\d{6,})[ \\t]+KVA\\b(?![ \\t]*DEMAND)[ \\t]+([\\d,]*\\.\\d{3})[ \\t]+([\\d,]*\\.\\d{3})",
+   "required": true
+  },
+  {
+   "fields": [
+    "kok_kva_cons",
+    "kok_kva_levied_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "KVA register: CONSUMPTION + LEVIED AMOUNT columns",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{6,}[ \\t]+KVA\\b(?![ \\t]*DEMAND)[ \\t]+[\\d,]*\\.\\d{3}[ \\t]+[\\d,]*\\.\\d{3}[ \\t]*[^\\d\\s]?[ \\t]+([\\d,]+\\.\\d{3})[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+   "required": true
+  },
+  {
+   "fields": [
+    "standard_kwh",
+    "kok_energy_rate",
+    "standard_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "ENERGY CHARGE (code 000503) - single band, ex VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000503[ \\t]+[^A-Za-z\\n]{0,3}ENERGY CHARGE[^\\n]*?(?<![\\d.])([\\d,]+\\.\\d{3})@?\\)?[ \\t]*@?[ \\t]*([\\d,]+\\.\\d{4,8})\\)?[ \\t]*[\\*,.]?[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+   "required": true
+  },
+  {
+   "field": "kok_tariff_name",
+   "label": "Energy charge description (season)",
+   "scope": "section:electricity",
+   "collect": "join_unique",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000503[ \\t]+[^A-Za-z\\n]{0,3}(ENERGY CHARGE[A-Z ]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "nmd_kva",
+    "kok_nmd_rate",
+    "nmd_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "NOTIFIED DEMAND (code 000519), ex VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000519[ \\t]+[^A-Za-z\\n]{0,3}NOTIFIED DEMAND[^\\n]*?(?<![\\d.])([\\d,]+\\.\\d{3})@?\\)?[ \\t]*@?[ \\t]*([\\d,]+\\.\\d{4,8})\\)?[ \\t]*[\\*,.]?[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+   "required": true
+  },
+  {
+   "fields": [
+    "kok_demand_kva",
+    "kok_demand_rate",
+    "demand_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "ACTUAL DEMAND AND BASIC CHARGE (code 001508), ex VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+001508[ \\t]+[^A-Za-z\\n]{0,3}ACTUAL DEMAND[^\\n]*?(?<![\\d.])([\\d,]+\\.\\d{3})@?\\)?[ \\t]*@?[ \\t]*([\\d,]+\\.\\d{4,8})\\)?[ \\t]*[\\*,.]?[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+   "required": true
+  },
+  {
+   "fields": [
+    "kok_kva_basic_units",
+    "kok_kva_basic_rate",
+    "kok_kva_basic_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "KVA DEMAND BASIC CHARGE (code 001508), ex VAT",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+001508[ \\t]+[^A-Za-z\\n]{0,3}KVA DEMAND BASIC[^\\n]*?(?<![\\d.])([\\d,]+\\.\\d{3})@?\\)?[ \\t]*@?[ \\t]*([\\d,]+\\.\\d{4,8})\\)?[ \\t]*[\\*,.]?[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+   "required": true
+  },
+  {
+   "field": "kok_vat_r",
+   "label": "VAT levied (code 009008)",
+   "scope": "section:electricity",
+   "patterns": [
+    "^[ \\t]*009008[ \\t]+[^A-Za-z\\n]{0,3}VAT[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+    "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+009008[ \\t]+[^A-Za-z\\n]{0,3}VAT[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])"
+   ],
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "kok_opening_balance_r",
+   "label": "OPENING BALANCE",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*OPENING BALANCE[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "kok_payments_r",
+   "label": "Payments (code 008888, trailing minus)",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+008888[^\\n]*?[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": false
+  },
+  {
+   "fields": [
+    "kok_age_120",
+    "kok_age_90",
+    "kok_age_60",
+    "kok_age_30",
+    "kok_age_current",
+    "kok_closing_balance_r"
+   ],
+   "types": [
+    "money",
+    "money",
+    "money",
+    "money",
+    "money",
+    "money"
+   ],
+   "label": "Aging strip + CLOSING BALANCE",
+   "scope": "section:electricity",
+   "pattern": "^[ \\t]*120\\+ DAYS[^\\n]*\\n[ \\t]*((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "required": false
+  },
+  {
+   "field": "kok_refuse_desc",
+   "label": "Refuse charge description",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000802[ \\t]+[^A-Za-z\\n]{0,3}([A-Z][A-Z0-9 ]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "kok_refuse_r",
+   "label": "Refuse charge (ex VAT)",
+   "scope": "section:refuse",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000802\\b[^\\n]*?((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])[ \\t]*$",
+   "type": "money",
+   "required": true
+  },
+  {
+   "field": "kok_fire_desc",
+   "label": "Sundry charge description",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000401[ \\t]+[^A-Za-z\\n]{0,3}([A-Z][A-Z0-9 ]*?)[ \\t]{2,}",
+   "type": "text",
+   "required": true
+  },
+  {
+   "fields": [
+    "kok_fire_units",
+    "kok_fire_rate",
+    "kok_fire_r"
+   ],
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "label": "FIRE LEVY (code 000401), ex VAT",
+   "scope": "section:sundry",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+000401[ \\t]+[^A-Za-z\\n]{0,3}FIRE LEVY[^\\n]*?(?<![\\d.])([\\d,]+\\.\\d{3})@?\\)?[ \\t]*@?[ \\t]*([\\d,]+\\.\\d{4,8})\\)?[ \\t]*[\\*,.]?[ \\t]+((?<![\\d.,])-?[\\d,]+\\.\\d{2}-?)(?![\\d])",
+   "required": true
+  }
+ ],
+ "computes": [
+  {
+   "field": "kok_elec_parts_r",
+   "op": "sum",
+   "of": [
+    "standard_r",
+    "demand_r",
+    "nmd_r",
+    "kok_kva_basic_r"
+   ]
+  },
+  {
+   "field": "kok_levied_column_r",
+   "op": "sum",
+   "of": [
+    "kok_elec_levied_r",
+    "kok_kva_levied_r"
+   ]
+  },
+  {
+   "field": "kok_energy_demand_r",
+   "op": "sum",
+   "of": [
+    "standard_r",
+    "demand_r"
+   ]
+  },
+  {
+   "field": "kok_demand_kva_out",
+   "op": "prefer",
+   "as": "number",
+   "of": [
+    "kok_demand_kva",
+    "kok_kva_cons",
+    "kok_kva_new"
+   ]
+  },
+  {
+   "field": "kok_total_kwh",
+   "op": "prefer",
+   "as": "number",
+   "of": [
+    "kok_elec_cons_kwh",
+    "standard_kwh"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "site_name",
+  "billing_date": "billing_date",
+  "tariff_name": "kok_tariff_name",
+  "account_number": "account_number",
+  "meter": "meter",
+  "reading_type": "kok_read_flag",
+  "read_start": "read_start",
+  "read_end": "read_end",
+  "start_reading_kwh": "start_reading_kwh",
+  "end_reading_kwh": "end_reading_kwh",
+  "total_kwh": "kok_total_kwh",
+  "peak_kwh": "_none",
+  "standard_kwh": "standard_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "kok_demand_kva_out",
+  "nmd_kva": "nmd_kva",
+  "peak_r": "_none",
+  "standard_r": "standard_r",
+  "offpeak_r": "_none",
+  "demand_r": "demand_r",
+  "nmd_r": "nmd_r",
+  "other_r": "kok_kva_basic_r",
+  "total_ex_vat_r": "kok_elec_parts_r",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ },
+ "recon": {
+  "prev_balance": "^[ \\t]*OPENING BALANCE[ \\t]+(-?[\\d,]+\\.\\d{2}-?)",
+  "incoming_payment": "008888[^\\n]*?[ \\t]+(-?[\\d,]+\\.\\d{2}-?)[ \\t]*$",
+  "vat": "009008[ \\t]+[^A-Za-z\\n]{0,3}VAT[ \\t]+(-?[\\d,]+\\.\\d{2}-?)",
+  "total_due": "^[ \\t]*T?TOTAL DUE[ \\t]+(-?[\\d,]+\\.\\d{2}-?)",
+  "due_date": "TOTAL DUE ON OR BEFORE[ \\t]+(\\d{2}/\\d{2}/\\d{4})"
+ }
+}

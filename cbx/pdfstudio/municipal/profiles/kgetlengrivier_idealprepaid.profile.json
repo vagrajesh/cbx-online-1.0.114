@@ -1,0 +1,207 @@
+{
+ "profile_id": "kgetlengrivier_idealprepaid",
+ "profile_name": "Kgetlengrivier Municipality (IdealPrepaid sub-metering invoice)",
+ "short_name": "Kgetlengrivier",
+ "_doc": "Kgetlengrivier Municipality sub-metering TAX INVOICE produced weekly by IdealPrepaid (folder 'IDEAL PREPAID'). Each print lists billing cycles (month) with Energy Charge (kWh), Demand Charge (kVA), Basic Charge and Admin Fee lines (Amount column is excl VAT), then Total, Levies, Sub Total, Taxes @ 15% and TOTAL. kWh and Rands are summed across cycles; demand kVA is filled only when a single demand line is printed (cycle demands are not additive); energy maps to standard (flat CT-meter tariff), basic + admin + levies to other_r; total ex VAT = printed Sub Total so the canonical CHARGE=SUM check is a real cross-check. Account = Tenant number; meter = Meter Number; site = the line under Tenant. Prints with no charge lines (5 of 10 weekly R0.00 prints) route here but yield no electricity row by design. Fingerprint: Kgetlengrivier's own VAT number AND 'IdealPrepaid' (so other IdealPrepaid landlords will not match). Identity kg_total_less_vat_r = TOTAL - Taxes vs Sub Total: 4 exact, 1 within R0.01. Checked on 10 files, 0 contradiction checks.",
+ "fingerprint": {
+  "all": [
+   "4000142572",
+   "IdealPrepaid"
+  ],
+  "any": [
+   "Kgetlengrivier Municipality"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*Cycle[ \\t]+Item[ \\t]+Description[ \\t]",
+   "require": "\\b(?:Energy|Demand|Basic) Charge[ \\t]"
+  }
+ },
+ "fields": [
+  {
+   "field": "account_number",
+   "label": "Tenant number (account at the landlord)",
+   "scope": "header",
+   "pattern": "^[ \\t]*Tenant:[ \\t]*(\\d{5,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "billing_date",
+   "label": "Print Date",
+   "scope": "header",
+   "pattern": "\\bPrint Date:[ \\t]*(\\d{1,2} [A-Za-z]{3} \\d{4})\\b",
+   "type": "date",
+   "required": true
+  },
+  {
+   "field": "meter",
+   "label": "Meter Number",
+   "scope": "header",
+   "pattern": "\\bMeter Number:[ \\t]*(\\d{5,})\\b",
+   "type": "text",
+   "required": true
+  },
+  {
+   "field": "kg_invoice_no",
+   "label": "Invoice Number",
+   "scope": "header",
+   "pattern": "\\bInvoice Number:[ \\t]*(\\d{5,})\\b",
+   "type": "text"
+  },
+  {
+   "field": "tariff_name",
+   "label": "Tariff (blank on some weeks)",
+   "scope": "header",
+   "pattern": "\\bTariff:[ \\t]*(\\S[^\\n]*?)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "field": "site_name",
+   "label": "Site (line under Tenant)",
+   "scope": "header",
+   "pattern": "^[ \\t]*Tenant:[^\\n]*\\n[ \\t]*(\\S[^\\n]*?)[ \\t]{2,}Balance at print date",
+   "type": "text"
+  },
+  {
+   "fields": [
+    "standard_kwh",
+    "standard_r"
+   ],
+   "types": [
+    "number",
+    "money"
+   ],
+   "label": "Energy Charge lines (all cycles): kWh / amount",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "pattern": "\\bEnergy Charge[ \\t]+Power Consumption[ \\t]+\\S+[ \\t]+([\\d,]+\\.\\d+)kWh[ \\t]+[\\d,.]+[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "field": "demand_r",
+   "label": "Demand Charge lines (all cycles): amount",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "\\bDemand Charge[ \\t]+Peak demand during the period[ \\t]+\\S+[ \\t]+[\\d,]+\\.\\d+kVA[ \\t]+[\\d,.]+[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "field": "demand_kva",
+   "label": "Demand kVA - only when ONE demand line is printed (cycles are not additive)",
+   "scope": "section:electricity",
+   "type": "number",
+   "pattern": "\\A(?![\\s\\S]*Peak demand during the period[\\s\\S]*Peak demand during the period)[\\s\\S]*?\\bDemand Charge[ \\t]+Peak demand during the period[ \\t]+\\S+[ \\t]+([\\d,]+\\.\\d+)kVA[ \\t]"
+  },
+  {
+   "field": "kg_basic_r",
+   "label": "Basic Charge lines",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "\\bBasic Charge[ \\t]+Basic charge[ \\t]+\\S+[ \\t]+[\\d,.]+month[ \\t]+[\\d,.]+[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "field": "kg_admin_r",
+   "label": "Admin Fee lines",
+   "scope": "section:electricity",
+   "collect": "sum",
+   "type": "money",
+   "pattern": "\\bAdmin Fee[ \\t]+Reading & Data Generation[ \\t]+\\S+[ \\t]+[\\d,.]+[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "field": "kg_levies_r",
+   "label": "Levies",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "^[ \\t]*Levies:[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "field": "kg_charges_total_r",
+   "label": "Total (charge table)",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "^[ \\t]*Total:[ \\t]+(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$"
+  },
+  {
+   "field": "kg_subtotal_r",
+   "label": "Sub Total (excl VAT)",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "\\bSub Total:[ \\t]*(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "kg_vat_r",
+   "label": "Taxes @ 15%",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "\\bTaxes @ \\d+%[ \\t]*(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "kg_total_r",
+   "label": "TOTAL (incl VAT)",
+   "scope": "section:electricity",
+   "type": "money",
+   "pattern": "\\bTOTAL:[ \\t]*R[ \\t]*(-?\\d{1,3}(?:,\\d{3})*\\.\\d{2})[ \\t]*$",
+   "required": true
+  },
+  {
+   "field": "read_start",
+   "label": "First cycle period start",
+   "scope": "section:electricity",
+   "type": "date",
+   "pattern": "\\bPeriod:[ \\t]*(\\d{1,2} [A-Za-z]{3} \\d{4}) to "
+  },
+  {
+   "field": "read_end",
+   "label": "Last cycle period end",
+   "scope": "section:electricity",
+   "type": "date",
+   "pattern": "\\bPeriod:[ \\t]*\\d{1,2} [A-Za-z]{3} \\d{4} to (\\d{1,2} [A-Za-z]{3} \\d{4})(?![\\s\\S]*\\bPeriod:)"
+  }
+ ],
+ "computes": [
+  {
+   "field": "total_kwh",
+   "op": "prefer",
+   "of": [
+    "standard_kwh"
+   ]
+  },
+  {
+   "field": "other_r",
+   "op": "sum",
+   "of": [
+    "kg_basic_r",
+    "kg_admin_r",
+    "kg_levies_r"
+   ]
+  },
+  {
+   "field": "kg_total_less_vat_r",
+   "op": "sub",
+   "of": [
+    "kg_total_r",
+    "kg_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "total_ex_vat_r": "kg_subtotal_r",
+  "reading_type": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "peak_kwh": "_none",
+  "offpeak_kwh": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "offpeak_r": "_none",
+  "nmd_r": "_none",
+  "deposit_r": "_none",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

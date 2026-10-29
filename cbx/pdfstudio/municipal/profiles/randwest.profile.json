@@ -1,0 +1,263 @@
+{
+ "profile_id": "randwest",
+ "profile_name": "Rand West City Local Municipality (Randfontein/Westonaria, Gauteng)",
+ "short_name": "Rand West City",
+ "_doc": "Rand West City LM. Two layouts, both handled: (a) 'TAX INVOICE / STATEMENT OF ACCOUNT' with labelled 'Account Number:/Account Date:/Street:/Deposit:' and lines 'units@ tariff * value'; (b) 'Tax Invoice / Satement' with label-above-value header and lines 'units tariff value' (may run to two pages). Both print a Meter Readings table whose rows carry a LEVIED AMOUNT. Electricity (ex VAT, one VAT line per bill): 'TOU LV ABOVE nnKVA' (basic) + 'LV SUPPLY ACCESS CHARGE KVA' (both other_r; access units equal the measured kVA so nmd is left blank), 'LV SUPPLY DEMAND CHARGE KVA' (demand), 'LV SUPPLY LOW|HIGH SEASON OFF PEAK|PEAK|STANDARD' (TOU kWh + Rand, summed across seasons when a bill straddles the season change). meter/read period from the first TIME OF USE row; start/end readings blank (three registers). Fingerprint: municipal VAT number + name. IDENTITY: rw_elec_by_meter_r = sum of Meter Readings levied amounts (KVA/ELECTRICITY/TIME OF USE rows) + basic vs total_ex_vat_r: R0.00 on 9/9. The 10th file is a rotated scan whose OCR is word-salad: deliberately unrouted. Checked on 9 readable bills.",
+ "fingerprint": {
+  "all": [
+   "4790274619"
+  ],
+  "any": [
+   "RAND WEST CITY"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*DATE[ \\t]+CODE[ \\t]+DESCRIPTION\\b",
+   "overlay": true,
+   "end": "^[ \\t]*\\d+[ \\t]+VAT[ \\t]{2,}"
+  }
+ },
+ "fields": [
+  {
+   "label": "Account Number",
+   "scope": "document",
+   "field": "account_number",
+   "patterns": [
+    "\\bAccount Number:[ \\t]+(\\d{8,})\\b",
+    "^[ \\t]*Account Number[ \\t]+(\\d{8,})[ \\t]{2,}"
+   ],
+   "type": "text",
+   "required": true
+  },
+  {
+   "label": "Account Date",
+   "scope": "document",
+   "field": "billing_date",
+   "patterns": [
+    "Account Date:[ \\t]+(\\d{1,2} [A-Z]{3} \\d{4})",
+    "^[ \\t]*Account Date[ \\t]{2,}Erf No\\.[^\\n]*\\n[ \\t]*(\\d{1,2} [A-Z]{3} \\d{4})"
+   ],
+   "type": "date",
+   "required": true
+  },
+  {
+   "label": "Deposit",
+   "scope": "document",
+   "field": "deposit_r",
+   "patterns": [
+    "\\bDeposit:[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+    "\\bDEPOSIT[ \\t]*\\n[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$"
+   ],
+   "type": "money"
+  },
+  {
+   "label": "Street",
+   "scope": "document",
+   "field": "rw_street",
+   "patterns": [
+    "\\bStreet:[ \\t]+(\\S+(?: \\S+)*)[ \\t]*$",
+    "^[ \\t]*Street Address[^\\n]*\\n[ \\t]*(\\S+(?: \\S+)*)[ \\t]{2,}"
+   ],
+   "type": "text"
+  },
+  {
+   "label": "Meter readings: first TIME OF USE row (meter, period)",
+   "scope": "document",
+   "fields": [
+    "meter",
+    "read_start",
+    "read_end"
+   ],
+   "pattern": "^[ \\t]*(\\d{5,})[ \\t]+TIME OF USE[ \\t]+[^\\n]*?[ \\t](\\d{2}/\\d{2}/\\d{4})[ \\t]*-[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]*$",
+   "types": [
+    "text",
+    "date",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "label": "Meter readings: levied amounts on KVA / ELECTRICITY / TIME OF USE rows (summed)",
+   "scope": "document",
+   "field": "rw_levied_r",
+   "pattern": "^[ \\t]*\\d{5,}[ \\t]+(?:KVA|ELECTRICITY|TIME OF USE)[ \\t]+[^\\n]*?[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]+\\d{2}/\\d{2}/\\d{4}[ \\t]*-",
+   "type": "money",
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "label": "Statement VAT",
+   "scope": "document",
+   "field": "rw_vat_r",
+   "pattern": "^[ \\t]*\\d+[ \\t]+VAT[ \\t]{2,}(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "label": "TOU LV ABOVE nnKVA (basic)",
+   "scope": "section:electricity",
+   "fields": [
+    "rw_basic_units",
+    "rw_basic_rate",
+    "rw_basic_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+TOU LV ABOVE[^\\n]*?[ \\t]+(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*@?[ \\t]*(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*\\*?[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "collect": null,
+   "required": true
+  },
+  {
+   "label": "LV SUPPLY ACCESS CHARGE KVA",
+   "scope": "section:electricity",
+   "fields": [
+    "rw_access_kva",
+    "rw_access_rate",
+    "rw_access_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+LV SUPPLY ACCESS CHARGE KVA[ \\t]+(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*@?[ \\t]*(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*\\*?[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "collect": null,
+   "required": true
+  },
+  {
+   "label": "LV SUPPLY DEMAND CHARGE KVA",
+   "scope": "section:electricity",
+   "fields": [
+    "demand_kva",
+    "rw_demand_rate",
+    "demand_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+LV SUPPLY DEMAND CHARGE KVA[ \\t]+(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*@?[ \\t]*(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*\\*?[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "collect": null,
+   "required": true
+  },
+  {
+   "label": "LV SUPPLY <season> OFF PEAK (summed over seasons)",
+   "scope": "section:electricity",
+   "fields": [
+    "offpeak_kwh",
+    "rw_offpeak_rate_sum",
+    "offpeak_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+LV SUPPLY (?:LOW|HIGH) SEASON OFF PEAK[ \\t]+(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*@?[ \\t]*(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*\\*?[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "label": "LV SUPPLY <season> PEAK",
+   "scope": "section:electricity",
+   "fields": [
+    "peak_kwh",
+    "rw_peak_rate_sum",
+    "peak_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+LV SUPPLY (?:LOW|HIGH) SEASON PEAK\\b[^\\n]*?[ \\t]+(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*@?[ \\t]*(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*\\*?[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "label": "LV SUPPLY <season> STANDARD",
+   "scope": "section:electricity",
+   "fields": [
+    "standard_kwh",
+    "rw_standard_rate_sum",
+    "standard_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+LV SUPPLY (?:LOW|HIGH) SEASON STANDARD[ \\t]+(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*@?[ \\t]*(-?\\d[\\d,]*(?:\\.\\d+)?|\\.\\d+)[ \\t]*\\*?[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "number",
+    "number",
+    "money"
+   ],
+   "collect": "sum",
+   "required": true
+  },
+  {
+   "label": "Any other LV SUPPLY line (none seen)",
+   "scope": "section:electricity",
+   "field": "rw_other_lv_r",
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+[ \\t]+LV SUPPLY (?!ACCESS CHARGE KVA[ \\t]|DEMAND CHARGE KVA[ \\t]|(?:LOW|HIGH) SEASON (?:OFF PEAK|PEAK|STANDARD))[^\\n]*?[ \\t]+(-?(?:\\d{1,3}(?:[ ,]\\d{3})+|\\d+)\\.\\d{2}-?)[ \\t]*$",
+   "type": "money",
+   "collect": "sum"
+  }
+ ],
+ "computes": [
+  {
+   "field": "rw_other_r",
+   "op": "sum",
+   "of": [
+    "rw_basic_r",
+    "rw_access_r",
+    "rw_other_lv_r"
+   ]
+  },
+  {
+   "field": "rw_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "rw_basic_r",
+    "rw_access_r",
+    "demand_r",
+    "offpeak_r",
+    "peak_r",
+    "standard_r",
+    "rw_other_lv_r"
+   ]
+  },
+  {
+   "field": "total_kwh",
+   "op": "sum",
+   "of": [
+    "offpeak_kwh",
+    "peak_kwh",
+    "standard_kwh"
+   ],
+   "as": "number"
+  },
+  {
+   "field": "rw_elec_by_meter_r",
+   "op": "sum",
+   "of": [
+    "rw_levied_r",
+    "rw_basic_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "rw_street",
+  "tariff_name": "_none",
+  "reading_type": "_none",
+  "start_reading_kwh": "_none",
+  "end_reading_kwh": "_none",
+  "nmd_r": "_none",
+  "nmd_kva": "_none",
+  "other_r": "rw_other_r",
+  "total_ex_vat_r": "rw_elec_ex_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

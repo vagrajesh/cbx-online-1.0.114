@@ -1,0 +1,154 @@
+{
+  "title": "page.company.title",
+  "intro": "page.company.intro",
+  "menu": false,
+  "style": {
+    "width": "normal"
+  },
+  "layout": {
+    "sections": [
+      {
+        "id": "s1",
+        "columns": [
+          {
+            "width": 12,
+            "widgets": [
+              {
+                "id": "w_cgrid",
+                "type": "grid",
+                "title": "page.company.grid",
+                "source": {
+                  "data": "documents"
+                },
+                "rows": {
+                  "data": "companies",
+                  "label": "name",
+                  "hide": "archived"
+                },
+                "cols": {
+                  "data": "doc_types",
+                  "label": "short",
+                  "title": "name",
+                  "order": "order",
+                  "show": "shown"
+                },
+                "cell": {
+                  "row": "company",
+                  "col": "doc_type",
+                  "status": "status",
+                  "date": "expiry"
+                },
+                "extra": [
+                  {
+                    "key": "responsible",
+                    "account": "responsible_account"
+                  }
+                ],
+                "row_page": ""
+              },
+              {
+                "id": "w_cdocs",
+                "type": "table",
+                "title": "page.company.docs",
+                "source": {
+                  "data": "documents"
+                },
+                "columns": [
+                  {
+                    "key": "doc_type"
+                  },
+                  {
+                    "key": "title"
+                  },
+                  {
+                    "key": "file"
+                  },
+                  {
+                    "key": "expiry"
+                  },
+                  {
+                    "key": "days_left"
+                  },
+                  {
+                    "key": "status",
+                    "type": "status"
+                  }
+                ],
+                "search": true,
+                "row_link": true,
+                "actions": [
+                  {
+                    "label": "act.mail",
+                    "kind": "mail",
+                    "to": [
+                      "company.responsible_account",
+                      "company.responsible_email"
+                    ],
+                    "fields": [
+                      "company",
+                      "doc_type",
+                      "title",
+                      "expiry",
+                      "status"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "w_cinfo",
+                "type": "table",
+                "title": "page.company.details",
+                "source": {
+                  "data": "companies"
+                },
+                "row_param": "company",
+                "add": false,
+                "search": false,
+                "columns": [
+                  {
+                    "key": "name"
+                  },
+                  {
+                    "key": "responsible"
+                  },
+                  {
+                    "key": "responsible_account"
+                  },
+                  {
+                    "key": "responsible_email"
+                  },
+                  {
+                    "key": "visible"
+                  },
+                  {
+                    "key": "notes"
+                  },
+                  {
+                    "key": "archived"
+                  }
+                ]
+              },
+              {
+                "id": "w_cpeople",
+                "type": "table",
+                "title": "page.company.people",
+                "source": {
+                  "data": "company_people"
+                },
+                "search": false,
+                "columns": [
+                  {
+                    "key": "person"
+                  },
+                  {
+                    "key": "note"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,317 @@
+{
+ "profile_id": "prince_albert",
+ "profile_name": "Prince Albert Local Municipality (Western Cape)",
+ "short_name": "Prince Albert",
+ "_doc": "Prince Albert LM (WC052) Afrikaans 'Collab' statement (same print stream as Umsobomvu/Cape Agulhas): header row REKENINGNOMMER / VOORSTAD-WAARDASIE-ERF-DEPOSITO-REKENINGDATUM / STRAAT ADRES, then a ledger 'Datum Verwysing Beskrywing BTW Bedrag' where every charge line prints its VAT and its VAT-INCLUSIVE amount. Electricity = 'E<ref> Elektrisiteit <new>-<old>=<kWh>' (single-rate, energy -> standard band) plus 'Elektrisiteit Basies' (other_r, printed from Nov-2025 on); ex-VAT = Bedrag - BTW per line. The Jul/Aug/Sep-2025 bills instead carry 'nn x Basiese heffing - Besigheid (Kon...' which is NOT labelled electricity, so it is kept natively (sundry) and not counted. read_end = the meter line's date; no start date printed. Fingerprint: municipal BTW number + masthead name. IDENTITY: pa_elec_ex_by_vat_r = electricity BTW x (1/0.15) (constant made with label_present) vs total_ex_vat_r: within R0.05 on 10/10 (per-line VAT rounding); side check: sum of all BTW cells = printed '-- BTW INGESLUIT --' on 10/10. Checked on 10 bills.",
+ "fingerprint": {
+  "all": [
+   "4690117587"
+  ],
+  "any": [
+   "PRINS ALBERT MUNISIPALITEIT",
+   "Prins Albert"
+  ]
+ },
+ "sections": {
+  "electricity": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?:E\\d+[ \\t]+)?Elektrisiteit\\b"
+  },
+  "water": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+(?:W\\d+[ \\t]+)?Water\\b"
+  },
+  "sewerage": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Basiese heffing - Septiese"
+  },
+  "refuse": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Basiese heffing - Vullis"
+  },
+  "sundry": {
+   "start": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+ x Basiese heffing - Besigheid",
+   "overlay": true,
+   "end": "\\n"
+  }
+ },
+ "fields": [
+  {
+   "label": "Account number (REKENINGNOMMER)",
+   "scope": "header",
+   "field": "account_number",
+   "pattern": "REKENINGNOMMER[ \\t]*\\n[^\\n]*?[ \\t](\\d{10})[ \\t]*$",
+   "type": "text",
+   "required": true
+  },
+  {
+   "label": "Deposit + statement date (DEPOSITO / REKENINGDATUM)",
+   "scope": "header",
+   "fields": [
+    "deposit_r",
+    "billing_date"
+   ],
+   "pattern": "REKENINGDATUM[^\\n]*\\n[^\\n]*?[ \\t]R[ \\t]+(\\d+\\.\\d{2})[ \\t]+(\\d{2}/\\d{2}/\\d{4})",
+   "types": [
+    "money",
+    "date"
+   ],
+   "required": true
+  },
+  {
+   "label": "Suburb (VOORSTAD)",
+   "scope": "header",
+   "field": "pa_suburb",
+   "pattern": "VOORSTAD[^\\n]*\\n[ \\t]*\\d{4}[ \\t]{2,}(\\S+(?: \\S+)*)[ \\t]{2,}R[ \\t]",
+   "type": "text"
+  },
+  {
+   "label": "Street address (STRAAT ADRES)",
+   "scope": "header",
+   "field": "pa_street",
+   "pattern": "STRAAT ADRES[ \\t]*\\n[^\\n]*?[ \\t]{2,}(\\S+(?: \\S+)*)[ \\t]*$",
+   "type": "text"
+  },
+  {
+   "label": "Statement VAT total (BTW INGESLUIT)",
+   "scope": "document",
+   "field": "pa_vat_total_r",
+   "pattern": "--[ \\t]*BTW INGESLUIT[ \\t]*--[ \\t]+\\d*[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "label": "TOTAAL",
+   "scope": "document",
+   "field": "pa_total_due_r",
+   "pattern": "^[ \\t]*TOTAAL[ \\t]+R[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "type": "money"
+  },
+  {
+   "label": "Elektrisiteit meter line (new-old=kWh, BTW, Bedrag)",
+   "scope": "section:electricity",
+   "fields": [
+    "read_end",
+    "meter",
+    "end_reading_kwh",
+    "start_reading_kwh",
+    "total_kwh",
+    "pa_energy_vat_r",
+    "pa_energy_incl_r"
+   ],
+   "pattern": "^[ \\t]*(\\d{2}/\\d{2}/\\d{4})[ \\t]+E(\\d+)[ \\t]+Elektrisiteit[ \\t]+(\\d+)-(\\d+)=(\\d+)(?:[ \\t]+\\d)?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "date",
+    "text",
+    "number",
+    "number",
+    "number",
+    "money",
+    "money"
+   ],
+   "required": true
+  },
+  {
+   "label": "Elektrisiteit Basies (BTW, Bedrag)",
+   "scope": "section:electricity",
+   "fields": [
+    "pa_basic_vat_r",
+    "pa_basic_incl_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Elektrisiteit[ \\t]+Basies(?:[ \\t]+\\d)?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "label": "Water meter line",
+   "scope": "section:water",
+   "fields": [
+    "pa_water_meter",
+    "pa_water_new",
+    "pa_water_old",
+    "pa_water_kl",
+    "pa_water_vat_r",
+    "pa_water_incl_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+W(\\d+)[ \\t]+Water[ \\t]+(\\d+)-(\\d+)=(\\d+)[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "text",
+    "number",
+    "number",
+    "number",
+    "money",
+    "money"
+   ]
+  },
+  {
+   "label": "Water Basies",
+   "scope": "section:water",
+   "fields": [
+    "pa_water_basic_vat_r",
+    "pa_water_basic_incl_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Water[ \\t]+Basies[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "label": "Basiese heffing - Septiese tenk",
+   "scope": "section:sewerage",
+   "fields": [
+    "pa_sewer_vat_r",
+    "pa_sewer_incl_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Basiese heffing - Septiese[^\\n]*?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "label": "Basiese heffing - Vullis",
+   "scope": "section:refuse",
+   "fields": [
+    "pa_refuse_vat_r",
+    "pa_refuse_incl_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+Basiese heffing - Vullis[^\\n]*?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  },
+  {
+   "label": "Basiese heffing - Besigheid (not counted as electricity)",
+   "scope": "section:sundry",
+   "fields": [
+    "pa_bus_basic_vat_r",
+    "pa_bus_basic_incl_r"
+   ],
+   "pattern": "^[ \\t]*\\d{2}/\\d{2}/\\d{4}[ \\t]+\\d+ x Basiese heffing - Besigheid[^\\n]*?[ \\t]{2,}(-?\\d+\\.\\d{2}-?)[ \\t]+(-?\\d+\\.\\d{2}-?)[ \\t]*$",
+   "types": [
+    "money",
+    "money"
+   ]
+  }
+ ],
+ "computes": [
+  {
+   "field": "pa_k_inv15",
+   "op": "label_present",
+   "of": [
+    "account_number"
+   ],
+   "labels": [
+    "666666.666667E-5"
+   ]
+  },
+  {
+   "field": "pa_site",
+   "op": "concat",
+   "of": [
+    "pa_street",
+    "pa_suburb"
+   ]
+  },
+  {
+   "field": "pa_energy_ex_r",
+   "op": "sub",
+   "of": [
+    "pa_energy_incl_r",
+    "pa_energy_vat_r"
+   ]
+  },
+  {
+   "field": "pa_basic_ex_r",
+   "op": "sub",
+   "of": [
+    "pa_basic_incl_r",
+    "pa_basic_vat_r"
+   ]
+  },
+  {
+   "field": "pa_elec_ex_r",
+   "op": "sum",
+   "of": [
+    "pa_energy_ex_r",
+    "pa_basic_ex_r"
+   ]
+  },
+  {
+   "field": "pa_elec_vat_r",
+   "op": "sum",
+   "of": [
+    "pa_energy_vat_r",
+    "pa_basic_vat_r"
+   ]
+  },
+  {
+   "field": "pa_elec_incl_r",
+   "op": "sum",
+   "of": [
+    "pa_energy_incl_r",
+    "pa_basic_incl_r"
+   ]
+  },
+  {
+   "field": "pa_elec_ex_check_r",
+   "op": "sub",
+   "of": [
+    "pa_elec_incl_r",
+    "pa_elec_vat_r"
+   ]
+  },
+  {
+   "field": "pa_elec_ex_by_vat_r",
+   "op": "mul",
+   "of": [
+    "pa_elec_vat_r",
+    "pa_k_inv15"
+   ]
+  },
+  {
+   "field": "pa_water_ex_r",
+   "op": "sub",
+   "of": [
+    "pa_water_incl_r",
+    "pa_water_vat_r"
+   ]
+  },
+  {
+   "field": "pa_sewer_ex_r",
+   "op": "sub",
+   "of": [
+    "pa_sewer_incl_r",
+    "pa_sewer_vat_r"
+   ]
+  },
+  {
+   "field": "pa_refuse_ex_r",
+   "op": "sub",
+   "of": [
+    "pa_refuse_incl_r",
+    "pa_refuse_vat_r"
+   ]
+  }
+ ],
+ "canonical": {
+  "site_name": "pa_site",
+  "tariff_name": "_none",
+  "reading_type": "_none",
+  "read_start": "_none",
+  "peak_kwh": "_none",
+  "standard_kwh": "total_kwh",
+  "offpeak_kwh": "_none",
+  "demand_kva": "_none",
+  "nmd_kva": "_none",
+  "peak_r": "_none",
+  "standard_r": "pa_energy_ex_r",
+  "offpeak_r": "_none",
+  "demand_r": "_none",
+  "nmd_r": "_none",
+  "other_r": "pa_basic_ex_r",
+  "total_ex_vat_r": "pa_elec_ex_r",
+  "cash_r": "_none",
+  "guarantee_r": "_none",
+  "security_held_r": "_none"
+ }
+}

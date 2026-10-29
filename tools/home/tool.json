@@ -1,0 +1,45 @@
+{
+  "slug": "home",
+  "title": "tool.title",
+  "icon": "home",
+  "menu": {
+    "section": "My tools",
+    "order": 1,
+    "hidden": true
+  },
+  "access": {
+    "roles": [],
+    "everyone": true
+  },
+  "home": "user",
+  "owner": "edwin.botha@cbreexcellerate.com",
+  "version": 1,
+  "note": "Home: one page per role (owner, admin, manager, user). Each person can rearrange their own copy from Home → Customise; that is kept with them, not here.",
+  "canvas": {
+    "menu": {
+      "x": 730,
+      "y": 60
+    },
+    "pages": {
+      "owner": {
+        "x": 490,
+        "y": 60
+      },
+      "admin": {
+        "x": 490,
+        "y": 420
+      },
+      "manager": {
+        "x": 490,
+        "y": 780
+      },
+      "user": {
+        "x": 490,
+        "y": 1140
+      }
+    },
+    "data": {},
+    "sources": {},
+    "parked": []
+  }
+}

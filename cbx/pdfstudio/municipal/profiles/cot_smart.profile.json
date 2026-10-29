@@ -1,0 +1,69 @@
+{
+  "profile_id": "cot_smart",
+  "profile_name": "City of Tshwane - Prepayment Smart Meter Update",
+  "short_name": "CoT Smart",
+  "_doc": "The one-page 'Prepayment Account Update' letters: balance and estimated remaining days per prepaid account. Feeds the Smart Meter tab. The cot bill profile rejects these letters.",
+  "fingerprint": {
+    "all": [
+      "PREPAYMENT ACCOUNT UPDATE"
+    ]
+  },
+  "sections": {
+    "smart_meter": {
+      "start": "Prepayment Account Update"
+    }
+  },
+  "fields": [
+    {
+      "field": "account_number",
+      "label": "Account",
+      "scope": "document",
+      "pattern": "-\\s*(\\d{7,12})\\s*\\n",
+      "type": "text",
+      "required": true
+    },
+    {
+      "field": "site_name",
+      "label": "Site",
+      "scope": "document",
+      "pattern": "Dear Customer,\\s*\\n+\\s*(.+?)\\s*-\\s*\\d{7,12}\\s*\\n",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "municipality",
+      "label": "Municipality",
+      "scope": "document",
+      "pattern": "(City of Tshwane)",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "as_of_date",
+      "label": "As-of date",
+      "scope": "document",
+      "pattern": "As of\\s+(\\d{1,2} \\w+ \\d{4})",
+      "type": "text",
+      "required": false
+    },
+    {
+      "field": "balance_r",
+      "label": "Balance (R)",
+      "scope": "section:smart_meter",
+      "pattern": "balance is\\s*R\\s*(-?[\\d, ]+\\.\\d{2}-?)",
+      "type": "money",
+      "required": true
+    },
+    {
+      "field": "days_left",
+      "label": "Days left",
+      "scope": "section:smart_meter",
+      "pattern": "consumption of\\s*(-?[\\d.]+-?)\\s*days",
+      "type": "money",
+      "required": true
+    }
+  ],
+  "computes": [],
+  "canonical": {},
+  "recon": {}
+}
